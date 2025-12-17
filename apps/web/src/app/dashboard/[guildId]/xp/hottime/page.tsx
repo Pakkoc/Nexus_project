@@ -14,7 +14,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Checkbox } from "@/components/ui/checkbox";
+import { Switch } from "@/components/ui/switch";
 import {
   Select,
   SelectContent,
@@ -308,7 +308,7 @@ export default function HotTimeSettingsPage() {
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
-                    <Checkbox
+                    <Switch
                       checked={hotTime.enabled}
                       onCheckedChange={() => handleToggle(hotTime)}
                     />

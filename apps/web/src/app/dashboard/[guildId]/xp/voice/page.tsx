@@ -8,7 +8,7 @@ import { useXpSettings, useUpdateXpSettings } from "@/hooks/queries";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Checkbox } from "@/components/ui/checkbox";
+import { Switch } from "@/components/ui/switch";
 import {
   Form,
   FormControl,
@@ -125,7 +125,7 @@ export default function VoiceXpSettingsPage() {
                       </FormDescription>
                     </div>
                     <FormControl>
-                      <Checkbox
+                      <Switch
                         checked={field.value}
                         onCheckedChange={field.onChange}
                       />

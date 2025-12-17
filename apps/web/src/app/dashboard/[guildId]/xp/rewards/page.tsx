@@ -15,7 +15,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Checkbox } from "@/components/ui/checkbox";
+import { Switch } from "@/components/ui/switch";
 import {
   Select,
   SelectContent,
@@ -249,7 +249,7 @@ export default function LevelRewardsPage() {
                   render={({ field }) => (
                     <FormItem className="flex items-center space-x-3 space-y-0 rounded-lg border border-slate-700 p-4">
                       <FormControl>
-                        <Checkbox
+                        <Switch
                           checked={field.value}
                           onCheckedChange={field.onChange}
                         />
@@ -342,7 +342,7 @@ export default function LevelRewardsPage() {
                     </div>
                     <div className="flex items-center gap-2">
                       <div className="flex items-center gap-2">
-                        <Checkbox
+                        <Switch
                           checked={reward.removeOnHigherLevel}
                           onCheckedChange={() => handleToggleRemove(reward)}
                         />
