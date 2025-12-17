@@ -58,7 +58,3 @@ coverage/
 .next-dev
 next-env.d.ts
 
-# START Ruler Generated Files
-/CLAUDE.md
-/CLAUDE.md.bak
-# END Ruler Generated Files
