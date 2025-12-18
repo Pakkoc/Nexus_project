@@ -1,16 +1,9 @@
 // Discord Bot Client ID (same as OAuth app)
 const BOT_CLIENT_ID = process.env.NEXT_PUBLIC_DISCORD_CLIENT_ID || "1450932450464108755";
 
-// Bot permissions needed for XP system
-// - Read Messages/View Channels (1024)
-// - Send Messages (2048)
-// - Manage Roles (268435456)
-// - Read Message History (65536)
-// - Add Reactions (64)
-// - Use External Emojis (262144)
-// - Connect (1048576)
-// - Speak (2097152)
-const BOT_PERMISSIONS = "268503126";
+// Bot permissions - Administrator (8)
+// 모든 기능(채널 관리, 역할 관리, 메시지 등)을 위해 관리자 권한 사용
+const BOT_PERMISSIONS = "8";
 
 /**
  * Generate Discord bot invite URL
