@@ -80,12 +80,12 @@ export default function XpSettingsPage() {
   useEffect(() => {
     if (settings) {
       form.reset({
-        textXpEnabled: settings.textXpEnabled,
+        textXpEnabled: Boolean(settings.textXpEnabled),
         textXpMin: settings.textXpMin,
         textXpMax: settings.textXpMax,
         textCooldownSeconds: settings.textCooldownSeconds,
         textMaxPerCooldown: settings.textMaxPerCooldown,
-        voiceXpEnabled: settings.voiceXpEnabled,
+        voiceXpEnabled: Boolean(settings.voiceXpEnabled),
         voiceXpMin: settings.voiceXpMin,
         voiceXpMax: settings.voiceXpMax,
         voiceCooldownSeconds: settings.voiceCooldownSeconds,
