@@ -19,6 +19,14 @@ export interface LevelChannel {
   channelId: string;
 }
 
+export interface XpMultiplier {
+  id: number;
+  guildId: string;
+  targetType: 'channel' | 'role';
+  targetId: string;
+  multiplier: number;
+}
+
 export interface XpSettingsRepositoryPort {
   findByGuild(guildId: string): Promise<Result<XpSettings | null, RepositoryError>>;
   save(settings: XpSettings): Promise<Result<void, RepositoryError>>;
@@ -33,4 +41,7 @@ export interface XpSettingsRepositoryPort {
   saveLevelRequirement(guildId: string, level: number, requiredXp: number): Promise<Result<void, RepositoryError>>;
   deleteLevelRequirement(guildId: string, level: number): Promise<Result<void, RepositoryError>>;
   deleteAllLevelRequirements(guildId: string): Promise<Result<void, RepositoryError>>;
+
+  // XP 배율 (채널/역할)
+  getMultipliers(guildId: string, targetType?: 'channel' | 'role'): Promise<Result<XpMultiplier[], RepositoryError>>;
 }

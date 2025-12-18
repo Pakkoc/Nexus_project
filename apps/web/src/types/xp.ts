@@ -79,6 +79,25 @@ export type LevelUnlockChannel = z.infer<typeof levelUnlockChannelSchema>;
 export const createLevelUnlockChannelSchema = levelUnlockChannelSchema.omit({ id: true, guildId: true });
 export type CreateLevelUnlockChannel = z.infer<typeof createLevelUnlockChannelSchema>;
 
+// XP Multiplier (채널/역할별 배율)
+export const xpMultiplierSchema = z.object({
+  id: z.number(),
+  guildId: z.string(),
+  targetType: z.enum(["channel", "role"]),
+  targetId: z.string(),
+  multiplier: z.number().min(0.1).max(10),
+});
+
+export type XpMultiplier = z.infer<typeof xpMultiplierSchema>;
+
+export const createXpMultiplierSchema = xpMultiplierSchema.omit({ id: true, guildId: true });
+export type CreateXpMultiplier = z.infer<typeof createXpMultiplierSchema>;
+
+export const updateXpMultiplierSchema = z.object({
+  multiplier: z.number().min(0.1).max(10),
+});
+export type UpdateXpMultiplier = z.infer<typeof updateXpMultiplierSchema>;
+
 // Default values (ProBot reference)
 export const DEFAULT_XP_SETTINGS: Omit<XpSettings, "guildId"> = {
   enabled: true,

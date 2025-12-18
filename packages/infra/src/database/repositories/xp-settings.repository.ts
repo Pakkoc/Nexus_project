@@ -1,5 +1,5 @@
 import type { Pool, RowDataPacket } from 'mysql2/promise';
-import type { XpSettingsRepositoryPort, XpSettings, RepositoryError, LevelReward, LevelChannel, HotTimeConfig, LevelRequirement } from '@topia/core';
+import type { XpSettingsRepositoryPort, XpSettings, RepositoryError, LevelReward, LevelChannel, HotTimeConfig, LevelRequirement, XpMultiplier } from '@topia/core';
 import { Result } from '@topia/core';
 
 interface XpSettingsRow extends RowDataPacket {
@@ -53,6 +53,14 @@ interface LevelRequirementRow extends RowDataPacket {
   required_xp: number;
   created_at: Date;
   updated_at: Date;
+}
+
+interface MultiplierRow extends RowDataPacket {
+  id: number;
+  guild_id: string;
+  target_type: 'channel' | 'role';
+  target_id: string;
+  multiplier: number;
 }
 
 function toXpSettings(row: XpSettingsRow): XpSettings {
@@ -325,6 +333,30 @@ export class XpSettingsRepository implements XpSettingsRepositoryPort {
       );
 
       return Result.ok(undefined);
+    } catch (error) {
+      return Result.err({
+        type: 'QUERY_ERROR',
+        message: error instanceof Error ? error.message : 'Unknown error',
+      });
+    }
+  }
+
+  async getMultipliers(guildId: string, targetType?: 'channel' | 'role'): Promise<Result<XpMultiplier[], RepositoryError>> {
+    try {
+      const query = targetType
+        ? 'SELECT * FROM xp_multipliers WHERE guild_id = ? AND target_type = ?'
+        : 'SELECT * FROM xp_multipliers WHERE guild_id = ?';
+      const params = targetType ? [guildId, targetType] : [guildId];
+
+      const [rows] = await this.pool.execute<MultiplierRow[]>(query, params);
+
+      return Result.ok(rows.map(r => ({
+        id: r.id,
+        guildId: r.guild_id,
+        targetType: r.target_type,
+        targetId: r.target_id,
+        multiplier: Number(r.multiplier),
+      })));
     } catch (error) {
       return Result.err({
         type: 'QUERY_ERROR',
