@@ -2,6 +2,7 @@ import { getServerSession } from "next-auth";
 import { NextRequest, NextResponse } from "next/server";
 import { authOptions } from "@/lib/auth";
 import { db } from "@/lib/db";
+import { notifyBotSettingsChanged } from "@/lib/bot-notify";
 import { createLevelRewardSchema } from "@/types/xp";
 import type { RowDataPacket, ResultSetHeader } from "mysql2";
 
@@ -102,6 +103,14 @@ export async function POST(
       removeOnHigherLevel: validatedData.removeOnHigherLevel ?? false,
     };
 
+    // 봇에 설정 변경 알림
+    await notifyBotSettingsChanged({
+      guildId,
+      type: 'xp-reward',
+      action: '추가',
+      details: `레벨 ${validatedData.level} 보상 역할: ${validatedData.roleId}`,
+    });
+
     return NextResponse.json(newReward, { status: 201 });
   } catch (error) {
     if (error instanceof Error && error.name === "ZodError") {
@@ -183,6 +192,14 @@ export async function PATCH(
       return NextResponse.json({ error: "Reward not found" }, { status: 404 });
     }
 
+    // 봇에 설정 변경 알림
+    await notifyBotSettingsChanged({
+      guildId,
+      type: 'xp-reward',
+      action: '수정',
+      details: `ID: ${id}`,
+    });
+
     return NextResponse.json(rowToReward(rows[0]!));
   } catch (error) {
     if (error instanceof Error && error.name === "ZodError") {
@@ -226,6 +243,14 @@ export async function DELETE(
     if (result.affectedRows === 0) {
       return NextResponse.json({ error: "Reward not found" }, { status: 404 });
     }
+
+    // 봇에 설정 변경 알림
+    await notifyBotSettingsChanged({
+      guildId,
+      type: 'xp-reward',
+      action: '삭제',
+      details: `ID: ${id}`,
+    });
 
     return NextResponse.json({ success: true });
   } catch (error) {

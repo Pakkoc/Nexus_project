@@ -2,6 +2,7 @@ import { getServerSession } from "next-auth";
 import { NextRequest, NextResponse } from "next/server";
 import { authOptions } from "@/lib/auth";
 import { db } from "@/lib/db";
+import { notifyBotSettingsChanged } from "@/lib/bot-notify";
 import { createXpExclusionSchema } from "@/types/xp";
 import type { RowDataPacket, ResultSetHeader } from "mysql2";
 
@@ -94,6 +95,14 @@ export async function POST(
       targetId: validatedData.targetId,
     };
 
+    // 봇에 설정 변경 알림
+    await notifyBotSettingsChanged({
+      guildId,
+      type: 'xp-exclusion',
+      action: '추가',
+      details: `${validatedData.targetType === 'channel' ? '채널' : '역할'}: ${validatedData.targetId}`,
+    });
+
     return NextResponse.json(newExclusion, { status: 201 });
   } catch (error) {
     if (error instanceof Error && error.name === "ZodError") {
@@ -137,6 +146,14 @@ export async function DELETE(
     if (result.affectedRows === 0) {
       return NextResponse.json({ error: "Exclusion not found" }, { status: 404 });
     }
+
+    // 봇에 설정 변경 알림
+    await notifyBotSettingsChanged({
+      guildId,
+      type: 'xp-exclusion',
+      action: '삭제',
+      details: `ID: ${id}`,
+    });
 
     return NextResponse.json({ success: true });
   } catch (error) {

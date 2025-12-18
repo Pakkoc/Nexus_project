@@ -2,23 +2,9 @@ import { getServerSession } from "next-auth";
 import { NextRequest, NextResponse } from "next/server";
 import { authOptions } from "@/lib/auth";
 import { db } from "@/lib/db";
+import { notifyBotSettingsChanged } from "@/lib/bot-notify";
 import { updateXpSettingsSchema } from "@/types/xp";
 import type { RowDataPacket } from "mysql2";
-
-// Bot API로 알림 전송
-async function notifyBotSettingsChanged(guildId: string, changes: Record<string, unknown>) {
-  const botApiUrl = process.env.BOT_API_URL || 'http://localhost:3001';
-  try {
-    await fetch(`${botApiUrl}/api/notify/xp-settings`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ guildId, changes }),
-    });
-  } catch (error) {
-    // 봇 서버가 다운되어도 웹은 정상 동작
-    console.error('Failed to notify bot:', error);
-  }
-}
 
 interface XpSettingsRow extends RowDataPacket {
   guild_id: string;
@@ -176,7 +162,13 @@ export async function PATCH(
     }
 
     // 봇에 설정 변경 알림
-    await notifyBotSettingsChanged(guildId, validatedData);
+    const changedFields = Object.keys(validatedData).join(', ');
+    await notifyBotSettingsChanged({
+      guildId,
+      type: 'xp-settings',
+      action: '수정',
+      details: `변경된 필드: ${changedFields}`,
+    });
 
     return NextResponse.json(rowToSettings(rows[0]!));
   } catch (error) {

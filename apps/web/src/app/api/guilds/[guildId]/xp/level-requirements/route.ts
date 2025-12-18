@@ -2,6 +2,7 @@ import { getServerSession } from "next-auth";
 import { NextRequest, NextResponse } from "next/server";
 import { authOptions } from "@/lib/auth";
 import { db } from "@/lib/db";
+import { notifyBotSettingsChanged } from "@/lib/bot-notify";
 import { z } from "zod";
 import type { RowDataPacket, ResultSetHeader } from "mysql2";
 
@@ -88,6 +89,14 @@ export async function POST(
       requiredXp: validatedData.requiredXp,
     };
 
+    // 봇에 설정 변경 알림
+    await notifyBotSettingsChanged({
+      guildId,
+      type: 'xp-level-requirement',
+      action: '추가',
+      details: `레벨 ${validatedData.level}: ${validatedData.requiredXp} XP`,
+    });
+
     return NextResponse.json(newRequirement, { status: 201 });
   } catch (error) {
     if (error instanceof z.ZodError) {
@@ -138,6 +147,14 @@ export async function PATCH(
       [guildId]
     );
 
+    // 봇에 설정 변경 알림
+    await notifyBotSettingsChanged({
+      guildId,
+      type: 'xp-level-requirement',
+      action: '변경',
+      details: `${validatedData.length}개 레벨 설정 저장`,
+    });
+
     return NextResponse.json(rows.map(rowToRequirement));
   } catch (error) {
     if (error instanceof z.ZodError) {
@@ -180,12 +197,28 @@ export async function DELETE(
       if (result.affectedRows === 0) {
         return NextResponse.json({ error: "Level requirement not found" }, { status: 404 });
       }
+
+      // 봇에 설정 변경 알림
+      await notifyBotSettingsChanged({
+        guildId,
+        type: 'xp-level-requirement',
+        action: '삭제',
+        details: `레벨 ${level}`,
+      });
     } else {
       // 전체 삭제
       await pool.query(
         `DELETE FROM xp_level_requirements WHERE guild_id = ?`,
         [guildId]
       );
+
+      // 봇에 설정 변경 알림
+      await notifyBotSettingsChanged({
+        guildId,
+        type: 'xp-level-requirement',
+        action: '삭제',
+        details: '전체 레벨 설정 삭제',
+      });
     }
 
     return NextResponse.json({ success: true });

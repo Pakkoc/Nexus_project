@@ -214,17 +214,31 @@ async function main() {
   const app = express();
   app.use(express.json());
 
-  // XP 설정 변경 알림 엔드포인트
-  app.post('/api/notify/xp-settings', (req, res) => {
-    const { guildId, changes } = req.body;
+  // 설정 변경 알림 엔드포인트 (범용)
+  app.post('/api/notify/settings-changed', (req, res) => {
+    const { guildId, type, action, details } = req.body;
 
-    if (!guildId) {
-      return res.status(400).json({ error: 'guildId is required' });
+    if (!guildId || !type) {
+      return res.status(400).json({ error: 'guildId and type are required' });
     }
 
-    console.log(`[WEB -> BOT] XP 설정 수정됨 - Guild: ${guildId}`);
-    if (changes) {
-      console.log(`[WEB -> BOT] 변경된 항목:`, changes);
+    const actionText = action || '변경';
+    const typeLabels: Record<string, string> = {
+      'xp-settings': 'XP 설정',
+      'xp-text': '텍스트 XP',
+      'xp-voice': '음성 XP',
+      'xp-exclusion': 'XP 차단',
+      'xp-hottime': 'XP 핫타임',
+      'xp-reward': '레벨 보상',
+      'xp-notification': '레벨업 알림',
+      'xp-level-requirement': '레벨 설정',
+    };
+
+    const typeLabel = typeLabels[type] || type;
+    console.log(`[SETTINGS] ${typeLabel} ${actionText} - Guild: ${guildId}`);
+
+    if (details) {
+      console.log(`[SETTINGS] 상세: ${details}`);
     }
 
     return res.json({ success: true });
