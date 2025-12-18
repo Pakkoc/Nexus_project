@@ -78,14 +78,16 @@ export default function NotificationSettingsPage() {
   }, [isDirty, setHasUnsavedChanges]);
 
   useEffect(() => {
-    if (settings) {
+    // settings와 channels가 모두 로드된 후에만 form.reset 호출
+    // (Radix Select가 value와 일치하는 SelectItem이 없으면 값을 리셋하는 문제 방지)
+    if (settings && !channelsLoading) {
       form.reset({
         levelUpChannelId: settings.levelUpChannelId,
         levelUpMessage: settings.levelUpMessage ?? defaultMessage,
       });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [settings]);
+  }, [settings, channelsLoading]);
 
   const onSubmit = async (data: NotificationFormValues) => {
     try {
@@ -167,15 +169,15 @@ export default function NotificationSettingsPage() {
                             const selectedChannel = channels?.find(ch => ch.id === field.value);
                             if (selectedChannel) {
                               return (
-                                <span className="flex items-center gap-2">
+                                <span className="flex items-center gap-2 whitespace-nowrap">
                                   {selectedChannel.type === 2 ? (
-                                    <Icon icon="solar:volume-loud-linear" className="h-4 w-4 text-green-400" />
+                                    <Icon icon="solar:volume-loud-linear" className="h-4 w-4 shrink-0 text-green-400" />
                                   ) : selectedChannel.type === 5 ? (
-                                    <Icon icon="solar:megaphone-linear" className="h-4 w-4 text-amber-400" />
+                                    <Icon icon="solar:megaphone-linear" className="h-4 w-4 shrink-0 text-amber-400" />
                                   ) : (
-                                    <Icon icon="solar:hashtag-linear" className="h-4 w-4 text-slate-400" />
+                                    <Icon icon="solar:hashtag-linear" className="h-4 w-4 shrink-0 text-slate-400" />
                                   )}
-                                  {selectedChannel.name}
+                                  <span className="truncate">{selectedChannel.name}</span>
                                 </span>
                               );
                             }
