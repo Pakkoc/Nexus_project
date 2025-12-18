@@ -243,6 +243,46 @@ async function main() {
     }
   });
 
+  // 다중 유저 채널 해금 엔드포인트 (소급 적용)
+  app.post('/api/channels/unlock-for-users', async (req, res) => {
+    const { guildId, channelId, userIds } = req.body;
+
+    if (!guildId || !channelId || !userIds || !Array.isArray(userIds)) {
+      return res.status(400).json({ error: 'guildId, channelId, and userIds are required' });
+    }
+
+    try {
+      const guild = await client.guilds.fetch(guildId);
+      const channel = await guild.channels.fetch(channelId);
+
+      if (!channel || !('permissionOverwrites' in channel)) {
+        return res.status(404).json({ error: 'Channel not found or not a text channel' });
+      }
+
+      let unlocked = 0;
+      let failed = 0;
+
+      for (const userId of userIds) {
+        try {
+          const member = await guild.members.fetch(userId);
+          await channel.permissionOverwrites.create(member, {
+            ViewChannel: true,
+          });
+          unlocked++;
+        } catch (err) {
+          console.error(`[LEVEL CHANNEL] Failed to unlock for user ${userId}:`, err);
+          failed++;
+        }
+      }
+
+      console.log(`[LEVEL CHANNEL] Retroactive unlock: ${unlocked} users unlocked, ${failed} failed for channel ${channel.name}`);
+      return res.json({ success: true, unlocked, failed });
+    } catch (error) {
+      console.error('[LEVEL CHANNEL] Failed to unlock for users:', error);
+      return res.status(500).json({ error: 'Failed to unlock channel for users' });
+    }
+  });
+
   // 설정 변경 알림 엔드포인트 (범용)
   app.post('/api/notify/settings-changed', (req, res) => {
     const { guildId, type, action, details } = req.body;

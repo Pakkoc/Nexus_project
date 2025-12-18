@@ -81,3 +81,38 @@ export async function lockChannel(guildId: string, channelId: string): Promise<b
     return false;
   }
 }
+
+/**
+ * 봇에 다중 유저 채널 해금 요청을 보냅니다.
+ * 소급 적용: 이미 해당 레벨에 도달한 유저들에게 채널 권한을 부여합니다.
+ */
+export async function unlockChannelForUsers(
+  guildId: string,
+  channelId: string,
+  userIds: string[]
+): Promise<{ success: boolean; unlocked?: number; failed?: number }> {
+  if (userIds.length === 0) {
+    return { success: true, unlocked: 0, failed: 0 };
+  }
+
+  try {
+    const response = await fetch(`${BOT_API_URL}/api/channels/unlock-for-users`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ guildId, channelId, userIds }),
+    });
+
+    if (!response.ok) {
+      console.error(`[BOT] Failed to unlock channel for users: ${response.status}`);
+      return { success: false };
+    }
+
+    const result = await response.json();
+    return { success: true, unlocked: result.unlocked, failed: result.failed };
+  } catch (error) {
+    console.error('[BOT] Failed to connect to bot for channel unlock:', error);
+    return { success: false };
+  }
+}

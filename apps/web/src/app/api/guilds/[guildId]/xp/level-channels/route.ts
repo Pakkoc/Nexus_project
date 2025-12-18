@@ -2,7 +2,7 @@ import { getServerSession } from "next-auth";
 import { NextRequest, NextResponse } from "next/server";
 import { authOptions } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { notifyBotSettingsChanged, lockChannel } from "@/lib/bot-notify";
+import { notifyBotSettingsChanged, lockChannel, unlockChannelForUsers } from "@/lib/bot-notify";
 import { createLevelUnlockChannelSchema } from "@/types/xp";
 import type { RowDataPacket, ResultSetHeader } from "mysql2";
 
@@ -12,6 +12,11 @@ interface LevelChannelRow extends RowDataPacket {
   level: number;
   channel_id: string;
   created_at: Date;
+}
+
+interface XpUserRow extends RowDataPacket {
+  user_id: string;
+  level: number;
 }
 
 function rowToLevelChannel(row: LevelChannelRow) {
@@ -98,11 +103,23 @@ export async function POST(
     // 채널 잠금 (봇이 @everyone ViewChannel 권한 거부)
     await lockChannel(guildId, validatedData.channelId);
 
+    // 소급 적용: 이미 해당 레벨 이상인 유저들에게 채널 해금
+    const [eligibleUsers] = await pool.query<XpUserRow[]>(
+      `SELECT user_id, level FROM xp_users WHERE guild_id = ? AND level >= ?`,
+      [guildId, validatedData.level]
+    );
+
+    if (eligibleUsers.length > 0) {
+      const userIds = eligibleUsers.map(u => u.user_id);
+      const unlockResult = await unlockChannelForUsers(guildId, validatedData.channelId, userIds);
+      console.log(`[LEVEL CHANNEL] Retroactive unlock: ${unlockResult.unlocked}/${userIds.length} users for level ${validatedData.level}`);
+    }
+
     await notifyBotSettingsChanged({
       guildId,
       type: 'xp-level-channel',
       action: '추가',
-      details: `레벨 ${validatedData.level} 해금 채널`,
+      details: `레벨 ${validatedData.level} 해금 채널 (소급 적용: ${eligibleUsers.length}명)`,
     });
 
     return NextResponse.json(newLevelChannel, { status: 201 });
