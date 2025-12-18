@@ -1,5 +1,5 @@
 import type { Pool, RowDataPacket } from 'mysql2/promise';
-import type { XpSettingsRepositoryPort, XpSettings, RepositoryError, LevelReward, LevelChannel, HotTimeConfig } from '@topia/core';
+import type { XpSettingsRepositoryPort, XpSettings, RepositoryError, LevelReward, LevelChannel, HotTimeConfig, LevelRequirement } from '@topia/core';
 import { Result } from '@topia/core';
 
 interface XpSettingsRow extends RowDataPacket {
@@ -45,6 +45,14 @@ interface LevelChannelRow extends RowDataPacket {
   guild_id: string;
   level: number;
   channel_id: string;
+}
+
+interface LevelRequirementRow extends RowDataPacket {
+  guild_id: string;
+  level: number;
+  required_xp: number;
+  created_at: Date;
+  updated_at: Date;
 }
 
 function toXpSettings(row: XpSettingsRow): XpSettings {
@@ -242,6 +250,81 @@ export class XpSettingsRepository implements XpSettingsRepositoryPort {
         level: r.level,
         channelId: r.channel_id,
       })));
+    } catch (error) {
+      return Result.err({
+        type: 'QUERY_ERROR',
+        message: error instanceof Error ? error.message : 'Unknown error',
+      });
+    }
+  }
+
+  async getLevelRequirements(guildId: string): Promise<Result<LevelRequirement[], RepositoryError>> {
+    try {
+      const [rows] = await this.pool.execute<LevelRequirementRow[]>(
+        `SELECT guild_id, level, required_xp, created_at, updated_at
+         FROM xp_level_requirements
+         WHERE guild_id = ?
+         ORDER BY level`,
+        [guildId]
+      );
+
+      return Result.ok(rows.map(r => ({
+        guildId: r.guild_id,
+        level: r.level,
+        requiredXp: r.required_xp,
+        createdAt: r.created_at,
+        updatedAt: r.updated_at,
+      })));
+    } catch (error) {
+      return Result.err({
+        type: 'QUERY_ERROR',
+        message: error instanceof Error ? error.message : 'Unknown error',
+      });
+    }
+  }
+
+  async saveLevelRequirement(guildId: string, level: number, requiredXp: number): Promise<Result<void, RepositoryError>> {
+    try {
+      await this.pool.execute(
+        `INSERT INTO xp_level_requirements (guild_id, level, required_xp)
+         VALUES (?, ?, ?)
+         ON DUPLICATE KEY UPDATE required_xp = VALUES(required_xp), updated_at = NOW()`,
+        [guildId, level, requiredXp]
+      );
+
+      return Result.ok(undefined);
+    } catch (error) {
+      return Result.err({
+        type: 'QUERY_ERROR',
+        message: error instanceof Error ? error.message : 'Unknown error',
+      });
+    }
+  }
+
+  async deleteLevelRequirement(guildId: string, level: number): Promise<Result<void, RepositoryError>> {
+    try {
+      await this.pool.execute(
+        `DELETE FROM xp_level_requirements WHERE guild_id = ? AND level = ?`,
+        [guildId, level]
+      );
+
+      return Result.ok(undefined);
+    } catch (error) {
+      return Result.err({
+        type: 'QUERY_ERROR',
+        message: error instanceof Error ? error.message : 'Unknown error',
+      });
+    }
+  }
+
+  async deleteAllLevelRequirements(guildId: string): Promise<Result<void, RepositoryError>> {
+    try {
+      await this.pool.execute(
+        `DELETE FROM xp_level_requirements WHERE guild_id = ?`,
+        [guildId]
+      );
+
+      return Result.ok(undefined);
     } catch (error) {
       return Result.err({
         type: 'QUERY_ERROR',

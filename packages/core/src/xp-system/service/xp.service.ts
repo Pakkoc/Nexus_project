@@ -6,7 +6,8 @@ import type { XpError } from '../errors';
 import { Result } from '../../shared/types/result';
 import { createUserXp } from '../domain/user-xp';
 import { checkCooldown } from '../functions/check-cooldown';
-import { calculateLevel } from '../functions/calculate-level';
+import { calculateLevelWithCustom } from '../functions/calculate-level';
+import { toLevelRequirementsMap } from '../domain/xp-level-requirements';
 import { generateRandomXp, applyMultiplier } from '../functions/generate-random-xp';
 import { checkHotTime, formatTimeForHotTime } from '../functions/check-hot-time';
 
@@ -112,7 +113,14 @@ export class XpService {
     }
 
     const newTotalXp = userXp.xp + earnedXp;
-    const newLevel = calculateLevel(newTotalXp);
+
+    // 5.5 커스텀 레벨 요구사항 조회
+    const levelReqResult = await this.settingsRepo.getLevelRequirements(guildId);
+    const levelRequirements = levelReqResult.success
+      ? toLevelRequirementsMap(levelReqResult.data)
+      : new Map<number, number>();
+
+    const newLevel = calculateLevelWithCustom(newTotalXp, levelRequirements);
     const previousLevel = userXp.level;
     const leveledUp = newLevel > previousLevel;
 
@@ -248,7 +256,14 @@ export class XpService {
     }
 
     const newTotalXp = userXp.xp + earnedXp;
-    const newLevel = calculateLevel(newTotalXp);
+
+    // 5.5 커스텀 레벨 요구사항 조회
+    const voiceLevelReqResult = await this.settingsRepo.getLevelRequirements(guildId);
+    const voiceLevelRequirements = voiceLevelReqResult.success
+      ? toLevelRequirementsMap(voiceLevelReqResult.data)
+      : new Map<number, number>();
+
+    const newLevel = calculateLevelWithCustom(newTotalXp, voiceLevelRequirements);
     const previousLevel = userXp.level;
     const leveledUp = newLevel > previousLevel;
 

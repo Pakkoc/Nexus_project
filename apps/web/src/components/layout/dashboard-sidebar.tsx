@@ -11,6 +11,7 @@ import {
   Settings,
   Shield,
   Sparkles,
+  TrendingUp,
   Trophy,
   Users,
   Volume2,
@@ -30,6 +31,7 @@ const navigation = [
     children: [
       { name: "텍스트 XP", href: "/xp/text", icon: MessageSquare },
       { name: "음성 XP", href: "/xp/voice", icon: Mic2 },
+      { name: "레벨 설정", href: "/xp/levels", icon: TrendingUp },
       { name: "XP 핫타임", href: "/xp/hottime", icon: Sparkles },
       { name: "XP 차단", href: "/xp/exclusions", icon: Shield },
       { name: "레벨 보상", href: "/xp/rewards", icon: Trophy },
