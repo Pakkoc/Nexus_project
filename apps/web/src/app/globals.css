@@ -5,6 +5,17 @@
 
 @custom-variant dark (&:where(.dark, .dark *));
 
+/* ============================================
+   REFINED PREMIUM THEME - Topia Empire
+   ============================================ */
+
+/* Font Family Configuration */
+@theme {
+  --font-sans: var(--font-jakarta), system-ui, -apple-system, sans-serif;
+  --font-heading: var(--font-outfit), system-ui, -apple-system, sans-serif;
+}
+
+/* Container Utility */
 @utility container {
   margin-inline: auto;
   width: 100%;
@@ -14,6 +25,7 @@
   }
 }
 
+/* Theme Color Mappings */
 @theme {
   --color-border: hsl(var(--border));
   --color-input: hsl(var(--input));
@@ -42,111 +54,418 @@
   --color-card: hsl(var(--card));
   --color-card-foreground: hsl(var(--card-foreground));
 
+  /* Premium Accent Colors */
+  --color-gold: hsl(var(--gold));
+  --color-gold-foreground: hsl(var(--gold-foreground));
+
+  /* Border Radius */
   --radius-lg: var(--radius);
   --radius-md: calc(var(--radius) - 2px);
   --radius-sm: calc(var(--radius) - 4px);
 
-  --animate-accordion-down: accordion-down 0.2s ease-out;
-  --animate-accordion-up: accordion-up 0.2s ease-out;
+  /* ============================================
+     PREMIUM ANIMATIONS
+     ============================================ */
 
+  /* Basic Animations */
+  --animate-accordion-down: accordion-down 0.3s cubic-bezier(0.32, 0.72, 0, 1);
+  --animate-accordion-up: accordion-up 0.3s cubic-bezier(0.32, 0.72, 0, 1);
+
+  /* Premium Entrance Animations */
+  --animate-fade-in: fade-in 0.4s cubic-bezier(0.32, 0.72, 0, 1);
+  --animate-fade-up: fade-up 0.5s cubic-bezier(0.32, 0.72, 0, 1);
+  --animate-fade-down: fade-down 0.5s cubic-bezier(0.32, 0.72, 0, 1);
+  --animate-scale-in: scale-in 0.3s cubic-bezier(0.32, 0.72, 0, 1);
+  --animate-slide-in-right: slide-in-right 0.4s cubic-bezier(0.32, 0.72, 0, 1);
+  --animate-slide-in-left: slide-in-left 0.4s cubic-bezier(0.32, 0.72, 0, 1);
+
+  /* Premium Effects */
+  --animate-shimmer: shimmer 2s linear infinite;
+  --animate-pulse-glow: pulse-glow 2s ease-in-out infinite;
+  --animate-float: float 3s ease-in-out infinite;
+
+  /* Keyframes */
   @keyframes accordion-down {
-    from {
-      height: 0;
-    }
-    to {
-      height: var(--radix-accordion-content-height);
-    }
+    from { height: 0; opacity: 0; }
+    to { height: var(--radix-accordion-content-height); opacity: 1; }
   }
+
   @keyframes accordion-up {
-    from {
-      height: var(--radix-accordion-content-height);
-    }
-    to {
-      height: 0;
-    }
+    from { height: var(--radix-accordion-content-height); opacity: 1; }
+    to { height: 0; opacity: 0; }
+  }
+
+  @keyframes fade-in {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+
+  @keyframes fade-up {
+    from { opacity: 0; transform: translateY(16px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  @keyframes fade-down {
+    from { opacity: 0; transform: translateY(-16px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  @keyframes scale-in {
+    from { opacity: 0; transform: scale(0.95); }
+    to { opacity: 1; transform: scale(1); }
+  }
+
+  @keyframes slide-in-right {
+    from { opacity: 0; transform: translateX(24px); }
+    to { opacity: 1; transform: translateX(0); }
+  }
+
+  @keyframes slide-in-left {
+    from { opacity: 0; transform: translateX(-24px); }
+    to { opacity: 1; transform: translateX(0); }
+  }
+
+  @keyframes shimmer {
+    0% { background-position: -200% 0; }
+    100% { background-position: 200% 0; }
+  }
+
+  @keyframes pulse-glow {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.6; }
+  }
+
+  @keyframes float {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-8px); }
   }
 }
 
-/*
-  The default border color has changed to `currentcolor` in Tailwind CSS v4,
-  so we've added these compatibility styles to make sure everything still
-  looks the same as it did with Tailwind CSS v3.
+/* ============================================
+   LIGHT MODE - Refined Premium
+   ============================================ */
+@layer base {
+  :root {
+    /* Background: Warm off-white */
+    --background: 40 20% 98%;
+    --foreground: 222 47% 11%;
 
-  If we ever want to remove these styles, we need to add an explicit border
-  color utility to any element that depends on these defaults.
-*/
+    /* Card: Pure white with subtle warmth */
+    --card: 0 0% 100%;
+    --card-foreground: 222 47% 11%;
+
+    /* Popover */
+    --popover: 0 0% 100%;
+    --popover-foreground: 222 47% 11%;
+
+    /* Primary: Deep charcoal */
+    --primary: 222 47% 11%;
+    --primary-foreground: 40 20% 98%;
+
+    /* Secondary: Warm gray */
+    --secondary: 220 14% 96%;
+    --secondary-foreground: 222 47% 11%;
+
+    /* Muted */
+    --muted: 220 14% 96%;
+    --muted-foreground: 220 9% 46%;
+
+    /* Accent: Warm neutral */
+    --accent: 220 14% 96%;
+    --accent-foreground: 222 47% 11%;
+
+    /* Destructive */
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 98%;
+
+    /* Border & Input */
+    --border: 220 13% 91%;
+    --input: 220 13% 91%;
+    --ring: 222 47% 11%;
+
+    /* Premium Gold Accent */
+    --gold: 43 96% 56%;
+    --gold-foreground: 222 47% 11%;
+
+    /* Radius */
+    --radius: 0.625rem;
+
+    /* Chart Colors - Refined */
+    --chart-1: 221 83% 53%;
+    --chart-2: 142 71% 45%;
+    --chart-3: 43 96% 56%;
+    --chart-4: 262 83% 58%;
+    --chart-5: 0 84% 60%;
+  }
+}
+
+/* ============================================
+   DARK MODE - Refined Premium
+   ============================================ */
+@layer base {
+  .dark {
+    /* Background: Deep navy-charcoal (not pure black) */
+    --background: 224 71% 4%;
+    --foreground: 210 40% 98%;
+
+    /* Card: Elevated surface */
+    --card: 224 71% 6%;
+    --card-foreground: 210 40% 98%;
+
+    /* Popover */
+    --popover: 224 71% 6%;
+    --popover-foreground: 210 40% 98%;
+
+    /* Primary: Soft white */
+    --primary: 210 40% 98%;
+    --primary-foreground: 224 71% 4%;
+
+    /* Secondary: Elevated gray */
+    --secondary: 217 33% 12%;
+    --secondary-foreground: 210 40% 98%;
+
+    /* Muted */
+    --muted: 217 33% 12%;
+    --muted-foreground: 215 20% 55%;
+
+    /* Accent: Premium gold-tinted */
+    --accent: 217 33% 14%;
+    --accent-foreground: 210 40% 98%;
+
+    /* Destructive */
+    --destructive: 0 63% 31%;
+    --destructive-foreground: 210 40% 98%;
+
+    /* Border & Input */
+    --border: 217 33% 14%;
+    --input: 217 33% 14%;
+    --ring: 43 96% 56%;
+
+    /* Premium Gold Accent */
+    --gold: 43 96% 56%;
+    --gold-foreground: 224 71% 4%;
+
+    /* Chart Colors - Premium Dark */
+    --chart-1: 217 91% 60%;
+    --chart-2: 142 76% 50%;
+    --chart-3: 43 96% 56%;
+    --chart-4: 262 83% 65%;
+    --chart-5: 0 84% 65%;
+  }
+}
+
+/* ============================================
+   BASE STYLES
+   ============================================ */
 @layer base {
   *,
   ::after,
   ::before,
   ::backdrop,
   ::file-selector-button {
-    border-color: var(--color-gray-200, currentcolor);
-  }
-}
-
-@layer base {
-  :root {
-    --background: 0 0% 100%;
-    --foreground: 0 0% 3.9%;
-    --card: 0 0% 100%;
-    --card-foreground: 0 0% 3.9%;
-    --popover: 0 0% 100%;
-    --popover-foreground: 0 0% 3.9%;
-    --primary: 0 0% 9%;
-    --primary-foreground: 0 0% 98%;
-    --secondary: 0 0% 96.1%;
-    --secondary-foreground: 0 0% 9%;
-    --muted: 0 0% 96.1%;
-    --muted-foreground: 0 0% 45.1%;
-    --accent: 0 0% 96.1%;
-    --accent-foreground: 0 0% 9%;
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 0 0% 98%;
-    --border: 0 0% 89.8%;
-    --input: 0 0% 89.8%;
-    --ring: 0 0% 3.9%;
-    --radius: 0.5rem;
-    --chart-1: 12 76% 61%;
-    --chart-2: 173 58% 39%;
-    --chart-3: 197 37% 24%;
-    --chart-4: 43 74% 66%;
-    --chart-5: 27 87% 67%;
+    border-color: var(--color-border, currentcolor);
   }
 
-  .dark {
-    --background: 0 0% 3.9%;
-    --foreground: 0 0% 98%;
-    --card: 0 0% 3.9%;
-    --card-foreground: 0 0% 98%;
-    --popover: 0 0% 3.9%;
-    --popover-foreground: 0 0% 98%;
-    --primary: 0 0% 98%;
-    --primary-foreground: 0 0% 9%;
-    --secondary: 0 0% 14.9%;
-    --secondary-foreground: 0 0% 98%;
-    --muted: 0 0% 14.9%;
-    --muted-foreground: 0 0% 63.9%;
-    --accent: 0 0% 14.9%;
-    --accent-foreground: 0 0% 98%;
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 0 0% 98%;
-    --border: 0 0% 14.9%;
-    --input: 0 0% 14.9%;
-    --ring: 0 0% 83.1%;
-    --chart-1: 220 70% 50%;
-    --chart-2: 160 60% 45%;
-    --chart-3: 30 80% 55%;
-    --chart-4: 280 65% 60%;
-    --chart-5: 340 75% 55%;
-  }
-}
-
-@layer base {
   * {
     @apply border-border;
   }
+
+  html {
+    scroll-behavior: smooth;
+  }
+
   body {
     @apply bg-background text-foreground;
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* Premium Heading Styles */
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-heading);
+    font-weight: 600;
+    letter-spacing: -0.025em;
+  }
+
+  h1 {
+    letter-spacing: -0.03em;
+  }
+
+  /* Selection Styling */
+  ::selection {
+    background-color: hsl(var(--gold) / 0.3);
+    color: hsl(var(--foreground));
+  }
+
+  /* Scrollbar Styling - Premium */
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: hsl(var(--muted-foreground) / 0.3);
+    border-radius: 4px;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: hsl(var(--muted-foreground) / 0.5);
+  }
+
+  /* Focus Visible - Premium Gold Ring */
+  :focus-visible {
+    outline: 2px solid hsl(var(--gold));
+    outline-offset: 2px;
+  }
+}
+
+/* ============================================
+   PREMIUM UTILITY CLASSES
+   ============================================ */
+@layer utilities {
+  /* Premium Text Gradient */
+  .text-gradient-gold {
+    background: linear-gradient(135deg, hsl(43 96% 56%), hsl(38 92% 50%), hsl(43 96% 56%));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  /* Premium Glass Effect */
+  .glass {
+    background: hsl(var(--card) / 0.7);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+  }
+
+  .glass-subtle {
+    background: hsl(var(--card) / 0.4);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+  }
+
+  /* Premium Glow Effects */
+  .glow-gold {
+    box-shadow: 0 0 20px hsl(var(--gold) / 0.3), 0 0 40px hsl(var(--gold) / 0.1);
+  }
+
+  .glow-subtle {
+    box-shadow: 0 0 30px hsl(var(--primary) / 0.1);
+  }
+
+  /* Premium Border Gradient */
+  .border-gradient {
+    position: relative;
+    border: 1px solid transparent;
+    background: linear-gradient(hsl(var(--card)), hsl(var(--card))) padding-box,
+                linear-gradient(135deg, hsl(var(--gold) / 0.3), hsl(var(--border))) border-box;
+  }
+
+  /* Premium Shimmer Effect */
+  .shimmer {
+    background: linear-gradient(
+      90deg,
+      hsl(var(--muted)) 0%,
+      hsl(var(--muted-foreground) / 0.1) 50%,
+      hsl(var(--muted)) 100%
+    );
+    background-size: 200% 100%;
+    animation: shimmer 2s linear infinite;
+  }
+
+  /* Stagger Animation Delays */
+  .animate-delay-100 { animation-delay: 100ms; }
+  .animate-delay-200 { animation-delay: 200ms; }
+  .animate-delay-300 { animation-delay: 300ms; }
+  .animate-delay-400 { animation-delay: 400ms; }
+  .animate-delay-500 { animation-delay: 500ms; }
+
+
+  /* Premium Hover Lift */
+  .hover-lift {
+    transition: transform 0.3s cubic-bezier(0.32, 0.72, 0, 1), box-shadow 0.3s cubic-bezier(0.32, 0.72, 0, 1);
+  }
+
+  .hover-lift:hover {
+    transform: translateY(-2px);
+  }
+
+  /* Noise Texture Overlay */
+  .noise::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+    opacity: 0.03;
+    pointer-events: none;
+    mix-blend-mode: overlay;
+  }
+}
+
+/* ============================================
+   PREMIUM SHADOW UTILITIES (Tailwind v4)
+   ============================================ */
+@utility shadow-premium {
+  box-shadow:
+    0 1px 2px hsl(var(--foreground) / 0.04),
+    0 4px 8px hsl(var(--foreground) / 0.04),
+    0 12px 24px hsl(var(--foreground) / 0.06);
+}
+
+@utility shadow-premium-lg {
+  box-shadow:
+    0 2px 4px hsl(var(--foreground) / 0.04),
+    0 8px 16px hsl(var(--foreground) / 0.06),
+    0 24px 48px hsl(var(--foreground) / 0.08);
+}
+
+/* ============================================
+   PREMIUM COMPONENT OVERRIDES
+   ============================================ */
+@layer components {
+  /* Premium Card Style */
+  .card-premium {
+    @apply relative overflow-hidden rounded-xl border border-border/50 bg-card;
+    @apply shadow-premium transition-all duration-300;
+  }
+
+  .card-premium:hover {
+    @apply border-gold/30 shadow-premium-lg;
+  }
+
+  /* Premium Button Style */
+  .btn-premium {
+    @apply relative inline-flex items-center justify-center overflow-hidden;
+    @apply rounded-lg px-6 py-3 font-medium;
+    @apply bg-gradient-to-r from-amber-500 to-amber-600;
+    @apply text-white shadow-premium;
+    @apply transition-all duration-300;
+  }
+
+  .btn-premium:hover {
+    @apply from-amber-400 to-amber-500;
+    @apply shadow-premium-lg;
+    transform: translateY(-1px);
+  }
+
+  /* Premium Input Style */
+  .input-premium {
+    @apply rounded-lg border border-border/50 bg-card/50;
+    @apply px-4 py-3 text-foreground;
+    @apply transition-all duration-200;
+    @apply focus:border-gold/50 focus:ring-2 focus:ring-gold/20;
+  }
+
+  /* Premium Badge Style */
+  .badge-premium {
+    @apply inline-flex items-center rounded-full px-3 py-1;
+    @apply text-xs font-medium;
+    @apply bg-gradient-to-r from-amber-500/10 to-amber-600/10;
+    @apply text-amber-500 border border-amber-500/20;
   }
 }
