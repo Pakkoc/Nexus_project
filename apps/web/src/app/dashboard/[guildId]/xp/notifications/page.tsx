@@ -166,14 +166,25 @@ export default function NotificationSettingsPage() {
                             로딩 중...
                           </SelectItem>
                         ) : channels && channels.length > 0 ? (
-                          channels.map((channel) => (
-                            <SelectItem key={channel.id} value={channel.id}>
-                              <span className="flex items-center gap-2">
-                                <Icon icon="solar:hashtag-linear" className="h-4 w-4 text-slate-400" />
-                                {channel.name}
-                              </span>
-                            </SelectItem>
-                          ))
+                          <>
+                            {/* 현재 설정된 채널이 목록에 없는 경우 표시 */}
+                            {field.value && field.value !== "__none__" && !channels.find(ch => ch.id === field.value) && (
+                              <SelectItem value={field.value}>
+                                <span className="flex items-center gap-2">
+                                  <Icon icon="solar:hashtag-linear" className="h-4 w-4 text-amber-400" />
+                                  <span className="text-amber-400">알 수 없는 채널 ({field.value})</span>
+                                </span>
+                              </SelectItem>
+                            )}
+                            {channels.map((channel) => (
+                              <SelectItem key={channel.id} value={channel.id}>
+                                <span className="flex items-center gap-2">
+                                  <Icon icon="solar:hashtag-linear" className="h-4 w-4 text-slate-400" />
+                                  {channel.name}
+                                </span>
+                              </SelectItem>
+                            ))}
+                          </>
                         ) : (
                           <SelectItem value="__empty__" disabled>
                             채널이 없습니다
