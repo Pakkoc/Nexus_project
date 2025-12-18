@@ -28,6 +28,8 @@ import {
 import { MultiSelect, type MultiSelectOption } from "@/components/ui/multi-select";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
+import { useUnsavedChanges } from "@/contexts/unsaved-changes-context";
+import { useEffect } from "react";
 import { Plus, Trash2, Trophy, Star, Unlock, Hash } from "lucide-react";
 import { LevelReward } from "@/types/xp";
 
@@ -35,6 +37,7 @@ export default function LevelRewardsPage() {
   const params = useParams();
   const guildId = params["guildId"] as string;
   const { toast } = useToast();
+  const { setHasUnsavedChanges } = useUnsavedChanges();
 
   // Role Rewards State
   const [isAddingReward, setIsAddingReward] = useState(false);
@@ -138,6 +141,13 @@ export default function LevelRewardsPage() {
   const [isAddingChannel, setIsAddingChannel] = useState(false);
   const [channelLevel, setChannelLevel] = useState(5);
   const [selectedChannelId, setSelectedChannelId] = useState("");
+
+  // 추가 폼이 열려 있고 값이 입력된 경우 unsaved changes로 표시
+  useEffect(() => {
+    const hasRewardFormData = isAddingReward && selectedRoleIds.length > 0;
+    const hasChannelFormData = isAddingChannel && selectedChannelId !== "";
+    setHasUnsavedChanges(hasRewardFormData || hasChannelFormData);
+  }, [isAddingReward, selectedRoleIds, isAddingChannel, selectedChannelId, setHasUnsavedChanges]);
 
   const { data: levelChannels, isLoading: channelsLoading } = useLevelChannels(guildId);
   const { data: channels, isLoading: allChannelsLoading } = useChannels(guildId);

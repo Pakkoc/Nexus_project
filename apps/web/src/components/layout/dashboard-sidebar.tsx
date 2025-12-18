@@ -1,8 +1,8 @@
 "use client";
 
-import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
+import { NavigationLink } from "@/components/navigation-link";
 import {
   BarChart3,
   Home,
@@ -52,9 +52,9 @@ export function DashboardSidebar({ guildId, guildName }: SidebarProps) {
     <aside className="flex h-full w-64 flex-col border-r border-slate-700/50 bg-slate-900/50">
       {/* Guild Header */}
       <div className="border-b border-slate-700/50 p-4">
-        <Link href="/dashboard" className="text-sm text-slate-400 hover:text-white">
+        <NavigationLink href="/dashboard" className="text-sm text-slate-400 hover:text-white">
           ← 서버 목록
-        </Link>
+        </NavigationLink>
         <h2 className="mt-2 truncate text-lg font-semibold text-white">
           {guildName}
         </h2>
@@ -74,7 +74,7 @@ export function DashboardSidebar({ guildId, guildName }: SidebarProps) {
                   <ul className="ml-4 space-y-1 border-l border-slate-700/50 pl-2">
                     {item.children.map((child) => (
                       <li key={child.name}>
-                        <Link
+                        <NavigationLink
                           href={`${basePath}${child.href}`}
                           className={cn(
                             "flex items-center gap-2 rounded-lg px-3 py-2 text-sm transition-colors",
@@ -85,13 +85,13 @@ export function DashboardSidebar({ guildId, guildName }: SidebarProps) {
                         >
                           <child.icon className="h-4 w-4" />
                           {child.name}
-                        </Link>
+                        </NavigationLink>
                       </li>
                     ))}
                   </ul>
                 </div>
               ) : (
-                <Link
+                <NavigationLink
                   href={`${basePath}${item.href}`}
                   className={cn(
                     "flex items-center gap-2 rounded-lg px-3 py-2 text-sm transition-colors",
@@ -102,7 +102,7 @@ export function DashboardSidebar({ guildId, guildName }: SidebarProps) {
                 >
                   <item.icon className="h-4 w-4" />
                   {item.name}
-                </Link>
+                </NavigationLink>
               )}
             </li>
           ))}

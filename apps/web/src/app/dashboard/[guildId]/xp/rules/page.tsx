@@ -39,6 +39,8 @@ import {
 import { MultiSelect, type MultiSelectOption } from "@/components/ui/multi-select";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
+import { useUnsavedChanges } from "@/contexts/unsaved-changes-context";
+import { useEffect } from "react";
 import { Plus, Trash2, Clock, Sparkles, Hash, Shield, Volume2 } from "lucide-react";
 import { XpHotTime } from "@/types/xp";
 
@@ -73,6 +75,7 @@ export default function XpRulesPage() {
   const params = useParams();
   const guildId = params["guildId"] as string;
   const { toast } = useToast();
+  const { setHasUnsavedChanges } = useUnsavedChanges();
 
   // Hot Time State
   const [isAddingHotTime, setIsAddingHotTime] = useState(false);
@@ -149,6 +152,15 @@ export default function XpRulesPage() {
   const [isAddingExclusion, setIsAddingExclusion] = useState(false);
   const [targetType, setTargetType] = useState<"channel" | "role">("channel");
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
+
+  const hotTimeFormIsDirty = hotTimeForm.formState.isDirty;
+
+  // 추가 폼이 열려 있고 값이 입력된 경우 unsaved changes로 표시
+  useEffect(() => {
+    const hasHotTimeFormData = isAddingHotTime && hotTimeFormIsDirty;
+    const hasExclusionFormData = isAddingExclusion && selectedIds.length > 0;
+    setHasUnsavedChanges(hasHotTimeFormData || hasExclusionFormData);
+  }, [isAddingHotTime, hotTimeFormIsDirty, isAddingExclusion, selectedIds, setHasUnsavedChanges]);
 
   const { data: exclusions, isLoading: exclusionsLoading } = useXpExclusions(guildId);
   const { data: channels, isLoading: channelsLoading } = useChannels(guildId, null);

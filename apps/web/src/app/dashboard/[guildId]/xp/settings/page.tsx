@@ -22,6 +22,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { useToast } from "@/hooks/use-toast";
+import { useUnsavedChanges } from "@/contexts/unsaved-changes-context";
 import { MessageSquare, Mic2, Plus, Trash2, RotateCcw, Save, TrendingUp, Settings } from "lucide-react";
 
 // XP Settings Schema
@@ -55,6 +56,7 @@ export default function XpSettingsPage() {
   const params = useParams();
   const guildId = params["guildId"] as string;
   const { toast } = useToast();
+  const { setHasUnsavedChanges } = useUnsavedChanges();
   const queryClient = useQueryClient();
 
   // XP Settings State
@@ -77,6 +79,8 @@ export default function XpSettingsPage() {
     },
   });
 
+  const formIsDirty = form.formState.isDirty;
+
   useEffect(() => {
     if (settings) {
       form.reset({
@@ -97,6 +101,7 @@ export default function XpSettingsPage() {
   const onSubmitXpSettings = async (data: XpSettingsFormValues) => {
     try {
       await updateSettings.mutateAsync(data);
+      form.reset(data);
       toast({
         title: "설정 저장 완료",
         description: "XP 설정이 저장되었습니다.",
@@ -113,6 +118,11 @@ export default function XpSettingsPage() {
   // Level Requirements State
   const [requirements, setRequirements] = useState<{ level: number; requiredXp: number }[]>([]);
   const [hasChanges, setHasChanges] = useState(false);
+
+  // 두 가지 상태(폼과 레벨 설정) 중 하나라도 변경되면 unsaved changes로 표시
+  useEffect(() => {
+    setHasUnsavedChanges(formIsDirty || hasChanges);
+  }, [formIsDirty, hasChanges, setHasUnsavedChanges]);
 
   const { data: levelData, isLoading: levelLoading } = useQuery<LevelRequirement[]>({
     queryKey: ["levelRequirements", guildId],

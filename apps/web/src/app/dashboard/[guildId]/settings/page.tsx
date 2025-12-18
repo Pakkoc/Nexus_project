@@ -18,6 +18,7 @@ import {
 } from "@/components/ui/form";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
+import { useUnsavedChanges } from "@/contexts/unsaved-changes-context";
 import { useEffect } from "react";
 import { Settings, Zap, AlertTriangle } from "lucide-react";
 
@@ -31,6 +32,7 @@ export default function GuildSettingsPage() {
   const params = useParams();
   const guildId = params['guildId'] as string;
   const { toast } = useToast();
+  const { setHasUnsavedChanges } = useUnsavedChanges();
 
   const { data: xpSettings, isLoading } = useXpSettings(guildId);
   const updateSettings = useUpdateXpSettings(guildId);
@@ -41,6 +43,12 @@ export default function GuildSettingsPage() {
       enabled: true,
     },
   });
+
+  const isDirty = form.formState.isDirty;
+
+  useEffect(() => {
+    setHasUnsavedChanges(isDirty);
+  }, [isDirty, setHasUnsavedChanges]);
 
   useEffect(() => {
     if (xpSettings) {
@@ -53,6 +61,7 @@ export default function GuildSettingsPage() {
   const onSubmit = async (data: SettingsFormValues) => {
     try {
       await updateSettings.mutateAsync(data);
+      form.reset(data);
       toast({
         title: "설정 저장 완료",
         description: "설정이 저장되었습니다.",

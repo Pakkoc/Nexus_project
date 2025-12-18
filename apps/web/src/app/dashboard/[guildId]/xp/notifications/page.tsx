@@ -25,6 +25,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { useToast } from "@/hooks/use-toast";
+import { useUnsavedChanges } from "@/contexts/unsaved-changes-context";
 import { useEffect } from "react";
 import { Bell, MessageSquare, Hash, Loader2 } from "lucide-react";
 
@@ -49,6 +50,7 @@ export default function NotificationSettingsPage() {
   const params = useParams();
   const guildId = params["guildId"] as string;
   const { toast } = useToast();
+  const { setHasUnsavedChanges } = useUnsavedChanges();
 
   const { data: settings, isLoading } = useXpSettings(guildId);
   const { data: channels, isLoading: channelsLoading } = useTextChannels(guildId);
@@ -61,6 +63,12 @@ export default function NotificationSettingsPage() {
       levelUpMessage: null,
     },
   });
+
+  const isDirty = form.formState.isDirty;
+
+  useEffect(() => {
+    setHasUnsavedChanges(isDirty);
+  }, [isDirty, setHasUnsavedChanges]);
 
   useEffect(() => {
     if (settings) {
@@ -77,6 +85,7 @@ export default function NotificationSettingsPage() {
         levelUpChannelId: data.levelUpChannelId || null,
         levelUpMessage: data.levelUpMessage || null,
       });
+      form.reset(data);
       toast({
         title: "설정 저장 완료",
         description: "알림 설정이 저장되었습니다.",
