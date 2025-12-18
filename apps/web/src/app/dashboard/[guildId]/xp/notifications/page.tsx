@@ -152,15 +152,34 @@ export default function NotificationSettingsPage() {
                     <FormLabel className="text-white">채널</FormLabel>
                     <Select
                       onValueChange={(value) => field.onChange(value === "__none__" ? null : value)}
-                      value={field.value ?? "__none__"}
+                      value={field.value || "__none__"}
                     >
                       <FormControl>
                         <SelectTrigger className="border-slate-700 bg-slate-900">
-                          <SelectValue
-                            placeholder={
-                              channelsLoading ? "로딩 중..." : "채널 선택 (선택 안함 = 알림 비활성화)"
+                          {(() => {
+                            if (channelsLoading) {
+                              return <span className="text-slate-400">로딩 중...</span>;
                             }
-                          />
+                            if (!field.value || field.value === "__none__") {
+                              return <span className="text-slate-400">채널 선택 (선택 안함 = 알림 비활성화)</span>;
+                            }
+                            const selectedChannel = channels?.find(ch => ch.id === field.value);
+                            if (selectedChannel) {
+                              return (
+                                <span className="flex items-center gap-2">
+                                  {selectedChannel.type === 2 ? (
+                                    <Icon icon="solar:volume-loud-linear" className="h-4 w-4 text-green-400" />
+                                  ) : selectedChannel.type === 5 ? (
+                                    <Icon icon="solar:megaphone-linear" className="h-4 w-4 text-amber-400" />
+                                  ) : (
+                                    <Icon icon="solar:hashtag-linear" className="h-4 w-4 text-slate-400" />
+                                  )}
+                                  {selectedChannel.name}
+                                </span>
+                              );
+                            }
+                            return <span className="text-slate-400">채널 로딩 중...</span>;
+                          })()}
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
