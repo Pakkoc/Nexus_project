@@ -45,7 +45,7 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { useUnsavedChanges } from "@/contexts/unsaved-changes-context";
 import { useEffect } from "react";
-import { Plus, Trash2, Clock, Sparkles, Hash, Shield, Volume2, Percent } from "lucide-react";
+import { Icon } from "@iconify/react";
 import { XpHotTime, XpMultiplier } from "@/types/xp";
 
 // Hot Time Schema
@@ -207,9 +207,9 @@ export default function XpRulesPage() {
       value: ch.id,
       label: ch.name,
       icon: isVoiceChannel(ch.type) ? (
-        <Volume2 className="h-4 w-4 text-green-400" />
+        <Icon icon="solar:volume-loud-linear" className="h-4 w-4 text-green-400" />
       ) : (
-        <Hash className="h-4 w-4 text-slate-400" />
+        <Icon icon="solar:hashtag-linear" className="h-4 w-4 text-slate-400" />
       ),
     }));
 
@@ -288,9 +288,9 @@ export default function XpRulesPage() {
       value: ch.id,
       label: ch.name,
       icon: isVoiceChannel(ch.type) ? (
-        <Volume2 className="h-4 w-4 text-green-400" />
+        <Icon icon="solar:volume-loud-linear" className="h-4 w-4 text-green-400" />
       ) : (
-        <Hash className="h-4 w-4 text-slate-400" />
+        <Icon icon="solar:hashtag-linear" className="h-4 w-4 text-slate-400" />
       ),
     }));
 
@@ -402,15 +402,15 @@ export default function XpRulesPage() {
       <Tabs defaultValue="hottime" className="space-y-6">
         <TabsList className="bg-slate-800">
           <TabsTrigger value="hottime" className="data-[state=active]:bg-indigo-600">
-            <Sparkles className="mr-2 h-4 w-4" />
+            <Icon icon="solar:stars-linear" className="mr-2 h-4 w-4" />
             핫타임
           </TabsTrigger>
           <TabsTrigger value="multipliers" className="data-[state=active]:bg-indigo-600">
-            <Percent className="mr-2 h-4 w-4" />
+            <Icon icon="solar:percent-linear" className="mr-2 h-4 w-4" />
             배율
           </TabsTrigger>
           <TabsTrigger value="exclusions" className="data-[state=active]:bg-indigo-600">
-            <Shield className="mr-2 h-4 w-4" />
+            <Icon icon="solar:shield-linear" className="mr-2 h-4 w-4" />
             XP 차단
           </TabsTrigger>
         </TabsList>
@@ -422,7 +422,7 @@ export default function XpRulesPage() {
               onClick={() => setIsAddingHotTime(true)}
               className="bg-indigo-600 hover:bg-indigo-700"
             >
-              <Plus className="mr-2 h-4 w-4" />
+              <Icon icon="solar:add-circle-linear" className="mr-2 h-4 w-4" />
               핫타임 추가
             </Button>
           </div>
@@ -559,7 +559,7 @@ export default function XpRulesPage() {
                     >
                       <div className="flex items-center gap-4">
                         <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-amber-500/20">
-                          <Sparkles className="h-5 w-5 text-amber-500" />
+                          <Icon icon="solar:stars-linear" className="h-5 w-5 text-amber-500" />
                         </div>
                         <div>
                           <div className="flex items-center gap-2">
@@ -570,7 +570,7 @@ export default function XpRulesPage() {
                             <Badge className="bg-amber-600">x{hotTime.multiplier}</Badge>
                           </div>
                           <div className="flex items-center gap-1 text-sm text-slate-400">
-                            <Clock className="h-3 w-3" />
+                            <Icon icon="solar:clock-circle-linear" className="h-3 w-3" />
                             {hotTime.enabled ? "활성화됨" : "비활성화됨"}
                           </div>
                         </div>
@@ -586,7 +586,7 @@ export default function XpRulesPage() {
                           onClick={() => handleDeleteHotTime(hotTime.id)}
                           className="text-red-400 hover:text-red-300"
                         >
-                          <Trash2 className="h-4 w-4" />
+                          <Icon icon="solar:trash-bin-trash-linear" className="h-4 w-4" />
                         </Button>
                       </div>
                     </div>
@@ -594,7 +594,7 @@ export default function XpRulesPage() {
                 </div>
               ) : (
                 <div className="py-8 text-center">
-                  <Sparkles className="mx-auto h-12 w-12 text-slate-600" />
+                  <Icon icon="solar:stars-linear" className="mx-auto h-12 w-12 text-slate-600" />
                   <p className="mt-4 text-slate-400">설정된 핫타임이 없습니다.</p>
                   <p className="text-sm text-slate-500">핫타임을 추가하여 특정 시간대에 XP 배율을 높이세요.</p>
                 </div>
@@ -617,7 +617,7 @@ export default function XpRulesPage() {
               onClick={() => setIsAddingMultiplier(true)}
               className="bg-indigo-600 hover:bg-indigo-700"
             >
-              <Plus className="mr-2 h-4 w-4" />
+              <Icon icon="solar:add-circle-linear" className="mr-2 h-4 w-4" />
               배율 추가
             </Button>
           </div>
@@ -730,7 +730,7 @@ export default function XpRulesPage() {
             <Card className="border-slate-700 bg-slate-800/50">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-white">
-                  <Hash className="h-5 w-5 text-blue-500" />
+                  <Icon icon="solar:hashtag-linear" className="h-5 w-5 text-blue-500" />
                   채널별 배율
                 </CardTitle>
                 <CardDescription>특정 채널에서 XP 배율이 적용됩니다.</CardDescription>
@@ -748,9 +748,9 @@ export default function XpRulesPage() {
                         >
                           <div className="flex items-center gap-2">
                             {isVoice ? (
-                              <Volume2 className="h-4 w-4 text-green-400" />
+                              <Icon icon="solar:volume-loud-linear" className="h-4 w-4 text-green-400" />
                             ) : (
-                              <Hash className="h-4 w-4 text-slate-400" />
+                              <Icon icon="solar:hashtag-linear" className="h-4 w-4 text-slate-400" />
                             )}
                             <span className="text-slate-300">
                               {getChannelName(multiplier.targetId)}
@@ -778,7 +778,7 @@ export default function XpRulesPage() {
                               onClick={() => handleDeleteMultiplier(multiplier.id)}
                               className="text-red-400 hover:text-red-300"
                             >
-                              <Trash2 className="h-4 w-4" />
+                              <Icon icon="solar:trash-bin-trash-linear" className="h-4 w-4" />
                             </Button>
                           </div>
                         </div>
@@ -787,7 +787,7 @@ export default function XpRulesPage() {
                   </div>
                 ) : (
                   <div className="py-6 text-center">
-                    <Hash className="mx-auto h-8 w-8 text-slate-600" />
+                    <Icon icon="solar:hashtag-linear" className="mx-auto h-8 w-8 text-slate-600" />
                     <p className="mt-2 text-sm text-slate-400">채널 배율이 없습니다.</p>
                   </div>
                 )}
@@ -798,7 +798,7 @@ export default function XpRulesPage() {
             <Card className="border-slate-700 bg-slate-800/50">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-white">
-                  <Shield className="h-5 w-5 text-purple-500" />
+                  <Icon icon="solar:shield-linear" className="h-5 w-5 text-purple-500" />
                   역할별 배율
                 </CardTitle>
                 <CardDescription>특정 역할을 가진 유저에게 XP 배율이 적용됩니다.</CardDescription>
@@ -836,7 +836,7 @@ export default function XpRulesPage() {
                             onClick={() => handleDeleteMultiplier(multiplier.id)}
                             className="text-red-400 hover:text-red-300"
                           >
-                            <Trash2 className="h-4 w-4" />
+                            <Icon icon="solar:trash-bin-trash-linear" className="h-4 w-4" />
                           </Button>
                         </div>
                       </div>
@@ -844,7 +844,7 @@ export default function XpRulesPage() {
                   </div>
                 ) : (
                   <div className="py-6 text-center">
-                    <Shield className="mx-auto h-8 w-8 text-slate-600" />
+                    <Icon icon="solar:shield-linear" className="mx-auto h-8 w-8 text-slate-600" />
                     <p className="mt-2 text-sm text-slate-400">역할 배율이 없습니다.</p>
                   </div>
                 )}
@@ -860,7 +860,7 @@ export default function XpRulesPage() {
               onClick={() => setIsAddingExclusion(true)}
               className="bg-indigo-600 hover:bg-indigo-700"
             >
-              <Plus className="mr-2 h-4 w-4" />
+              <Icon icon="solar:add-circle-linear" className="mr-2 h-4 w-4" />
               차단 추가
             </Button>
           </div>
@@ -950,7 +950,7 @@ export default function XpRulesPage() {
             <Card className="border-slate-700 bg-slate-800/50">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-white">
-                  <Hash className="h-5 w-5 text-blue-500" />
+                  <Icon icon="solar:hashtag-linear" className="h-5 w-5 text-blue-500" />
                   차단된 채널
                 </CardTitle>
                 <CardDescription>이 채널에서는 XP를 받을 수 없습니다.</CardDescription>
@@ -968,9 +968,9 @@ export default function XpRulesPage() {
                         >
                           <div className="flex items-center gap-2">
                             {isVoice ? (
-                              <Volume2 className="h-4 w-4 text-green-400" />
+                              <Icon icon="solar:volume-loud-linear" className="h-4 w-4 text-green-400" />
                             ) : (
-                              <Hash className="h-4 w-4 text-slate-400" />
+                              <Icon icon="solar:hashtag-linear" className="h-4 w-4 text-slate-400" />
                             )}
                             <span className="text-slate-300">
                               {getChannelName(exclusion.targetId)}
@@ -987,7 +987,7 @@ export default function XpRulesPage() {
                             onClick={() => handleDeleteExclusion(exclusion.id)}
                             className="text-red-400 hover:text-red-300"
                           >
-                            <Trash2 className="h-4 w-4" />
+                            <Icon icon="solar:trash-bin-trash-linear" className="h-4 w-4" />
                           </Button>
                         </div>
                       );
@@ -995,7 +995,7 @@ export default function XpRulesPage() {
                   </div>
                 ) : (
                   <div className="py-6 text-center">
-                    <Hash className="mx-auto h-8 w-8 text-slate-600" />
+                    <Icon icon="solar:hashtag-linear" className="mx-auto h-8 w-8 text-slate-600" />
                     <p className="mt-2 text-sm text-slate-400">차단된 채널이 없습니다.</p>
                   </div>
                 )}
@@ -1006,7 +1006,7 @@ export default function XpRulesPage() {
             <Card className="border-slate-700 bg-slate-800/50">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-white">
-                  <Shield className="h-5 w-5 text-purple-500" />
+                  <Icon icon="solar:shield-linear" className="h-5 w-5 text-purple-500" />
                   차단된 역할
                 </CardTitle>
                 <CardDescription>이 역할을 가진 유저는 XP를 받을 수 없습니다.</CardDescription>
@@ -1028,14 +1028,14 @@ export default function XpRulesPage() {
                           onClick={() => handleDeleteExclusion(exclusion.id)}
                           className="text-red-400 hover:text-red-300"
                         >
-                          <Trash2 className="h-4 w-4" />
+                          <Icon icon="solar:trash-bin-trash-linear" className="h-4 w-4" />
                         </Button>
                       </div>
                     ))}
                   </div>
                 ) : (
                   <div className="py-6 text-center">
-                    <Shield className="mx-auto h-8 w-8 text-slate-600" />
+                    <Icon icon="solar:shield-linear" className="mx-auto h-8 w-8 text-slate-600" />
                     <p className="mt-2 text-sm text-slate-400">차단된 역할이 없습니다.</p>
                   </div>
                 )}

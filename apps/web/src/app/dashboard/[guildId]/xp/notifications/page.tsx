@@ -27,7 +27,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { useUnsavedChanges } from "@/contexts/unsaved-changes-context";
 import { useEffect } from "react";
-import { Bell, MessageSquare, Hash, Loader2 } from "lucide-react";
+import { Icon } from "@iconify/react";
 
 const notificationFormSchema = z.object({
   levelUpChannelId: z.string().nullable(),
@@ -131,7 +131,7 @@ export default function NotificationSettingsPage() {
           <Card className="border-slate-700 bg-slate-800/50">
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-white">
-                <Bell className="h-5 w-5" />
+                <Icon icon="solar:bell-linear" className="h-5 w-5" />
                 알림 채널
               </CardTitle>
               <CardDescription>레벨업 알림이 전송될 채널을 설정합니다.</CardDescription>
@@ -162,14 +162,14 @@ export default function NotificationSettingsPage() {
                         </SelectItem>
                         {channelsLoading ? (
                           <SelectItem value="__loading__" disabled>
-                            <Loader2 className="mr-2 inline h-4 w-4 animate-spin" />
+                            <Icon icon="solar:spinner-linear" className="mr-2 inline h-4 w-4 animate-spin" />
                             로딩 중...
                           </SelectItem>
                         ) : channels && channels.length > 0 ? (
                           channels.map((channel) => (
                             <SelectItem key={channel.id} value={channel.id}>
                               <span className="flex items-center gap-2">
-                                <Hash className="h-4 w-4 text-slate-400" />
+                                <Icon icon="solar:hashtag-linear" className="h-4 w-4 text-slate-400" />
                                 {channel.name}
                               </span>
                             </SelectItem>
@@ -194,7 +194,7 @@ export default function NotificationSettingsPage() {
           <Card className="border-slate-700 bg-slate-800/50">
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-white">
-                <MessageSquare className="h-5 w-5" />
+                <Icon icon="solar:chat-line-linear" className="h-5 w-5" />
                 알림 메시지
               </CardTitle>
               <CardDescription>레벨업 시 전송될 메시지를 커스텀합니다.</CardDescription>

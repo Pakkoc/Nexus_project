@@ -23,7 +23,7 @@ import {
 } from "@/components/ui/form";
 import { useToast } from "@/hooks/use-toast";
 import { useUnsavedChanges } from "@/contexts/unsaved-changes-context";
-import { MessageSquare, Mic2, Plus, Trash2, RotateCcw, Save, TrendingUp, Settings } from "lucide-react";
+import { Icon } from "@iconify/react";
 
 // XP Settings Schema
 const xpSettingsFormSchema = z.object({
@@ -258,11 +258,11 @@ export default function XpSettingsPage() {
       <Tabs defaultValue="xp" className="space-y-6">
         <TabsList className="bg-slate-800">
           <TabsTrigger value="xp" className="data-[state=active]:bg-indigo-600">
-            <Settings className="mr-2 h-4 w-4" />
+            <Icon icon="solar:settings-linear" className="mr-2 h-4 w-4" />
             XP 획득
           </TabsTrigger>
           <TabsTrigger value="levels" className="data-[state=active]:bg-indigo-600">
-            <TrendingUp className="mr-2 h-4 w-4" />
+            <Icon icon="solar:graph-up-linear" className="mr-2 h-4 w-4" />
             레벨 설정
           </TabsTrigger>
         </TabsList>
@@ -276,7 +276,7 @@ export default function XpSettingsPage() {
                 <Card className="border-slate-700 bg-slate-800/50">
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2 text-white">
-                      <MessageSquare className="h-5 w-5 text-blue-500" />
+                      <Icon icon="solar:chat-line-linear" className="h-5 w-5 text-blue-500" />
                       텍스트 XP
                     </CardTitle>
                     <CardDescription>채팅 메시지 기반 경험치 부여</CardDescription>
@@ -385,7 +385,7 @@ export default function XpSettingsPage() {
                 <Card className="border-slate-700 bg-slate-800/50">
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2 text-white">
-                      <Mic2 className="h-5 w-5 text-green-500" />
+                      <Icon icon="solar:microphone-linear" className="h-5 w-5 text-green-500" />
                       음성 XP
                     </CardTitle>
                     <CardDescription>음성 채널 활동 기반 경험치 부여</CardDescription>
@@ -514,14 +514,14 @@ export default function XpSettingsPage() {
                 onClick={handleResetToDefault}
                 className="border-slate-600"
               >
-                <RotateCcw className="mr-2 h-4 w-4" />
+                <Icon icon="solar:refresh-linear" className="mr-2 h-4 w-4" />
                 기본값
               </Button>
               <Button
                 onClick={handleAddLevel}
                 className="bg-indigo-600 hover:bg-indigo-700"
               >
-                <Plus className="mr-2 h-4 w-4" />
+                <Icon icon="solar:add-circle-linear" className="mr-2 h-4 w-4" />
                 레벨 추가
               </Button>
             </div>
@@ -594,7 +594,7 @@ export default function XpSettingsPage() {
                           onClick={() => handleRemoveLevel(req.level)}
                           className="text-red-400 hover:text-red-300"
                         >
-                          <Trash2 className="h-4 w-4" />
+                          <Icon icon="solar:trash-bin-trash-linear" className="h-4 w-4" />
                         </Button>
                       </div>
                     </div>
@@ -602,7 +602,7 @@ export default function XpSettingsPage() {
                 </div>
               ) : (
                 <div className="py-12 text-center">
-                  <TrendingUp className="mx-auto h-12 w-12 text-slate-600" />
+                  <Icon icon="solar:graph-up-linear" className="mx-auto h-12 w-12 text-slate-600" />
                   <p className="mt-4 text-slate-400">커스텀 레벨 설정이 없습니다.</p>
                   <p className="text-sm text-slate-500">
                     기본 공식(레벨² × 100)이 적용됩니다.
@@ -649,7 +649,7 @@ export default function XpSettingsPage() {
                 className="bg-green-600 hover:bg-green-700"
                 size="lg"
               >
-                <Save className="mr-2 h-4 w-4" />
+                <Icon icon="solar:diskette-linear" className="mr-2 h-4 w-4" />
                 {saveLevelMutation.isPending ? "저장 중..." : "변경사항 저장"}
               </Button>
             </div>

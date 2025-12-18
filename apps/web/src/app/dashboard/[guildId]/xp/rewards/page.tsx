@@ -30,7 +30,7 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { useUnsavedChanges } from "@/contexts/unsaved-changes-context";
 import { useEffect } from "react";
-import { Plus, Trash2, Trophy, Star, Unlock, Hash } from "lucide-react";
+import { Icon } from "@iconify/react";
 import { LevelReward } from "@/types/xp";
 
 export default function LevelRewardsPage() {
@@ -246,11 +246,11 @@ export default function LevelRewardsPage() {
       <Tabs defaultValue="roles" className="space-y-6">
         <TabsList className="bg-slate-800">
           <TabsTrigger value="roles" className="data-[state=active]:bg-indigo-600">
-            <Trophy className="mr-2 h-4 w-4" />
+            <Icon icon="solar:cup-star-linear" className="mr-2 h-4 w-4" />
             역할 보상
           </TabsTrigger>
           <TabsTrigger value="channels" className="data-[state=active]:bg-indigo-600">
-            <Unlock className="mr-2 h-4 w-4" />
+            <Icon icon="solar:lock-unlocked-linear" className="mr-2 h-4 w-4" />
             해금 채널
           </TabsTrigger>
         </TabsList>
@@ -262,7 +262,7 @@ export default function LevelRewardsPage() {
               onClick={() => setIsAddingReward(true)}
               className="bg-indigo-600 hover:bg-indigo-700"
             >
-              <Plus className="mr-2 h-4 w-4" />
+              <Icon icon="solar:add-circle-linear" className="mr-2 h-4 w-4" />
               보상 추가
             </Button>
           </div>
@@ -364,7 +364,7 @@ export default function LevelRewardsPage() {
                       >
                         <div className="flex items-center gap-4">
                           <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-amber-500/20">
-                            <Star className="h-6 w-6 text-amber-500" />
+                            <Icon icon="solar:star-linear" className="h-6 w-6 text-amber-500" />
                           </div>
                           <div>
                             <div className="flex items-center gap-2">
@@ -409,7 +409,7 @@ export default function LevelRewardsPage() {
                             onClick={() => handleDeleteReward(reward.id)}
                             className="text-red-400 hover:text-red-300"
                           >
-                            <Trash2 className="h-4 w-4" />
+                            <Icon icon="solar:trash-bin-trash-linear" className="h-4 w-4" />
                           </Button>
                         </div>
                       </div>
@@ -418,7 +418,7 @@ export default function LevelRewardsPage() {
                 </div>
               ) : (
                 <div className="py-12 text-center">
-                  <Trophy className="mx-auto h-12 w-12 text-slate-600" />
+                  <Icon icon="solar:cup-star-linear" className="mx-auto h-12 w-12 text-slate-600" />
                   <p className="mt-4 text-slate-400">설정된 레벨 보상이 없습니다.</p>
                   <p className="text-sm text-slate-500">
                     레벨 보상을 추가하여 유저들에게 동기를 부여하세요.
@@ -436,7 +436,7 @@ export default function LevelRewardsPage() {
               onClick={() => setIsAddingChannel(true)}
               className="bg-indigo-600 hover:bg-indigo-700"
             >
-              <Plus className="mr-2 h-4 w-4" />
+              <Icon icon="solar:add-circle-linear" className="mr-2 h-4 w-4" />
               해금 채널 추가
             </Button>
           </div>
@@ -477,7 +477,7 @@ export default function LevelRewardsPage() {
                         {availableChannels.map((channel) => (
                           <SelectItem key={channel.id} value={channel.id}>
                             <div className="flex items-center gap-2">
-                              <Hash className="h-4 w-4 text-slate-400" />
+                              <Icon icon="solar:hashtag-linear" className="h-4 w-4 text-slate-400" />
                               {channel.name}
                             </div>
                           </SelectItem>
@@ -534,7 +534,7 @@ export default function LevelRewardsPage() {
                       >
                         <div className="flex items-center gap-4">
                           <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-green-500/20">
-                            <Unlock className="h-6 w-6 text-green-500" />
+                            <Icon icon="solar:lock-unlocked-linear" className="h-6 w-6 text-green-500" />
                           </div>
                           <div>
                             <div className="flex items-center gap-2">
@@ -545,7 +545,7 @@ export default function LevelRewardsPage() {
                                 variant="secondary"
                                 className="bg-slate-700 text-slate-300"
                               >
-                                <Hash className="mr-1 h-3 w-3" />
+                                <Icon icon="solar:hashtag-linear" className="mr-1 h-3 w-3" />
                                 {channel?.name ?? levelChannel.channelId}
                               </Badge>
                             </div>
@@ -560,7 +560,7 @@ export default function LevelRewardsPage() {
                           onClick={() => handleDeleteChannel(levelChannel.id)}
                           className="text-red-400 hover:text-red-300"
                         >
-                          <Trash2 className="h-4 w-4" />
+                          <Icon icon="solar:trash-bin-trash-linear" className="h-4 w-4" />
                         </Button>
                       </div>
                     );
@@ -568,7 +568,7 @@ export default function LevelRewardsPage() {
                 </div>
               ) : (
                 <div className="py-12 text-center">
-                  <Unlock className="mx-auto h-12 w-12 text-slate-600" />
+                  <Icon icon="solar:lock-unlocked-linear" className="mx-auto h-12 w-12 text-slate-600" />
                   <p className="mt-4 text-slate-400">설정된 해금 채널이 없습니다.</p>
                   <p className="text-sm text-slate-500">
                     해금 채널을 추가하여 레벨업 보상으로 채널 접근 권한을 부여하세요.

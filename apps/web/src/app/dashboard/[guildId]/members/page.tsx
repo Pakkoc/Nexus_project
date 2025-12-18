@@ -15,7 +15,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Search, Users, ChevronLeft, ChevronRight, ArrowUpDown } from "lucide-react";
+import { Icon } from "@iconify/react";
 import { useDebounce } from "react-use";
 
 export default function MembersPage() {
@@ -59,7 +59,7 @@ export default function MembersPage() {
       {/* Search and Sort Controls */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="relative flex-1 sm:max-w-xs">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+          <Icon icon="solar:magnifer-linear" className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
           <Input
             placeholder="이름 또는 ID로 검색..."
             value={searchInput}
@@ -85,7 +85,7 @@ export default function MembersPage() {
             onClick={toggleSortOrder}
             className="border-slate-700 bg-slate-800/50"
           >
-            <ArrowUpDown className="h-4 w-4" />
+            <Icon icon="solar:sort-vertical-linear" className="h-4 w-4" />
           </Button>
         </div>
       </div>
@@ -123,7 +123,7 @@ export default function MembersPage() {
           </CardHeader>
           <CardContent>
             <div className="py-12 text-center">
-              <Users className="mx-auto h-12 w-12 text-slate-600" />
+              <Icon icon="solar:users-group-rounded-linear" className="mx-auto h-12 w-12 text-slate-600" />
               <p className="mt-4 text-slate-400">멤버가 없습니다.</p>
               <p className="text-sm text-slate-500">
                 검색 조건을 변경해 보세요.
@@ -196,7 +196,7 @@ export default function MembersPage() {
                     disabled={page === 1}
                     className="border-slate-700"
                   >
-                    <ChevronLeft className="h-4 w-4" />
+                    <Icon icon="solar:alt-arrow-left-linear" className="h-4 w-4" />
                     이전
                   </Button>
                   <Button
@@ -209,7 +209,7 @@ export default function MembersPage() {
                     className="border-slate-700"
                   >
                     다음
-                    <ChevronRight className="h-4 w-4" />
+                    <Icon icon="solar:alt-arrow-right-linear" className="h-4 w-4" />
                   </Button>
                 </div>
               </div>

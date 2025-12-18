@@ -7,7 +7,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { ExternalLink } from "lucide-react";
+import { Icon } from "@iconify/react";
 import { getBotInviteUrl } from "@/lib/discord";
 
 function getGuildIconUrl(guildId: string, icon: string | null) {
@@ -161,7 +161,7 @@ export default function DashboardPage() {
               <Button asChild className="bg-indigo-600 hover:bg-indigo-700">
                 <a href={getBotInviteUrl()} target="_blank" rel="noopener noreferrer">
                   봇 초대하기
-                  <ExternalLink className="ml-2 h-4 w-4" />
+                  <Icon icon="solar:square-arrow-right-up-linear" className="ml-2 h-4 w-4" />
                 </a>
               </Button>
             </CardContent>

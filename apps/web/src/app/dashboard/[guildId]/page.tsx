@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
-import { BarChart3, MessageSquare, Mic2, Settings, Trophy, Users, Zap, ExternalLink, CheckCircle, XCircle } from "lucide-react";
+import { Icon } from "@iconify/react";
 import { getBotInviteUrl } from "@/lib/discord";
 
 export default function GuildDashboardPage() {
@@ -43,35 +43,35 @@ export default function GuildDashboardPage() {
       title: "XP 시스템",
       description: "텍스트 및 음성 XP 설정 관리",
       href: `/dashboard/${guildId}/xp/text`,
-      icon: Zap,
+      icon: "solar:bolt-linear",
       color: "text-yellow-500",
     },
     {
       title: "레벨 보상",
       description: "레벨업 시 지급할 역할 설정",
       href: `/dashboard/${guildId}/xp/rewards`,
-      icon: Trophy,
+      icon: "solar:cup-star-linear",
       color: "text-amber-500",
     },
     {
       title: "통계",
       description: "서버 활동 및 XP 통계 확인",
       href: `/dashboard/${guildId}/xp/stats`,
-      icon: BarChart3,
+      icon: "solar:chart-2-linear",
       color: "text-blue-500",
     },
     {
       title: "멤버 관리",
       description: "서버 멤버 XP 및 레벨 관리",
       href: `/dashboard/${guildId}/members`,
-      icon: Users,
+      icon: "solar:users-group-rounded-linear",
       color: "text-green-500",
     },
     {
       title: "설정",
       description: "봇 기본 설정 및 권한 관리",
       href: `/dashboard/${guildId}/settings`,
-      icon: Settings,
+      icon: "solar:settings-linear",
       color: "text-slate-400",
     },
   ];
@@ -91,7 +91,7 @@ export default function GuildDashboardPage() {
         <Card className="border-slate-700 bg-slate-800/50">
           <CardHeader className="pb-2">
             <CardDescription className="flex items-center gap-2">
-              <Users className="h-4 w-4" />
+              <Icon icon="solar:users-group-rounded-linear" className="h-4 w-4" />
               총 멤버
             </CardDescription>
           </CardHeader>
@@ -110,7 +110,7 @@ export default function GuildDashboardPage() {
         <Card className="border-slate-700 bg-slate-800/50">
           <CardHeader className="pb-2">
             <CardDescription className="flex items-center gap-2">
-              <MessageSquare className="h-4 w-4" />
+              <Icon icon="solar:chat-line-linear" className="h-4 w-4" />
               오늘 텍스트 활동
             </CardDescription>
           </CardHeader>
@@ -125,7 +125,7 @@ export default function GuildDashboardPage() {
         <Card className="border-slate-700 bg-slate-800/50">
           <CardHeader className="pb-2">
             <CardDescription className="flex items-center gap-2">
-              <Mic2 className="h-4 w-4" />
+              <Icon icon="solar:microphone-linear" className="h-4 w-4" />
               오늘 음성 활동
             </CardDescription>
           </CardHeader>
@@ -140,19 +140,19 @@ export default function GuildDashboardPage() {
         <Card className="border-slate-700 bg-slate-800/50">
           <CardHeader className="pb-2">
             <CardDescription className="flex items-center gap-2">
-              <Zap className="h-4 w-4" />
+              <Icon icon="solar:bolt-linear" className="h-4 w-4" />
               XP 시스템
             </CardDescription>
           </CardHeader>
           <CardContent>
             {stats?.xpEnabled ? (
               <Badge className="bg-green-600">
-                <CheckCircle className="mr-1 h-3 w-3" />
+                <Icon icon="solar:check-circle-linear" className="mr-1 h-3 w-3" />
                 활성
               </Badge>
             ) : (
               <Badge variant="outline" className="text-slate-400">
-                <XCircle className="mr-1 h-3 w-3" />
+                <Icon icon="solar:close-circle-linear" className="mr-1 h-3 w-3" />
                 비활성
               </Badge>
             )}
@@ -207,7 +207,7 @@ export default function GuildDashboardPage() {
               <Card className="group cursor-pointer border-slate-700 bg-slate-800/50 transition-all hover:border-indigo-500/50 hover:bg-slate-800">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2 text-white group-hover:text-indigo-400">
-                    <action.icon className={`h-5 w-5 ${action.color}`} />
+                    <Icon icon={action.icon} className={`h-5 w-5 ${action.color}`} />
                     {action.title}
                   </CardTitle>
                   <CardDescription>{action.description}</CardDescription>
@@ -234,7 +234,7 @@ export default function GuildDashboardPage() {
             >
               <a href={getBotInviteUrl(guildId)} target="_blank" rel="noopener noreferrer">
                 봇 초대하기
-                <ExternalLink className="ml-2 h-4 w-4" />
+                <Icon icon="solar:square-arrow-right-up-linear" className="ml-2 h-4 w-4" />
               </a>
             </Button>
           </CardContent>

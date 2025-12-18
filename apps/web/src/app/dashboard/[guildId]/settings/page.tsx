@@ -20,7 +20,7 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { useUnsavedChanges } from "@/contexts/unsaved-changes-context";
 import { useEffect } from "react";
-import { Settings, Zap, AlertTriangle } from "lucide-react";
+import { Icon } from "@iconify/react";
 
 const settingsFormSchema = z.object({
   enabled: z.boolean(),
@@ -108,7 +108,7 @@ export default function GuildSettingsPage() {
           <Card className="border-slate-700 bg-slate-800/50">
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-white">
-                <Zap className="h-5 w-5 text-yellow-500" />
+                <Icon icon="solar:bolt-linear" className="h-5 w-5 text-yellow-500" />
                 XP 시스템
               </CardTitle>
               <CardDescription>XP 시스템 전체를 켜거나 끕니다.</CardDescription>
@@ -153,7 +153,7 @@ export default function GuildSettingsPage() {
       <Card className="border-slate-700 bg-slate-800/50">
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-white">
-            <Settings className="h-5 w-5" />
+            <Icon icon="solar:settings-linear" className="h-5 w-5" />
             봇 정보
           </CardTitle>
         </CardHeader>
@@ -175,7 +175,7 @@ export default function GuildSettingsPage() {
       <Card className="border-red-500/30 bg-red-950/20">
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-red-400">
-            <AlertTriangle className="h-5 w-5" />
+            <Icon icon="solar:danger-triangle-linear" className="h-5 w-5" />
             위험 구역
           </CardTitle>
           <CardDescription>주의가 필요한 작업</CardDescription>

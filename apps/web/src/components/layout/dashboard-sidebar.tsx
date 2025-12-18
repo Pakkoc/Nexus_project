@@ -3,16 +3,7 @@
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { NavigationLink } from "@/components/navigation-link";
-import {
-  BarChart3,
-  Home,
-  Settings,
-  BookOpen,
-  Trophy,
-  Users,
-  Volume2,
-  Zap,
-} from "lucide-react";
+import { Icon } from "@iconify/react";
 
 interface SidebarProps {
   guildId: string;
@@ -20,20 +11,20 @@ interface SidebarProps {
 }
 
 const navigation = [
-  { name: "대시보드", href: "", icon: Home },
+  { name: "대시보드", href: "", icon: "solar:home-2-linear" },
   {
     name: "XP 시스템",
-    icon: Zap,
+    icon: "solar:bolt-linear",
     children: [
-      { name: "XP 설정", href: "/xp/settings", icon: Settings },
-      { name: "XP 규칙", href: "/xp/rules", icon: BookOpen },
-      { name: "레벨 보상", href: "/xp/rewards", icon: Trophy },
-      { name: "알림 설정", href: "/xp/notifications", icon: Volume2 },
-      { name: "통계", href: "/xp/stats", icon: BarChart3 },
+      { name: "XP 설정", href: "/xp/settings", icon: "solar:settings-linear" },
+      { name: "XP 규칙", href: "/xp/rules", icon: "solar:book-linear" },
+      { name: "레벨 보상", href: "/xp/rewards", icon: "solar:cup-star-linear" },
+      { name: "알림 설정", href: "/xp/notifications", icon: "solar:volume-loud-linear" },
+      { name: "통계", href: "/xp/stats", icon: "solar:chart-2-linear" },
     ],
   },
-  { name: "멤버 관리", href: "/members", icon: Users },
-  { name: "설정", href: "/settings", icon: Settings },
+  { name: "멤버 관리", href: "/members", icon: "solar:users-group-rounded-linear" },
+  { name: "설정", href: "/settings", icon: "solar:settings-linear" },
 ];
 
 export function DashboardSidebar({ guildId, guildName }: SidebarProps) {
@@ -68,7 +59,7 @@ export function DashboardSidebar({ guildId, guildName }: SidebarProps) {
               {item.children ? (
                 <div className="space-y-1">
                   <div className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-slate-400">
-                    <item.icon className="h-4 w-4" />
+                    <Icon icon={item.icon} className="h-4 w-4" />
                     {item.name}
                   </div>
                   <ul className="ml-4 space-y-1 border-l border-slate-700/50 pl-2">
@@ -83,7 +74,7 @@ export function DashboardSidebar({ guildId, guildName }: SidebarProps) {
                               : "text-slate-400 hover:bg-slate-800 hover:text-white"
                           )}
                         >
-                          <child.icon className="h-4 w-4" />
+                          <Icon icon={child.icon} className="h-4 w-4" />
                           {child.name}
                         </NavigationLink>
                       </li>
@@ -100,7 +91,7 @@ export function DashboardSidebar({ guildId, guildName }: SidebarProps) {
                       : "text-slate-400 hover:bg-slate-800 hover:text-white"
                   )}
                 >
-                  <item.icon className="h-4 w-4" />
+                  <Icon icon={item.icon} className="h-4 w-4" />
                   {item.name}
                 </NavigationLink>
               )}

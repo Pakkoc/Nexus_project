@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { Check, ChevronDown, X } from "lucide-react";
+import { Icon } from "@iconify/react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -90,7 +90,8 @@ export function MultiSelect({
               >
                 {opt.icon}
                 <span className="max-w-[100px] truncate">{opt.label}</span>
-                <X
+                <Icon
+                  icon="solar:close-circle-linear"
                   className="h-3 w-3 cursor-pointer hover:text-red-400"
                   onClick={(e) => handleRemove(opt.value, e)}
                 />
@@ -102,7 +103,7 @@ export function MultiSelect({
             </Badge>
           )}
         </div>
-        <ChevronDown className={cn("h-4 w-4 shrink-0 opacity-50 transition-transform", open && "rotate-180")} />
+        <Icon icon="solar:alt-arrow-down-linear" className={cn("h-4 w-4 shrink-0 opacity-50 transition-transform", open && "rotate-180")} />
       </Button>
 
       {open && (
@@ -132,7 +133,7 @@ export function MultiSelect({
                           : "border-slate-600"
                       )}
                     >
-                      {isSelected && <Check className="h-3 w-3 text-white" />}
+                      {isSelected && <Icon icon="solar:check-read-linear" className="h-3 w-3 text-white" />}
                     </div>
                     {option.icon}
                     <span className="flex-1 truncate">{option.label}</span>

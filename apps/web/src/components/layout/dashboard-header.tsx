@@ -11,7 +11,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { LogOut, Settings, User } from "lucide-react";
+import { Icon } from "@iconify/react";
 
 export function DashboardHeader() {
   const { data: session } = useSession();
@@ -38,16 +38,16 @@ export function DashboardHeader() {
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-48">
               <DropdownMenuItem>
-                <User className="mr-2 h-4 w-4" />
+                <Icon icon="solar:user-linear" className="mr-2 h-4 w-4" />
                 프로필
               </DropdownMenuItem>
               <DropdownMenuItem>
-                <Settings className="mr-2 h-4 w-4" />
+                <Icon icon="solar:settings-linear" className="mr-2 h-4 w-4" />
                 설정
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={() => signOut({ callbackUrl: "/" })}>
-                <LogOut className="mr-2 h-4 w-4" />
+                <Icon icon="solar:logout-2-linear" className="mr-2 h-4 w-4" />
                 로그아웃
               </DropdownMenuItem>
             </DropdownMenuContent>

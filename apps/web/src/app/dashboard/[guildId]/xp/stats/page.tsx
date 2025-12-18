@@ -5,7 +5,7 @@ import { useGuildStats, useMembers } from "@/hooks/queries";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { BarChart3, MessageSquare, Mic2, Trophy, Users, TrendingUp, Loader2 } from "lucide-react";
+import { Icon } from "@iconify/react";
 
 export default function XpStatsPage() {
   const params = useParams();
@@ -52,7 +52,7 @@ export default function XpStatsPage() {
         <Card className="border-slate-700 bg-slate-800/50">
           <CardHeader className="pb-2">
             <CardDescription className="flex items-center gap-2">
-              <Users className="h-4 w-4" />
+              <Icon icon="solar:users-group-rounded-linear" className="h-4 w-4" />
               총 멤버
             </CardDescription>
           </CardHeader>
@@ -69,7 +69,7 @@ export default function XpStatsPage() {
         <Card className="border-slate-700 bg-slate-800/50">
           <CardHeader className="pb-2">
             <CardDescription className="flex items-center gap-2">
-              <TrendingUp className="h-4 w-4" />
+              <Icon icon="solar:graph-up-linear" className="h-4 w-4" />
               총 XP
             </CardDescription>
           </CardHeader>
@@ -86,7 +86,7 @@ export default function XpStatsPage() {
         <Card className="border-slate-700 bg-slate-800/50">
           <CardHeader className="pb-2">
             <CardDescription className="flex items-center gap-2">
-              <Trophy className="h-4 w-4" />
+              <Icon icon="solar:cup-star-linear" className="h-4 w-4" />
               XP 시스템 상태
             </CardDescription>
           </CardHeader>
@@ -113,7 +113,7 @@ export default function XpStatsPage() {
         <Card className="border-slate-700 bg-slate-800/50">
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-white">
-              <MessageSquare className="h-5 w-5 text-blue-500" />
+              <Icon icon="solar:chat-line-linear" className="h-5 w-5 text-blue-500" />
               텍스트 활동
             </CardTitle>
             <CardDescription>채팅 메시지 기반 XP 획득 통계</CardDescription>
@@ -143,7 +143,7 @@ export default function XpStatsPage() {
         <Card className="border-slate-700 bg-slate-800/50">
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-white">
-              <Mic2 className="h-5 w-5 text-green-500" />
+              <Icon icon="solar:microphone-linear" className="h-5 w-5 text-green-500" />
               음성 활동
             </CardTitle>
             <CardDescription>음성 채널 기반 XP 획득 통계</CardDescription>
@@ -175,7 +175,7 @@ export default function XpStatsPage() {
       <Card className="border-slate-700 bg-slate-800/50">
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-white">
-            <BarChart3 className="h-5 w-5 text-amber-500" />
+            <Icon icon="solar:chart-2-linear" className="h-5 w-5 text-amber-500" />
             리더보드
           </CardTitle>
           <CardDescription>XP 상위 멤버</CardDescription>
@@ -229,7 +229,7 @@ export default function XpStatsPage() {
             </div>
           ) : (
             <div className="py-12 text-center">
-              <BarChart3 className="mx-auto h-12 w-12 text-slate-600" />
+              <Icon icon="solar:chart-2-linear" className="mx-auto h-12 w-12 text-slate-600" />
               <p className="mt-4 text-slate-400">아직 데이터가 없습니다.</p>
               <p className="text-sm text-slate-500">
                 멤버들이 활동하면 리더보드가 표시됩니다.
