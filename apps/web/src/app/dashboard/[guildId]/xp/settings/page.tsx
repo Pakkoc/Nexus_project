@@ -117,6 +117,7 @@ export default function XpSettingsPage() {
   // Level Requirements State
   const [requirements, setRequirements] = useState<{ level: number; requiredXp: number }[]>([]);
   const [hasChanges, setHasChanges] = useState(false);
+  const [activeTab, setActiveTab] = useState("xp");
 
   // 두 가지 상태(폼과 레벨 설정) 중 하나라도 변경되면 unsaved changes로 표시
   useEffect(() => {
@@ -259,23 +260,45 @@ export default function XpSettingsPage() {
         <p className="text-white/50 mt-1">XP 획득 및 레벨업 방식을 설정합니다</p>
       </div>
 
-      <Tabs defaultValue="xp" className="space-y-6">
-        <TabsList className="bg-white/5 border border-white/10 p-1 rounded-xl">
-          <TabsTrigger
-            value="xp"
-            className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-indigo-500 data-[state=active]:to-purple-500 data-[state=active]:text-white rounded-lg px-4 py-2 text-white/60"
-          >
-            <Icon icon="solar:bolt-linear" className="mr-2 h-4 w-4" />
-            XP 획득
-          </TabsTrigger>
-          <TabsTrigger
-            value="levels"
-            className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-indigo-500 data-[state=active]:to-purple-500 data-[state=active]:text-white rounded-lg px-4 py-2 text-white/60"
-          >
-            <Icon icon="solar:graph-up-linear" className="mr-2 h-4 w-4" />
-            레벨 설정
-          </TabsTrigger>
-        </TabsList>
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+        <div className="flex items-center justify-between">
+          <TabsList className="bg-white/5 border border-white/10 p-1 rounded-xl">
+            <TabsTrigger
+              value="xp"
+              className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-indigo-500 data-[state=active]:to-purple-500 data-[state=active]:text-white rounded-lg px-4 py-2 text-white/60"
+            >
+              <Icon icon="solar:bolt-linear" className="mr-2 h-4 w-4" />
+              XP 획득
+            </TabsTrigger>
+            <TabsTrigger
+              value="levels"
+              className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-indigo-500 data-[state=active]:to-purple-500 data-[state=active]:text-white rounded-lg px-4 py-2 text-white/60"
+            >
+              <Icon icon="solar:graph-up-linear" className="mr-2 h-4 w-4" />
+              레벨 설정
+            </TabsTrigger>
+          </TabsList>
+
+          {activeTab === "levels" && (
+            <div className="flex gap-3">
+              <Button
+                variant="outline"
+                onClick={handleResetToDefault}
+                className="border-white/10 text-white/70 hover:bg-white/5 hover:text-white"
+              >
+                <Icon icon="solar:refresh-linear" className="mr-2 h-4 w-4" />
+                기본값
+              </Button>
+              <Button
+                onClick={handleAddLevel}
+                className="bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white"
+              >
+                <Icon icon="solar:add-circle-linear" className="mr-2 h-4 w-4" />
+                레벨 추가
+              </Button>
+            </div>
+          )}
+        </div>
 
         {/* XP 획득 설정 탭 */}
         <TabsContent value="xp" className="space-y-6 animate-fade-up">
@@ -525,27 +548,6 @@ export default function XpSettingsPage() {
 
         {/* 레벨 설정 탭 */}
         <TabsContent value="levels" className="space-y-6 animate-fade-up">
-          <div className="flex items-center justify-between">
-            <div />
-            <div className="flex gap-3">
-              <Button
-                variant="outline"
-                onClick={handleResetToDefault}
-                className="border-white/10 text-white/70 hover:bg-white/5 hover:text-white"
-              >
-                <Icon icon="solar:refresh-linear" className="mr-2 h-4 w-4" />
-                기본값
-              </Button>
-              <Button
-                onClick={handleAddLevel}
-                className="bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white"
-              >
-                <Icon icon="solar:add-circle-linear" className="mr-2 h-4 w-4" />
-                레벨 추가
-              </Button>
-            </div>
-          </div>
-
           {/* Info Card */}
           <div className="bg-blue-500/10 border border-blue-500/20 rounded-2xl p-5">
             <div className="flex items-start gap-3">
