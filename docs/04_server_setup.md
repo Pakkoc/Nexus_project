@@ -111,6 +111,9 @@ Windows에 MySQL이 설치되어 있으면 포트 충돌이 발생합니다.
 ```powershell
 # PowerShell (관리자 권한) - Windows MySQL 서비스 중지
 net stop MySQL93
+
+# Windows MySQL 자동 시작 비활성화 (최초 1회)
+Set-Service -Name 'MySQL93' -StartupType Disabled
 ```
 
 ### 컨테이너 재생성
