@@ -79,9 +79,9 @@ export default function NotificationSettingsPage() {
   }, [isDirty, setHasUnsavedChanges]);
 
   useEffect(() => {
-    // settings와 channels가 모두 로드된 후에만 form.reset 호출
-    // settings.levelUpChannelId가 변경되었을 때만 리셋 (중복 호출 방지)
-    if (settings && !channelsLoading) {
+    // settings와 channels 데이터가 모두 있을 때만 form.reset 호출
+    // (channelsLoading 대신 channels 데이터 존재 여부로 확인 - 캐시된 데이터도 사용)
+    if (settings && channels) {
       const currentSettingsKey = `${settings.levelUpChannelId}-${settings.levelUpMessage}`;
       if (lastSettingsId.current !== currentSettingsKey) {
         lastSettingsId.current = currentSettingsKey;
@@ -92,7 +92,7 @@ export default function NotificationSettingsPage() {
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [settings, channelsLoading]);
+  }, [settings, channels]);
 
   const onSubmit = async (data: NotificationFormValues) => {
     try {
