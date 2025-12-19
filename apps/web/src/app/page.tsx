@@ -266,7 +266,7 @@ export default function Home() {
               <span className="text-white/70 font-medium">Topia Empire</span>
             </div>
             <p className="text-white/40 text-sm">
-              © 2024 Topia Empire. All rights reserved.
+              © 2025 Topia Empire. All rights reserved.
             </p>
           </div>
         </div>
