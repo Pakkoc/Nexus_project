@@ -100,7 +100,8 @@ export default function NotificationSettingsPage() {
     }
   };
 
-  if (isLoading) {
+  // settings와 channels 모두 로드될 때까지 로딩 표시
+  if (isLoading || channelsLoading || !settings) {
     return (
       <div className="space-y-8">
         {/* Header Skeleton */}
