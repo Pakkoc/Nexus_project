@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { Icon } from "@iconify/react";
+import { DiscordIcon } from "@/components/icons/discord-icon";
 
 const features = [
   {
@@ -119,7 +120,7 @@ export default function Home() {
                 href="/login"
                 className="group flex items-center gap-2 px-8 py-4 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-medium rounded-full transition-all shadow-xl shadow-indigo-500/25 hover:shadow-indigo-500/40"
               >
-                <Icon icon="ic:baseline-discord" className="w-5 h-5" />
+                <DiscordIcon className="w-5 h-5" />
                 Discord로 시작하기
                 <Icon icon="solar:arrow-right-linear" className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
               </Link>
@@ -247,7 +248,7 @@ export default function Home() {
               href="/login"
               className="inline-flex items-center gap-2 px-8 py-4 bg-white text-slate-900 font-medium rounded-full hover:bg-white/90 transition-all shadow-xl"
             >
-              <Icon icon="ic:baseline-discord" className="w-5 h-5" />
+              <DiscordIcon className="w-5 h-5" />
               무료로 시작하기
             </Link>
           </div>

@@ -5,6 +5,7 @@ import { useGuilds, useGuildStats } from "@/hooks/queries";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { Icon } from "@iconify/react";
+import { DiscordIcon } from "@/components/icons/discord-icon";
 import { getBotInviteUrl } from "@/lib/discord";
 
 export default function GuildDashboardPage() {
@@ -221,7 +222,7 @@ export default function GuildDashboardPage() {
               className="bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-white shadow-lg shadow-amber-500/25"
             >
               <a href={getBotInviteUrl(guildId)} target="_blank" rel="noopener noreferrer">
-                <Icon icon="ic:baseline-discord" className="w-5 h-5 mr-2" />
+                <DiscordIcon className="w-5 h-5 mr-2" />
                 봇 초대하기
                 <Icon icon="solar:arrow-right-up-linear" className="w-4 h-4 ml-2" />
               </a>
