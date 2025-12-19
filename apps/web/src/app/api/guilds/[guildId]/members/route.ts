@@ -51,7 +51,77 @@ export async function GET(
       return NextResponse.json({ error: "Bot token not configured" }, { status: 500 });
     }
 
-    // Fetch all guild members from Discord (up to 1000)
+    const pool = db();
+
+    // For XP/level sorting, use DB-first approach (leaderboard)
+    if ((sortBy === "xp" || sortBy === "level") && !search) {
+      // Get XP users from DB first
+      const [xpRows] = await pool.query<XpUserRow[]>(
+        `SELECT user_id, xp, level, last_text_xp_at, last_voice_xp_at, created_at, updated_at
+         FROM xp_users
+         WHERE guild_id = ? AND xp > 0
+         ORDER BY ${sortBy === "level" ? "level" : "xp"} ${sortOrder === "asc" ? "ASC" : "DESC"}`,
+        [guildId]
+      );
+
+      // Fetch Discord info for these users
+      const mergedMembers = await Promise.all(
+        xpRows.map(async (xpData) => {
+          let username = `User ${xpData.user_id.slice(-4)}`;
+          let displayName = username;
+          let avatar: string | null = null;
+          let joinedAt = xpData.created_at.toISOString();
+
+          try {
+            // Try to get user info from Discord
+            const userResponse = await fetch(
+              `https://discord.com/api/v10/users/${xpData.user_id}`,
+              { headers: { Authorization: `Bot ${botToken}` } }
+            );
+            if (userResponse.ok) {
+              const userData = await userResponse.json();
+              username = userData.username;
+              displayName = userData.global_name || userData.username;
+              avatar = userData.avatar
+                ? `https://cdn.discordapp.com/avatars/${xpData.user_id}/${userData.avatar}.png`
+                : null;
+            }
+          } catch {
+            // Ignore Discord API errors, use defaults
+          }
+
+          return {
+            userId: xpData.user_id,
+            username,
+            displayName,
+            avatar,
+            joinedAt,
+            xp: xpData.xp,
+            level: xpData.level,
+            lastTextXpAt: xpData.last_text_xp_at,
+            lastVoiceXpAt: xpData.last_voice_xp_at,
+            hasXpData: true,
+          };
+        })
+      );
+
+      // Apply pagination
+      const total = mergedMembers.length;
+      const offset = (page - 1) * limit;
+      const paginatedMembers = mergedMembers.slice(offset, offset + limit);
+
+      return NextResponse.json({
+        members: paginatedMembers,
+        pagination: {
+          page,
+          limit,
+          total,
+          totalPages: Math.ceil(total / limit),
+        },
+      });
+    }
+
+    // For other sorting or search, use Discord-first approach
     const discordMembers: DiscordGuildMember[] = [];
     let after = "0";
 
@@ -83,7 +153,6 @@ export async function GET(
     const humanMembers = discordMembers.filter(m => !m.user.bot);
 
     // Get XP data for all members
-    const pool = db();
     const [xpRows] = await pool.query<XpUserRow[]>(
       `SELECT user_id, xp, level, last_text_xp_at, last_voice_xp_at, created_at, updated_at
        FROM xp_users WHERE guild_id = ?`,
