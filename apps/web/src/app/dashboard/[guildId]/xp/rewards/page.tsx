@@ -220,47 +220,60 @@ export default function LevelRewardsPage() {
 
   if (isLoading) {
     return (
-      <div className="space-y-6">
-        <div className="h-8 w-48 animate-pulse rounded bg-slate-700" />
-        <div className="h-12 w-64 animate-pulse rounded bg-slate-700" />
-        <Card className="animate-pulse border-slate-700 bg-slate-800/50">
-          <CardContent className="py-8">
-            <div className="space-y-4">
-              {[...Array(5)].map((_, i) => (
-                <div key={i} className="h-16 rounded bg-slate-700" />
-              ))}
-            </div>
-          </CardContent>
-        </Card>
+      <div className="space-y-8">
+        {/* Header Skeleton */}
+        <div className="animate-pulse">
+          <div className="h-8 w-48 rounded-lg bg-white/10" />
+          <div className="h-5 w-64 rounded-lg bg-white/5 mt-2" />
+        </div>
+
+        {/* Tabs Skeleton */}
+        <div className="h-12 w-64 animate-pulse rounded-xl bg-white/5" />
+
+        {/* Card Skeleton */}
+        <div className="animate-pulse bg-white/5 rounded-2xl p-6 border border-white/5">
+          <div className="space-y-4">
+            {[...Array(5)].map((_, i) => (
+              <div key={i} className="h-16 rounded-xl bg-white/10" />
+            ))}
+          </div>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-white">레벨 보상</h1>
-        <p className="text-slate-400">레벨 달성 시 지급할 역할과 해금 채널을 설정합니다.</p>
+    <div className="space-y-8">
+      {/* Page Header */}
+      <div className="animate-fade-up">
+        <h1 className="text-2xl md:text-3xl font-bold text-white">레벨 보상</h1>
+        <p className="text-white/50 mt-1">레벨 달성 시 지급할 역할과 해금 채널을 설정합니다.</p>
       </div>
 
       <Tabs defaultValue="roles" className="space-y-6">
-        <TabsList className="bg-slate-800">
-          <TabsTrigger value="roles" className="data-[state=active]:bg-indigo-600">
+        <TabsList className="bg-white/5 border border-white/10 p-1 rounded-xl">
+          <TabsTrigger
+            value="roles"
+            className="rounded-lg data-[state=active]:bg-gradient-to-r data-[state=active]:from-indigo-500 data-[state=active]:to-purple-500 data-[state=active]:text-white data-[state=active]:shadow-lg transition-all"
+          >
             <Icon icon="solar:cup-star-linear" className="mr-2 h-4 w-4" />
             역할 보상
           </TabsTrigger>
-          <TabsTrigger value="channels" className="data-[state=active]:bg-indigo-600">
+          <TabsTrigger
+            value="channels"
+            className="rounded-lg data-[state=active]:bg-gradient-to-r data-[state=active]:from-indigo-500 data-[state=active]:to-purple-500 data-[state=active]:text-white data-[state=active]:shadow-lg transition-all"
+          >
             <Icon icon="solar:lock-unlocked-linear" className="mr-2 h-4 w-4" />
             해금 채널
           </TabsTrigger>
         </TabsList>
 
         {/* 역할 보상 탭 */}
-        <TabsContent value="roles" className="space-y-6">
+        <TabsContent value="roles" className="space-y-6 animate-fade-up">
           <div className="flex justify-end">
             <Button
               onClick={() => setIsAddingReward(true)}
-              className="bg-indigo-600 hover:bg-indigo-700"
+              className="bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-400 hover:to-purple-400 text-white shadow-lg shadow-indigo-500/25"
             >
               <Icon icon="solar:add-circle-linear" className="mr-2 h-4 w-4" />
               보상 추가
@@ -269,29 +282,30 @@ export default function LevelRewardsPage() {
 
           {/* Add Reward Form */}
           {isAddingReward && (
-            <Card className="border-indigo-500/50 bg-slate-800/50">
-              <CardHeader>
-                <CardTitle className="text-white">새 레벨 보상 추가</CardTitle>
-                <CardDescription>
-                  레벨과 역할을 여러 개 선택할 수 있습니다.
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
+            <div className="relative bg-white/5 backdrop-blur-sm rounded-2xl p-6 border border-indigo-500/30 animate-fade-up">
+              <div className="absolute inset-0 bg-gradient-to-r from-indigo-500/5 to-purple-500/5 rounded-2xl" />
+
+              <div className="relative space-y-4">
+                <div>
+                  <h3 className="text-lg font-semibold text-white">새 레벨 보상 추가</h3>
+                  <p className="text-sm text-white/50">레벨과 역할을 여러 개 선택할 수 있습니다.</p>
+                </div>
+
                 <div className="grid gap-4 sm:grid-cols-2">
                   <div className="space-y-2">
-                    <label className="text-sm font-medium text-white">레벨</label>
+                    <label className="text-sm font-medium text-white/70">레벨</label>
                     <Input
                       type="number"
                       min="1"
                       max="999"
                       value={rewardLevel}
                       onChange={(e) => setRewardLevel(parseInt(e.target.value) || 1)}
-                      className="border-slate-700 bg-slate-900"
+                      className="border-white/10 bg-white/5 hover:bg-white/10 transition-colors"
                     />
                   </div>
 
                   <div className="space-y-2">
-                    <label className="text-sm font-medium text-white">역할 선택</label>
+                    <label className="text-sm font-medium text-white/70">역할 선택</label>
                     <MultiSelect
                       options={roleOptions}
                       selected={selectedRoleIds}
@@ -302,7 +316,7 @@ export default function LevelRewardsPage() {
                   </div>
                 </div>
 
-                <div className="flex items-center space-x-3 rounded-lg border border-slate-700 p-4">
+                <div className="flex items-center space-x-3 rounded-xl border border-white/10 bg-white/5 p-4">
                   <Switch
                     checked={removeOnHigherLevel}
                     onCheckedChange={setRemoveOnHigherLevel}
@@ -311,7 +325,7 @@ export default function LevelRewardsPage() {
                     <label className="text-sm font-medium text-white">
                       상위 레벨 달성 시 역할 제거
                     </label>
-                    <p className="text-sm text-slate-400">
+                    <p className="text-sm text-white/40">
                       다음 레벨 보상을 받으면 이 역할을 제거합니다.
                     </p>
                   </div>
@@ -327,13 +341,14 @@ export default function LevelRewardsPage() {
                       setRewardLevel(5);
                       setRemoveOnHigherLevel(false);
                     }}
+                    className="border-white/10 hover:bg-white/5"
                   >
                     취소
                   </Button>
                   <Button
                     onClick={handleSubmitReward}
                     disabled={createRewardBulk.isPending || selectedRoleIds.length === 0}
-                    className="bg-indigo-600 hover:bg-indigo-700"
+                    className="bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-400 hover:to-purple-400 text-white"
                   >
                     {createRewardBulk.isPending
                       ? "추가 중..."
@@ -342,17 +357,24 @@ export default function LevelRewardsPage() {
                       : "추가"}
                   </Button>
                 </div>
-              </CardContent>
-            </Card>
+              </div>
+            </div>
           )}
 
           {/* Rewards List */}
-          <Card className="border-slate-700 bg-slate-800/50">
-            <CardHeader>
-              <CardTitle className="text-white">역할 보상 목록</CardTitle>
-              <CardDescription>레벨 달성 시 지급되는 역할</CardDescription>
-            </CardHeader>
-            <CardContent>
+          <div className="bg-white/5 backdrop-blur-sm rounded-2xl border border-white/10 overflow-hidden">
+            <div className="p-6 border-b border-white/10">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500 to-orange-500 flex items-center justify-center">
+                  <Icon icon="solar:cup-star-bold" className="w-5 h-5 text-white" />
+                </div>
+                <div>
+                  <h3 className="font-semibold text-white">역할 보상 목록</h3>
+                  <p className="text-sm text-white/50">레벨 달성 시 지급되는 역할</p>
+                </div>
+              </div>
+            </div>
+            <div className="p-6">
               {sortedRewards.length > 0 ? (
                 <div className="space-y-3">
                   {sortedRewards.map((reward) => {
@@ -360,14 +382,14 @@ export default function LevelRewardsPage() {
                     return (
                       <div
                         key={reward.id}
-                        className="flex items-center justify-between rounded-lg border border-slate-700 p-4"
+                        className="group flex items-center justify-between rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 p-4 transition-all"
                       >
                         <div className="flex items-center gap-4">
-                          <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-amber-500/20">
-                            <Icon icon="solar:star-linear" className="h-6 w-6 text-amber-500" />
+                          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-amber-500/20 to-orange-500/20 border border-amber-500/30">
+                            <Icon icon="solar:star-bold" className="h-6 w-6 text-amber-400" />
                           </div>
                           <div>
-                            <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-2 flex-wrap">
                               <span className="text-lg font-bold text-white">
                                 레벨 {reward.level}
                               </span>
@@ -376,38 +398,38 @@ export default function LevelRewardsPage() {
                                 style={{
                                   backgroundColor: role?.color
                                     ? `#${role.color.toString(16).padStart(6, "0")}20`
-                                    : undefined,
+                                    : 'rgba(255,255,255,0.1)',
                                   color: role?.color
                                     ? `#${role.color.toString(16).padStart(6, "0")}`
-                                    : undefined,
+                                    : 'rgba(255,255,255,0.7)',
                                   borderColor: role?.color
                                     ? `#${role.color.toString(16).padStart(6, "0")}40`
-                                    : undefined,
+                                    : 'rgba(255,255,255,0.2)',
                                 }}
                               >
                                 @{role?.name ?? reward.roleId}
                               </Badge>
                             </div>
-                            <p className="text-sm text-slate-400">
+                            <p className="text-sm text-white/40 mt-1">
                               {reward.removeOnHigherLevel
                                 ? "상위 레벨 달성 시 제거됨"
                                 : "영구 역할"}
                             </p>
                           </div>
                         </div>
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-3">
                           <div className="flex items-center gap-2">
                             <Switch
                               checked={reward.removeOnHigherLevel}
                               onCheckedChange={() => handleToggleRemove(reward)}
                             />
-                            <span className="text-sm text-slate-400">제거</span>
+                            <span className="text-sm text-white/40">제거</span>
                           </div>
                           <Button
                             variant="ghost"
                             size="icon"
                             onClick={() => handleDeleteReward(reward.id)}
-                            className="text-red-400 hover:text-red-300"
+                            className="text-red-400 hover:text-red-300 hover:bg-red-500/10"
                           >
                             <Icon icon="solar:trash-bin-trash-linear" className="h-4 w-4" />
                           </Button>
@@ -418,23 +440,25 @@ export default function LevelRewardsPage() {
                 </div>
               ) : (
                 <div className="py-12 text-center">
-                  <Icon icon="solar:cup-star-linear" className="mx-auto h-12 w-12 text-slate-600" />
-                  <p className="mt-4 text-slate-400">설정된 레벨 보상이 없습니다.</p>
-                  <p className="text-sm text-slate-500">
+                  <div className="w-16 h-16 rounded-2xl bg-white/5 flex items-center justify-center mx-auto mb-4">
+                    <Icon icon="solar:cup-star-linear" className="w-8 h-8 text-white/20" />
+                  </div>
+                  <p className="text-white/50">설정된 레벨 보상이 없습니다.</p>
+                  <p className="text-sm text-white/30 mt-1">
                     레벨 보상을 추가하여 유저들에게 동기를 부여하세요.
                   </p>
                 </div>
               )}
-            </CardContent>
-          </Card>
+            </div>
+          </div>
         </TabsContent>
 
         {/* 해금 채널 탭 */}
-        <TabsContent value="channels" className="space-y-6">
+        <TabsContent value="channels" className="space-y-6 animate-fade-up">
           <div className="flex justify-end">
             <Button
               onClick={() => setIsAddingChannel(true)}
-              className="bg-indigo-600 hover:bg-indigo-700"
+              className="bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-400 hover:to-purple-400 text-white shadow-lg shadow-indigo-500/25"
             >
               <Icon icon="solar:add-circle-linear" className="mr-2 h-4 w-4" />
               해금 채널 추가
@@ -443,47 +467,48 @@ export default function LevelRewardsPage() {
 
           {/* Add Channel Form */}
           {isAddingChannel && (
-            <Card className="border-indigo-500/50 bg-slate-800/50">
-              <CardHeader>
-                <CardTitle className="text-white">새 해금 채널 추가</CardTitle>
-                <CardDescription>
-                  특정 레벨에 도달하면 접근 가능한 채널을 설정합니다.
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
+            <div className="relative bg-white/5 backdrop-blur-sm rounded-2xl p-6 border border-indigo-500/30 animate-fade-up">
+              <div className="absolute inset-0 bg-gradient-to-r from-indigo-500/5 to-purple-500/5 rounded-2xl" />
+
+              <div className="relative space-y-4">
+                <div>
+                  <h3 className="text-lg font-semibold text-white">새 해금 채널 추가</h3>
+                  <p className="text-sm text-white/50">특정 레벨에 도달하면 접근 가능한 채널을 설정합니다.</p>
+                </div>
+
                 <div className="grid gap-4 sm:grid-cols-2">
                   <div className="space-y-2">
-                    <label className="text-sm font-medium text-white">레벨</label>
+                    <label className="text-sm font-medium text-white/70">레벨</label>
                     <Input
                       type="number"
                       min="1"
                       max="999"
                       value={channelLevel}
                       onChange={(e) => setChannelLevel(parseInt(e.target.value) || 1)}
-                      className="border-slate-700 bg-slate-900"
+                      className="border-white/10 bg-white/5 hover:bg-white/10 transition-colors"
                     />
                   </div>
 
                   <div className="space-y-2">
-                    <label className="text-sm font-medium text-white">채널 선택</label>
+                    <label className="text-sm font-medium text-white/70">채널 선택</label>
                     <Select
                       value={selectedChannelId}
                       onValueChange={setSelectedChannelId}
                     >
-                      <SelectTrigger className="border-slate-700 bg-slate-900">
+                      <SelectTrigger className="border-white/10 bg-white/5 hover:bg-white/10 transition-colors">
                         <SelectValue placeholder={allChannelsLoading ? "로딩 중..." : "채널을 선택하세요"} />
                       </SelectTrigger>
                       <SelectContent>
                         {availableChannels.map((channel) => (
                           <SelectItem key={channel.id} value={channel.id}>
                             <div className="flex items-center gap-2">
-                              <Icon icon="solar:hashtag-linear" className="h-4 w-4 text-slate-400" />
+                              <Icon icon="solar:hashtag-linear" className="h-4 w-4 text-white/40" />
                               {channel.name}
                             </div>
                           </SelectItem>
                         ))}
                         {availableChannels.length === 0 && (
-                          <div className="px-2 py-4 text-center text-sm text-slate-400">
+                          <div className="px-2 py-4 text-center text-sm text-white/40">
                             사용 가능한 채널이 없습니다.
                           </div>
                         )}
@@ -501,28 +526,36 @@ export default function LevelRewardsPage() {
                       setSelectedChannelId("");
                       setChannelLevel(5);
                     }}
+                    className="border-white/10 hover:bg-white/5"
                   >
                     취소
                   </Button>
                   <Button
                     onClick={handleSubmitChannel}
                     disabled={createLevelChannel.isPending || !selectedChannelId}
-                    className="bg-indigo-600 hover:bg-indigo-700"
+                    className="bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-400 hover:to-purple-400 text-white"
                   >
                     {createLevelChannel.isPending ? "추가 중..." : "추가"}
                   </Button>
                 </div>
-              </CardContent>
-            </Card>
+              </div>
+            </div>
           )}
 
           {/* Level Channels List */}
-          <Card className="border-slate-700 bg-slate-800/50">
-            <CardHeader>
-              <CardTitle className="text-white">해금 채널 목록</CardTitle>
-              <CardDescription>레벨별 접근 가능 채널 설정</CardDescription>
-            </CardHeader>
-            <CardContent>
+          <div className="bg-white/5 backdrop-blur-sm rounded-2xl border border-white/10 overflow-hidden">
+            <div className="p-6 border-b border-white/10">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-green-500 to-emerald-500 flex items-center justify-center">
+                  <Icon icon="solar:lock-unlocked-bold" className="w-5 h-5 text-white" />
+                </div>
+                <div>
+                  <h3 className="font-semibold text-white">해금 채널 목록</h3>
+                  <p className="text-sm text-white/50">레벨별 접근 가능 채널 설정</p>
+                </div>
+              </div>
+            </div>
+            <div className="p-6">
               {sortedLevelChannels.length > 0 ? (
                 <div className="space-y-3">
                   {sortedLevelChannels.map((levelChannel) => {
@@ -530,26 +563,26 @@ export default function LevelRewardsPage() {
                     return (
                       <div
                         key={levelChannel.id}
-                        className="flex items-center justify-between rounded-lg border border-slate-700 p-4"
+                        className="group flex items-center justify-between rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 p-4 transition-all"
                       >
                         <div className="flex items-center gap-4">
-                          <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-green-500/20">
-                            <Icon icon="solar:lock-unlocked-linear" className="h-6 w-6 text-green-500" />
+                          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-green-500/20 to-emerald-500/20 border border-green-500/30">
+                            <Icon icon="solar:lock-unlocked-bold" className="h-6 w-6 text-green-400" />
                           </div>
                           <div>
-                            <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-2 flex-wrap">
                               <span className="text-lg font-bold text-white">
                                 레벨 {levelChannel.level}
                               </span>
                               <Badge
                                 variant="secondary"
-                                className="bg-slate-700 text-slate-300"
+                                className="bg-white/10 text-white/70"
                               >
                                 <Icon icon="solar:hashtag-linear" className="mr-1 h-3 w-3" />
                                 {channel?.name ?? levelChannel.channelId}
                               </Badge>
                             </div>
-                            <p className="text-sm text-slate-400">
+                            <p className="text-sm text-white/40 mt-1">
                               레벨 {levelChannel.level} 달성 시 채널 접근 권한 부여
                             </p>
                           </div>
@@ -558,7 +591,7 @@ export default function LevelRewardsPage() {
                           variant="ghost"
                           size="icon"
                           onClick={() => handleDeleteChannel(levelChannel.id)}
-                          className="text-red-400 hover:text-red-300"
+                          className="text-red-400 hover:text-red-300 hover:bg-red-500/10"
                         >
                           <Icon icon="solar:trash-bin-trash-linear" className="h-4 w-4" />
                         </Button>
@@ -568,15 +601,17 @@ export default function LevelRewardsPage() {
                 </div>
               ) : (
                 <div className="py-12 text-center">
-                  <Icon icon="solar:lock-unlocked-linear" className="mx-auto h-12 w-12 text-slate-600" />
-                  <p className="mt-4 text-slate-400">설정된 해금 채널이 없습니다.</p>
-                  <p className="text-sm text-slate-500">
+                  <div className="w-16 h-16 rounded-2xl bg-white/5 flex items-center justify-center mx-auto mb-4">
+                    <Icon icon="solar:lock-unlocked-linear" className="w-8 h-8 text-white/20" />
+                  </div>
+                  <p className="text-white/50">설정된 해금 채널이 없습니다.</p>
+                  <p className="text-sm text-white/30 mt-1">
                     해금 채널을 추가하여 레벨업 보상으로 채널 접근 권한을 부여하세요.
                   </p>
                 </div>
               )}
-            </CardContent>
-          </Card>
+            </div>
+          </div>
         </TabsContent>
       </Tabs>
     </div>

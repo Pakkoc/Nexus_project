@@ -4,30 +4,53 @@ import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { NavigationLink } from "@/components/navigation-link";
 import { Icon } from "@iconify/react";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 interface SidebarProps {
   guildId: string;
   guildName: string;
+  guildIcon?: string | null;
+}
+
+function getGuildIconUrl(guildId: string, icon: string | null | undefined) {
+  if (!icon) return null;
+  return `https://cdn.discordapp.com/icons/${guildId}/${icon}.png`;
 }
 
 const navigation = [
-  { name: "대시보드", href: "", icon: "solar:home-2-linear" },
+  {
+    name: "대시보드",
+    href: "",
+    icon: "solar:home-2-linear",
+    iconActive: "solar:home-2-bold",
+  },
   {
     name: "XP 시스템",
     icon: "solar:bolt-linear",
+    iconActive: "solar:bolt-bold",
     children: [
-      { name: "XP 설정", href: "/xp/settings", icon: "solar:settings-linear" },
-      { name: "XP 규칙", href: "/xp/rules", icon: "solar:book-linear" },
-      { name: "레벨 보상", href: "/xp/rewards", icon: "solar:cup-star-linear" },
-      { name: "알림 설정", href: "/xp/notifications", icon: "solar:volume-loud-linear" },
-      { name: "통계", href: "/xp/stats", icon: "solar:chart-2-linear" },
+      { name: "XP 설정", href: "/xp/settings", icon: "solar:settings-linear", iconActive: "solar:settings-bold" },
+      { name: "XP 규칙", href: "/xp/rules", icon: "solar:book-linear", iconActive: "solar:book-bold" },
+      { name: "레벨 보상", href: "/xp/rewards", icon: "solar:cup-star-linear", iconActive: "solar:cup-star-bold" },
+      { name: "알림 설정", href: "/xp/notifications", icon: "solar:bell-linear", iconActive: "solar:bell-bold" },
+      { name: "통계", href: "/xp/stats", icon: "solar:chart-2-linear", iconActive: "solar:chart-2-bold" },
     ],
   },
-  { name: "멤버 관리", href: "/members", icon: "solar:users-group-rounded-linear" },
-  { name: "설정", href: "/settings", icon: "solar:settings-linear" },
+  {
+    name: "멤버 관리",
+    href: "/members",
+    icon: "solar:users-group-rounded-linear",
+    iconActive: "solar:users-group-rounded-bold",
+  },
+  {
+    name: "설정",
+    href: "/settings",
+    icon: "solar:settings-linear",
+    iconActive: "solar:settings-bold",
+  },
 ];
 
-export function DashboardSidebar({ guildId, guildName }: SidebarProps) {
+export function DashboardSidebar({ guildId, guildName, guildIcon }: SidebarProps) {
   const pathname = usePathname();
   const basePath = `/dashboard/${guildId}`;
 
@@ -39,16 +62,36 @@ export function DashboardSidebar({ guildId, guildName }: SidebarProps) {
     return pathname.startsWith(fullPath);
   };
 
+  const isParentActive = (children: typeof navigation[1]["children"]) => {
+    return children?.some(child => isActive(child.href));
+  };
+
   return (
-    <aside className="flex h-full w-64 flex-col border-r border-slate-700/50 bg-slate-900/50">
+    <aside className="flex h-full w-72 flex-col bg-black/40 backdrop-blur-xl border-r border-white/5">
       {/* Guild Header */}
-      <div className="border-b border-slate-700/50 p-4">
-        <NavigationLink href="/dashboard" className="text-sm text-slate-400 hover:text-white">
-          ← 서버 목록
+      <div className="p-5 border-b border-white/5">
+        <NavigationLink
+          href="/dashboard"
+          className="inline-flex items-center gap-2 text-white/50 hover:text-white/80 text-sm transition-colors mb-4"
+        >
+          <Icon icon="solar:arrow-left-linear" className="w-4 h-4" />
+          서버 목록
         </NavigationLink>
-        <h2 className="mt-2 truncate text-lg font-semibold text-white">
-          {guildName}
-        </h2>
+
+        <div className="flex items-center gap-3">
+          <Avatar className="h-11 w-11 rounded-xl">
+            <AvatarImage src={getGuildIconUrl(guildId, guildIcon) ?? undefined} />
+            <AvatarFallback className="rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 text-white font-semibold">
+              {guildName[0]?.toUpperCase()}
+            </AvatarFallback>
+          </Avatar>
+          <div className="flex-1 min-w-0">
+            <h2 className="truncate text-base font-semibold text-white">
+              {guildName}
+            </h2>
+            <p className="text-xs text-white/40">서버 관리</p>
+          </div>
+        </div>
       </div>
 
       {/* Navigation */}
@@ -58,23 +101,34 @@ export function DashboardSidebar({ guildId, guildName }: SidebarProps) {
             <li key={item.name}>
               {item.children ? (
                 <div className="space-y-1">
-                  <div className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-slate-400">
-                    <Icon icon={item.icon} className="h-4 w-4" />
+                  <div className={cn(
+                    "flex items-center gap-3 px-4 py-2.5 text-sm font-medium rounded-xl transition-colors",
+                    isParentActive(item.children)
+                      ? "text-white bg-white/5"
+                      : "text-white/50"
+                  )}>
+                    <Icon
+                      icon={isParentActive(item.children) ? item.iconActive : item.icon}
+                      className="h-5 w-5"
+                    />
                     {item.name}
                   </div>
-                  <ul className="ml-4 space-y-1 border-l border-slate-700/50 pl-2">
+                  <ul className="ml-4 space-y-0.5 pl-4 border-l border-white/10">
                     {item.children.map((child) => (
                       <li key={child.name}>
                         <NavigationLink
                           href={`${basePath}${child.href}`}
                           className={cn(
-                            "flex items-center gap-2 rounded-lg px-3 py-2 text-sm transition-colors",
+                            "flex items-center gap-3 rounded-xl px-4 py-2.5 text-sm transition-all",
                             isActive(child.href)
-                              ? "bg-indigo-600 text-white"
-                              : "text-slate-400 hover:bg-slate-800 hover:text-white"
+                              ? "bg-gradient-to-r from-indigo-500/20 to-purple-500/20 text-white font-medium border border-indigo-500/30"
+                              : "text-white/50 hover:bg-white/5 hover:text-white/80"
                           )}
                         >
-                          <Icon icon={child.icon} className="h-4 w-4" />
+                          <Icon
+                            icon={isActive(child.href) ? child.iconActive : child.icon}
+                            className="h-4 w-4"
+                          />
                           {child.name}
                         </NavigationLink>
                       </li>
@@ -85,13 +139,16 @@ export function DashboardSidebar({ guildId, guildName }: SidebarProps) {
                 <NavigationLink
                   href={`${basePath}${item.href}`}
                   className={cn(
-                    "flex items-center gap-2 rounded-lg px-3 py-2 text-sm transition-colors",
+                    "flex items-center gap-3 rounded-xl px-4 py-2.5 text-sm transition-all",
                     isActive(item.href)
-                      ? "bg-indigo-600 text-white"
-                      : "text-slate-400 hover:bg-slate-800 hover:text-white"
+                      ? "bg-gradient-to-r from-indigo-500/20 to-purple-500/20 text-white font-medium border border-indigo-500/30"
+                      : "text-white/50 hover:bg-white/5 hover:text-white/80"
                   )}
                 >
-                  <Icon icon={item.icon} className="h-4 w-4" />
+                  <Icon
+                    icon={isActive(item.href) ? item.iconActive : item.icon}
+                    className="h-5 w-5"
+                  />
                   {item.name}
                 </NavigationLink>
               )}
@@ -99,6 +156,19 @@ export function DashboardSidebar({ guildId, guildName }: SidebarProps) {
           ))}
         </ul>
       </nav>
+
+      {/* Footer */}
+      <div className="p-4 border-t border-white/5">
+        <div className="flex items-center gap-3 px-4 py-3 rounded-xl bg-gradient-to-r from-indigo-500/10 to-purple-500/10 border border-indigo-500/20">
+          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center">
+            <Icon icon="solar:crown-bold" className="w-4 h-4 text-white" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-xs font-medium text-white">Topia Empire</p>
+            <p className="text-[10px] text-white/40">v1.0.0</p>
+          </div>
+        </div>
+      </div>
     </aside>
   );
 }

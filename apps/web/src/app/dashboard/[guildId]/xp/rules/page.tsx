@@ -376,51 +376,67 @@ export default function XpRulesPage() {
 
   if (isLoading) {
     return (
-      <div className="space-y-6">
-        <div className="h-8 w-48 animate-pulse rounded bg-slate-700" />
-        <div className="h-12 w-64 animate-pulse rounded bg-slate-700" />
-        <Card className="animate-pulse border-slate-700 bg-slate-800/50">
-          <CardContent className="py-8">
-            <div className="space-y-4">
-              {[...Array(3)].map((_, i) => (
-                <div key={i} className="h-16 rounded bg-slate-700" />
-              ))}
-            </div>
-          </CardContent>
-        </Card>
+      <div className="space-y-8">
+        {/* Header Skeleton */}
+        <div className="animate-pulse">
+          <div className="h-8 w-48 rounded-lg bg-white/10" />
+          <div className="h-5 w-64 rounded-lg bg-white/5 mt-2" />
+        </div>
+
+        {/* Tabs Skeleton */}
+        <div className="h-12 w-80 animate-pulse rounded-xl bg-white/5" />
+
+        {/* Card Skeleton */}
+        <div className="animate-pulse bg-white/5 rounded-2xl p-6 border border-white/5">
+          <div className="space-y-4">
+            {[...Array(3)].map((_, i) => (
+              <div key={i} className="h-16 rounded-xl bg-white/10" />
+            ))}
+          </div>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-white">XP 규칙</h1>
-        <p className="text-slate-400">XP 보너스 및 제한 규칙을 설정합니다.</p>
+    <div className="space-y-8">
+      {/* Page Header */}
+      <div className="animate-fade-up">
+        <h1 className="text-2xl md:text-3xl font-bold text-white">XP 규칙</h1>
+        <p className="text-white/50 mt-1">XP 보너스 및 제한 규칙을 설정합니다.</p>
       </div>
 
       <Tabs defaultValue="hottime" className="space-y-6">
-        <TabsList className="bg-slate-800">
-          <TabsTrigger value="hottime" className="data-[state=active]:bg-indigo-600">
+        <TabsList className="bg-white/5 border border-white/10 p-1 rounded-xl">
+          <TabsTrigger
+            value="hottime"
+            className="rounded-lg data-[state=active]:bg-gradient-to-r data-[state=active]:from-indigo-500 data-[state=active]:to-purple-500 data-[state=active]:text-white data-[state=active]:shadow-lg transition-all"
+          >
             <Icon icon="solar:stars-linear" className="mr-2 h-4 w-4" />
             핫타임
           </TabsTrigger>
-          <TabsTrigger value="multipliers" className="data-[state=active]:bg-indigo-600">
+          <TabsTrigger
+            value="multipliers"
+            className="rounded-lg data-[state=active]:bg-gradient-to-r data-[state=active]:from-indigo-500 data-[state=active]:to-purple-500 data-[state=active]:text-white data-[state=active]:shadow-lg transition-all"
+          >
             <Icon icon="solar:percent-linear" className="mr-2 h-4 w-4" />
             배율
           </TabsTrigger>
-          <TabsTrigger value="exclusions" className="data-[state=active]:bg-indigo-600">
+          <TabsTrigger
+            value="exclusions"
+            className="rounded-lg data-[state=active]:bg-gradient-to-r data-[state=active]:from-indigo-500 data-[state=active]:to-purple-500 data-[state=active]:text-white data-[state=active]:shadow-lg transition-all"
+          >
             <Icon icon="solar:shield-linear" className="mr-2 h-4 w-4" />
             XP 차단
           </TabsTrigger>
         </TabsList>
 
         {/* 핫타임 탭 */}
-        <TabsContent value="hottime" className="space-y-6">
+        <TabsContent value="hottime" className="space-y-6 animate-fade-up">
           <div className="flex justify-end">
             <Button
               onClick={() => setIsAddingHotTime(true)}
-              className="bg-indigo-600 hover:bg-indigo-700"
+              className="bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-400 hover:to-purple-400 text-white shadow-lg shadow-indigo-500/25"
             >
               <Icon icon="solar:add-circle-linear" className="mr-2 h-4 w-4" />
               핫타임 추가
@@ -429,11 +445,12 @@ export default function XpRulesPage() {
 
           {/* Add Hot Time Form */}
           {isAddingHotTime && (
-            <Card className="border-indigo-500/50 bg-slate-800/50">
-              <CardHeader>
-                <CardTitle className="text-white">새 핫타임 추가</CardTitle>
-              </CardHeader>
-              <CardContent>
+            <div className="relative bg-white/5 backdrop-blur-sm rounded-2xl p-6 border border-indigo-500/30 animate-fade-up">
+              {/* Glow effect */}
+              <div className="absolute inset-0 bg-gradient-to-r from-indigo-500/5 to-purple-500/5 rounded-2xl" />
+
+              <div className="relative">
+                <h3 className="text-lg font-semibold text-white mb-4">새 핫타임 추가</h3>
                 <Form {...hotTimeForm}>
                   <form onSubmit={hotTimeForm.handleSubmit(onSubmitHotTime)} className="space-y-4">
                     <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -442,10 +459,10 @@ export default function XpRulesPage() {
                         name="type"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel className="text-white">유형</FormLabel>
+                            <FormLabel className="text-white/70">유형</FormLabel>
                             <Select onValueChange={field.onChange} defaultValue={field.value}>
                               <FormControl>
-                                <SelectTrigger className="border-slate-700 bg-slate-900">
+                                <SelectTrigger className="border-white/10 bg-white/5 hover:bg-white/10 transition-colors">
                                   <SelectValue />
                                 </SelectTrigger>
                               </FormControl>
@@ -465,12 +482,12 @@ export default function XpRulesPage() {
                         name="startTime"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel className="text-white">시작 시간</FormLabel>
+                            <FormLabel className="text-white/70">시작 시간</FormLabel>
                             <FormControl>
                               <Input
                                 type="time"
                                 {...field}
-                                className="border-slate-700 bg-slate-900"
+                                className="border-white/10 bg-white/5 hover:bg-white/10 transition-colors"
                               />
                             </FormControl>
                             <FormMessage />
@@ -483,12 +500,12 @@ export default function XpRulesPage() {
                         name="endTime"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel className="text-white">종료 시간</FormLabel>
+                            <FormLabel className="text-white/70">종료 시간</FormLabel>
                             <FormControl>
                               <Input
                                 type="time"
                                 {...field}
-                                className="border-slate-700 bg-slate-900"
+                                className="border-white/10 bg-white/5 hover:bg-white/10 transition-colors"
                               />
                             </FormControl>
                             <FormMessage />
@@ -501,7 +518,7 @@ export default function XpRulesPage() {
                         name="multiplier"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel className="text-white">배율</FormLabel>
+                            <FormLabel className="text-white/70">배율</FormLabel>
                             <FormControl>
                               <Input
                                 type="number"
@@ -509,7 +526,7 @@ export default function XpRulesPage() {
                                 min="1"
                                 max="10"
                                 {...field}
-                                className="border-slate-700 bg-slate-900"
+                                className="border-white/10 bg-white/5 hover:bg-white/10 transition-colors"
                               />
                             </FormControl>
                             <FormMessage />
@@ -526,56 +543,64 @@ export default function XpRulesPage() {
                           setIsAddingHotTime(false);
                           hotTimeForm.reset();
                         }}
+                        className="border-white/10 hover:bg-white/5"
                       >
                         취소
                       </Button>
                       <Button
                         type="submit"
                         disabled={createHotTime.isPending}
-                        className="bg-indigo-600 hover:bg-indigo-700"
+                        className="bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-400 hover:to-purple-400 text-white"
                       >
                         {createHotTime.isPending ? "추가 중..." : "추가"}
                       </Button>
                     </div>
                   </form>
                 </Form>
-              </CardContent>
-            </Card>
+              </div>
+            </div>
           )}
 
           {/* Hot Times List */}
-          <Card className="border-slate-700 bg-slate-800/50">
-            <CardHeader>
-              <CardTitle className="text-white">핫타임 목록</CardTitle>
-              <CardDescription>특정 시간대에 XP 배율이 증가합니다.</CardDescription>
-            </CardHeader>
-            <CardContent>
+          <div className="bg-white/5 backdrop-blur-sm rounded-2xl border border-white/10 overflow-hidden">
+            <div className="p-6 border-b border-white/10">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500 to-orange-500 flex items-center justify-center">
+                  <Icon icon="solar:stars-bold" className="w-5 h-5 text-white" />
+                </div>
+                <div>
+                  <h3 className="font-semibold text-white">핫타임 목록</h3>
+                  <p className="text-sm text-white/50">특정 시간대에 XP 배율이 증가합니다.</p>
+                </div>
+              </div>
+            </div>
+            <div className="p-6">
               {hotTimes && hotTimes.length > 0 ? (
                 <div className="space-y-3">
                   {hotTimes.map((hotTime) => (
                     <div
                       key={hotTime.id}
-                      className="flex items-center justify-between rounded-lg border border-slate-700 p-4"
+                      className="group flex items-center justify-between rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 p-4 transition-all"
                     >
                       <div className="flex items-center gap-4">
-                        <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-amber-500/20">
-                          <Icon icon="solar:stars-linear" className="h-5 w-5 text-amber-500" />
+                        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-amber-500/20 to-orange-500/20 border border-amber-500/30">
+                          <Icon icon="solar:stars-linear" className="h-5 w-5 text-amber-400" />
                         </div>
                         <div>
-                          <div className="flex items-center gap-2">
+                          <div className="flex items-center gap-2 flex-wrap">
                             <span className="font-medium text-white">
                               {hotTime.startTime} - {hotTime.endTime}
                             </span>
-                            <Badge variant="secondary">{typeLabels[hotTime.type]}</Badge>
-                            <Badge className="bg-amber-600">x{hotTime.multiplier}</Badge>
+                            <Badge variant="secondary" className="bg-white/10 text-white/70">{typeLabels[hotTime.type]}</Badge>
+                            <Badge className="bg-gradient-to-r from-amber-500 to-orange-500 text-white border-0">x{hotTime.multiplier}</Badge>
                           </div>
-                          <div className="flex items-center gap-1 text-sm text-slate-400">
+                          <div className="flex items-center gap-1 text-sm text-white/40 mt-1">
                             <Icon icon="solar:clock-circle-linear" className="h-3 w-3" />
                             {hotTime.enabled ? "활성화됨" : "비활성화됨"}
                           </div>
                         </div>
                       </div>
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-3">
                         <Switch
                           checked={hotTime.enabled}
                           onCheckedChange={() => handleToggleHotTime(hotTime)}
@@ -584,7 +609,7 @@ export default function XpRulesPage() {
                           variant="ghost"
                           size="icon"
                           onClick={() => handleDeleteHotTime(hotTime.id)}
-                          className="text-red-400 hover:text-red-300"
+                          className="text-red-400 hover:text-red-300 hover:bg-red-500/10"
                         >
                           <Icon icon="solar:trash-bin-trash-linear" className="h-4 w-4" />
                         </Button>
@@ -593,21 +618,26 @@ export default function XpRulesPage() {
                   ))}
                 </div>
               ) : (
-                <div className="py-8 text-center">
-                  <Icon icon="solar:stars-linear" className="mx-auto h-12 w-12 text-slate-600" />
-                  <p className="mt-4 text-slate-400">설정된 핫타임이 없습니다.</p>
-                  <p className="text-sm text-slate-500">핫타임을 추가하여 특정 시간대에 XP 배율을 높이세요.</p>
+                <div className="py-12 text-center">
+                  <div className="w-16 h-16 rounded-2xl bg-white/5 flex items-center justify-center mx-auto mb-4">
+                    <Icon icon="solar:stars-linear" className="w-8 h-8 text-white/20" />
+                  </div>
+                  <p className="text-white/50">설정된 핫타임이 없습니다.</p>
+                  <p className="text-sm text-white/30 mt-1">핫타임을 추가하여 특정 시간대에 XP 배율을 높이세요.</p>
                 </div>
               )}
-            </CardContent>
-          </Card>
+            </div>
+          </div>
         </TabsContent>
 
         {/* 배율 탭 */}
-        <TabsContent value="multipliers" className="space-y-6">
-          <div className="rounded-lg border border-amber-500/30 bg-amber-500/10 p-4">
-            <p className="text-sm text-amber-200">
-              <strong>우선순위:</strong> 역할 배율이 채널 배율보다 우선됩니다.
+        <TabsContent value="multipliers" className="space-y-6 animate-fade-up">
+          <div className="flex items-start gap-4 rounded-xl border border-amber-500/30 bg-gradient-to-r from-amber-500/10 to-orange-500/10 p-4">
+            <div className="w-8 h-8 rounded-lg bg-amber-500/20 flex items-center justify-center shrink-0">
+              <Icon icon="solar:info-circle-linear" className="w-4 h-4 text-amber-400" />
+            </div>
+            <p className="text-sm text-amber-200/80">
+              <strong className="text-amber-200">우선순위:</strong> 역할 배율이 채널 배율보다 우선됩니다.
               여러 역할을 가진 경우 가장 높은 배율이 적용됩니다.
             </p>
           </div>
@@ -615,7 +645,7 @@ export default function XpRulesPage() {
           <div className="flex justify-end">
             <Button
               onClick={() => setIsAddingMultiplier(true)}
-              className="bg-indigo-600 hover:bg-indigo-700"
+              className="bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-400 hover:to-purple-400 text-white shadow-lg shadow-indigo-500/25"
             >
               <Icon icon="solar:add-circle-linear" className="mr-2 h-4 w-4" />
               배율 추가
@@ -624,17 +654,18 @@ export default function XpRulesPage() {
 
           {/* Add Multiplier Form */}
           {isAddingMultiplier && (
-            <Card className="border-indigo-500/50 bg-slate-800/50">
-              <CardHeader>
-                <CardTitle className="text-white">새 배율 추가</CardTitle>
-                <CardDescription>
-                  특정 채널이나 역할에 XP 배율을 설정합니다.
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
+            <div className="relative bg-white/5 backdrop-blur-sm rounded-2xl p-6 border border-indigo-500/30 animate-fade-up">
+              <div className="absolute inset-0 bg-gradient-to-r from-indigo-500/5 to-purple-500/5 rounded-2xl" />
+
+              <div className="relative space-y-4">
+                <div>
+                  <h3 className="text-lg font-semibold text-white">새 배율 추가</h3>
+                  <p className="text-sm text-white/50">특정 채널이나 역할에 XP 배율을 설정합니다.</p>
+                </div>
+
                 <div className="grid gap-4 sm:grid-cols-3">
                   <div className="space-y-2">
-                    <label className="text-sm font-medium text-white">유형</label>
+                    <label className="text-sm font-medium text-white/70">유형</label>
                     <Select
                       value={multiplierTargetType}
                       onValueChange={(value: "channel" | "role") => {
@@ -642,7 +673,7 @@ export default function XpRulesPage() {
                         setMultiplierTargetId("");
                       }}
                     >
-                      <SelectTrigger className="border-slate-700 bg-slate-900">
+                      <SelectTrigger className="border-white/10 bg-white/5 hover:bg-white/10 transition-colors">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
@@ -653,14 +684,14 @@ export default function XpRulesPage() {
                   </div>
 
                   <div className="space-y-2">
-                    <label className="text-sm font-medium text-white">
+                    <label className="text-sm font-medium text-white/70">
                       {multiplierTargetType === "channel" ? "채널 선택" : "역할 선택"}
                     </label>
                     <Select
                       value={multiplierTargetId}
                       onValueChange={setMultiplierTargetId}
                     >
-                      <SelectTrigger className="border-slate-700 bg-slate-900">
+                      <SelectTrigger className="border-white/10 bg-white/5 hover:bg-white/10 transition-colors">
                         <SelectValue placeholder={multiplierTargetType === "channel" ? "채널 선택" : "역할 선택"} />
                       </SelectTrigger>
                       <SelectContent>
@@ -687,7 +718,7 @@ export default function XpRulesPage() {
                   </div>
 
                   <div className="space-y-2">
-                    <label className="text-sm font-medium text-white">배율</label>
+                    <label className="text-sm font-medium text-white/70">배율</label>
                     <Input
                       type="number"
                       step="0.1"
@@ -695,7 +726,7 @@ export default function XpRulesPage() {
                       max="10"
                       value={multiplierValue}
                       onChange={(e) => setMultiplierValue(parseFloat(e.target.value) || 1)}
-                      className="border-slate-700 bg-slate-900"
+                      className="border-white/10 bg-white/5 hover:bg-white/10 transition-colors"
                     />
                   </div>
                 </div>
@@ -709,33 +740,38 @@ export default function XpRulesPage() {
                       setMultiplierTargetId("");
                       setMultiplierValue(1.5);
                     }}
+                    className="border-white/10 hover:bg-white/5"
                   >
                     취소
                   </Button>
                   <Button
                     onClick={handleSubmitMultiplier}
                     disabled={createMultiplier.isPending || !multiplierTargetId}
-                    className="bg-indigo-600 hover:bg-indigo-700"
+                    className="bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-400 hover:to-purple-400 text-white"
                   >
                     {createMultiplier.isPending ? "추가 중..." : "추가"}
                   </Button>
                 </div>
-              </CardContent>
-            </Card>
+              </div>
+            </div>
           )}
 
           {/* Multipliers Lists */}
           <div className="grid gap-6 lg:grid-cols-2">
             {/* Channel Multipliers */}
-            <Card className="border-slate-700 bg-slate-800/50">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-white">
-                  <Icon icon="solar:hashtag-linear" className="h-5 w-5 text-blue-500" />
-                  채널별 배율
-                </CardTitle>
-                <CardDescription>특정 채널에서 XP 배율이 적용됩니다.</CardDescription>
-              </CardHeader>
-              <CardContent>
+            <div className="bg-white/5 backdrop-blur-sm rounded-2xl border border-white/10 overflow-hidden">
+              <div className="p-6 border-b border-white/10">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center">
+                    <Icon icon="solar:hashtag-bold" className="w-5 h-5 text-white" />
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-white">채널별 배율</h3>
+                    <p className="text-sm text-white/50">특정 채널에서 XP 배율이 적용됩니다.</p>
+                  </div>
+                </div>
+              </div>
+              <div className="p-6">
                 {channelMultipliers.length > 0 ? (
                   <div className="space-y-2">
                     {channelMultipliers.map((multiplier) => {
@@ -744,18 +780,18 @@ export default function XpRulesPage() {
                       return (
                         <div
                           key={multiplier.id}
-                          className="flex items-center justify-between rounded-lg border border-slate-700 p-3"
+                          className="flex items-center justify-between rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 p-3 transition-all"
                         >
                           <div className="flex items-center gap-2">
                             {isVoice ? (
                               <Icon icon="solar:volume-loud-linear" className="h-4 w-4 text-green-400" />
                             ) : (
-                              <Icon icon="solar:hashtag-linear" className="h-4 w-4 text-slate-400" />
+                              <Icon icon="solar:hashtag-linear" className="h-4 w-4 text-white/40" />
                             )}
-                            <span className="text-slate-300">
+                            <span className="text-white/80">
                               {getChannelName(multiplier.targetId)}
                             </span>
-                            <Badge className="bg-amber-600">x{multiplier.multiplier}</Badge>
+                            <Badge className="bg-gradient-to-r from-amber-500 to-orange-500 text-white border-0">x{multiplier.multiplier}</Badge>
                           </div>
                           <div className="flex items-center gap-2">
                             <Input
@@ -764,7 +800,7 @@ export default function XpRulesPage() {
                               min="0.1"
                               max="10"
                               defaultValue={multiplier.multiplier}
-                              className="w-20 border-slate-700 bg-slate-900"
+                              className="w-20 border-white/10 bg-white/5"
                               onBlur={(e) => {
                                 const newValue = parseFloat(e.target.value);
                                 if (newValue && newValue !== multiplier.multiplier) {
@@ -776,7 +812,7 @@ export default function XpRulesPage() {
                               variant="ghost"
                               size="icon"
                               onClick={() => handleDeleteMultiplier(multiplier.id)}
-                              className="text-red-400 hover:text-red-300"
+                              className="text-red-400 hover:text-red-300 hover:bg-red-500/10"
                             >
                               <Icon icon="solar:trash-bin-trash-linear" className="h-4 w-4" />
                             </Button>
@@ -786,34 +822,40 @@ export default function XpRulesPage() {
                     })}
                   </div>
                 ) : (
-                  <div className="py-6 text-center">
-                    <Icon icon="solar:hashtag-linear" className="mx-auto h-8 w-8 text-slate-600" />
-                    <p className="mt-2 text-sm text-slate-400">채널 배율이 없습니다.</p>
+                  <div className="py-8 text-center">
+                    <div className="w-12 h-12 rounded-xl bg-white/5 flex items-center justify-center mx-auto mb-3">
+                      <Icon icon="solar:hashtag-linear" className="w-6 h-6 text-white/20" />
+                    </div>
+                    <p className="text-sm text-white/40">채널 배율이 없습니다.</p>
                   </div>
                 )}
-              </CardContent>
-            </Card>
+              </div>
+            </div>
 
             {/* Role Multipliers */}
-            <Card className="border-slate-700 bg-slate-800/50">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-white">
-                  <Icon icon="solar:shield-linear" className="h-5 w-5 text-purple-500" />
-                  역할별 배율
-                </CardTitle>
-                <CardDescription>특정 역할을 가진 유저에게 XP 배율이 적용됩니다.</CardDescription>
-              </CardHeader>
-              <CardContent>
+            <div className="bg-white/5 backdrop-blur-sm rounded-2xl border border-white/10 overflow-hidden">
+              <div className="p-6 border-b border-white/10">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
+                    <Icon icon="solar:shield-bold" className="w-5 h-5 text-white" />
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-white">역할별 배율</h3>
+                    <p className="text-sm text-white/50">특정 역할을 가진 유저에게 XP 배율이 적용됩니다.</p>
+                  </div>
+                </div>
+              </div>
+              <div className="p-6">
                 {roleMultipliers.length > 0 ? (
                   <div className="space-y-2">
                     {roleMultipliers.map((multiplier) => (
                       <div
                         key={multiplier.id}
-                        className="flex items-center justify-between rounded-lg border border-slate-700 p-3"
+                        className="flex items-center justify-between rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 p-3 transition-all"
                       >
                         <div className="flex items-center gap-2">
-                          <Badge variant="secondary">@{getRoleName(multiplier.targetId)}</Badge>
-                          <Badge className="bg-amber-600">x{multiplier.multiplier}</Badge>
+                          <Badge variant="secondary" className="bg-purple-500/20 text-purple-300 border-purple-500/30">@{getRoleName(multiplier.targetId)}</Badge>
+                          <Badge className="bg-gradient-to-r from-amber-500 to-orange-500 text-white border-0">x{multiplier.multiplier}</Badge>
                         </div>
                         <div className="flex items-center gap-2">
                           <Input
@@ -822,7 +864,7 @@ export default function XpRulesPage() {
                             min="0.1"
                             max="10"
                             defaultValue={multiplier.multiplier}
-                            className="w-20 border-slate-700 bg-slate-900"
+                            className="w-20 border-white/10 bg-white/5"
                             onBlur={(e) => {
                               const newValue = parseFloat(e.target.value);
                               if (newValue && newValue !== multiplier.multiplier) {
@@ -834,7 +876,7 @@ export default function XpRulesPage() {
                             variant="ghost"
                             size="icon"
                             onClick={() => handleDeleteMultiplier(multiplier.id)}
-                            className="text-red-400 hover:text-red-300"
+                            className="text-red-400 hover:text-red-300 hover:bg-red-500/10"
                           >
                             <Icon icon="solar:trash-bin-trash-linear" className="h-4 w-4" />
                           </Button>
@@ -843,22 +885,24 @@ export default function XpRulesPage() {
                     ))}
                   </div>
                 ) : (
-                  <div className="py-6 text-center">
-                    <Icon icon="solar:shield-linear" className="mx-auto h-8 w-8 text-slate-600" />
-                    <p className="mt-2 text-sm text-slate-400">역할 배율이 없습니다.</p>
+                  <div className="py-8 text-center">
+                    <div className="w-12 h-12 rounded-xl bg-white/5 flex items-center justify-center mx-auto mb-3">
+                      <Icon icon="solar:shield-linear" className="w-6 h-6 text-white/20" />
+                    </div>
+                    <p className="text-sm text-white/40">역할 배율이 없습니다.</p>
                   </div>
                 )}
-              </CardContent>
-            </Card>
+              </div>
+            </div>
           </div>
         </TabsContent>
 
         {/* XP 차단 탭 */}
-        <TabsContent value="exclusions" className="space-y-6">
+        <TabsContent value="exclusions" className="space-y-6 animate-fade-up">
           <div className="flex justify-end">
             <Button
               onClick={() => setIsAddingExclusion(true)}
-              className="bg-indigo-600 hover:bg-indigo-700"
+              className="bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-400 hover:to-purple-400 text-white shadow-lg shadow-indigo-500/25"
             >
               <Icon icon="solar:add-circle-linear" className="mr-2 h-4 w-4" />
               차단 추가
@@ -867,17 +911,18 @@ export default function XpRulesPage() {
 
           {/* Add Exclusion Form */}
           {isAddingExclusion && (
-            <Card className="border-indigo-500/50 bg-slate-800/50">
-              <CardHeader>
-                <CardTitle className="text-white">새 차단 항목 추가</CardTitle>
-                <CardDescription>
-                  차단할 채널 또는 역할을 여러 개 선택할 수 있습니다.
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
+            <div className="relative bg-white/5 backdrop-blur-sm rounded-2xl p-6 border border-indigo-500/30 animate-fade-up">
+              <div className="absolute inset-0 bg-gradient-to-r from-indigo-500/5 to-purple-500/5 rounded-2xl" />
+
+              <div className="relative space-y-4">
+                <div>
+                  <h3 className="text-lg font-semibold text-white">새 차단 항목 추가</h3>
+                  <p className="text-sm text-white/50">차단할 채널 또는 역할을 여러 개 선택할 수 있습니다.</p>
+                </div>
+
                 <div className="grid gap-4 sm:grid-cols-2">
                   <div className="space-y-2">
-                    <label className="text-sm font-medium text-white">유형</label>
+                    <label className="text-sm font-medium text-white/70">유형</label>
                     <Select
                       value={targetType}
                       onValueChange={(value: "channel" | "role") => {
@@ -885,7 +930,7 @@ export default function XpRulesPage() {
                         setSelectedIds([]);
                       }}
                     >
-                      <SelectTrigger className="border-slate-700 bg-slate-900">
+                      <SelectTrigger className="border-white/10 bg-white/5 hover:bg-white/10 transition-colors">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
@@ -896,7 +941,7 @@ export default function XpRulesPage() {
                   </div>
 
                   <div className="space-y-2">
-                    <label className="text-sm font-medium text-white">
+                    <label className="text-sm font-medium text-white/70">
                       {targetType === "channel" ? "채널 선택" : "역할 선택"}
                     </label>
                     <MultiSelect
@@ -925,13 +970,14 @@ export default function XpRulesPage() {
                       setIsAddingExclusion(false);
                       setSelectedIds([]);
                     }}
+                    className="border-white/10 hover:bg-white/5"
                   >
                     취소
                   </Button>
                   <Button
                     onClick={handleSubmitExclusion}
                     disabled={createExclusionBulk.isPending || selectedIds.length === 0}
-                    className="bg-indigo-600 hover:bg-indigo-700"
+                    className="bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-400 hover:to-purple-400 text-white"
                   >
                     {createExclusionBulk.isPending
                       ? "추가 중..."
@@ -940,22 +986,26 @@ export default function XpRulesPage() {
                       : "추가"}
                   </Button>
                 </div>
-              </CardContent>
-            </Card>
+              </div>
+            </div>
           )}
 
           {/* Exclusions Lists */}
           <div className="grid gap-6 lg:grid-cols-2">
             {/* Channel Exclusions */}
-            <Card className="border-slate-700 bg-slate-800/50">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-white">
-                  <Icon icon="solar:hashtag-linear" className="h-5 w-5 text-blue-500" />
-                  차단된 채널
-                </CardTitle>
-                <CardDescription>이 채널에서는 XP를 받을 수 없습니다.</CardDescription>
-              </CardHeader>
-              <CardContent>
+            <div className="bg-white/5 backdrop-blur-sm rounded-2xl border border-white/10 overflow-hidden">
+              <div className="p-6 border-b border-white/10">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-red-500 to-rose-500 flex items-center justify-center">
+                    <Icon icon="solar:forbidden-bold" className="w-5 h-5 text-white" />
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-white">차단된 채널</h3>
+                    <p className="text-sm text-white/50">이 채널에서는 XP를 받을 수 없습니다.</p>
+                  </div>
+                </div>
+              </div>
+              <div className="p-6">
                 {channelExclusions.length > 0 ? (
                   <div className="space-y-2">
                     {channelExclusions.map((exclusion) => {
@@ -964,15 +1014,15 @@ export default function XpRulesPage() {
                       return (
                         <div
                           key={exclusion.id}
-                          className="flex items-center justify-between rounded-lg border border-slate-700 p-3"
+                          className="flex items-center justify-between rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 p-3 transition-all"
                         >
                           <div className="flex items-center gap-2">
                             {isVoice ? (
                               <Icon icon="solar:volume-loud-linear" className="h-4 w-4 text-green-400" />
                             ) : (
-                              <Icon icon="solar:hashtag-linear" className="h-4 w-4 text-slate-400" />
+                              <Icon icon="solar:hashtag-linear" className="h-4 w-4 text-white/40" />
                             )}
-                            <span className="text-slate-300">
+                            <span className="text-white/80">
                               {getChannelName(exclusion.targetId)}
                             </span>
                             {isVoice && (
@@ -985,7 +1035,7 @@ export default function XpRulesPage() {
                             variant="ghost"
                             size="icon"
                             onClick={() => handleDeleteExclusion(exclusion.id)}
-                            className="text-red-400 hover:text-red-300"
+                            className="text-red-400 hover:text-red-300 hover:bg-red-500/10"
                           >
                             <Icon icon="solar:trash-bin-trash-linear" className="h-4 w-4" />
                           </Button>
@@ -994,39 +1044,45 @@ export default function XpRulesPage() {
                     })}
                   </div>
                 ) : (
-                  <div className="py-6 text-center">
-                    <Icon icon="solar:hashtag-linear" className="mx-auto h-8 w-8 text-slate-600" />
-                    <p className="mt-2 text-sm text-slate-400">차단된 채널이 없습니다.</p>
+                  <div className="py-8 text-center">
+                    <div className="w-12 h-12 rounded-xl bg-white/5 flex items-center justify-center mx-auto mb-3">
+                      <Icon icon="solar:hashtag-linear" className="w-6 h-6 text-white/20" />
+                    </div>
+                    <p className="text-sm text-white/40">차단된 채널이 없습니다.</p>
                   </div>
                 )}
-              </CardContent>
-            </Card>
+              </div>
+            </div>
 
             {/* Role Exclusions */}
-            <Card className="border-slate-700 bg-slate-800/50">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-white">
-                  <Icon icon="solar:shield-linear" className="h-5 w-5 text-purple-500" />
-                  차단된 역할
-                </CardTitle>
-                <CardDescription>이 역할을 가진 유저는 XP를 받을 수 없습니다.</CardDescription>
-              </CardHeader>
-              <CardContent>
+            <div className="bg-white/5 backdrop-blur-sm rounded-2xl border border-white/10 overflow-hidden">
+              <div className="p-6 border-b border-white/10">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-red-500 to-rose-500 flex items-center justify-center">
+                    <Icon icon="solar:shield-cross-bold" className="w-5 h-5 text-white" />
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-white">차단된 역할</h3>
+                    <p className="text-sm text-white/50">이 역할을 가진 유저는 XP를 받을 수 없습니다.</p>
+                  </div>
+                </div>
+              </div>
+              <div className="p-6">
                 {roleExclusions.length > 0 ? (
                   <div className="space-y-2">
                     {roleExclusions.map((exclusion) => (
                       <div
                         key={exclusion.id}
-                        className="flex items-center justify-between rounded-lg border border-slate-700 p-3"
+                        className="flex items-center justify-between rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 p-3 transition-all"
                       >
                         <div className="flex items-center gap-2">
-                          <Badge variant="secondary">@{getRoleName(exclusion.targetId)}</Badge>
+                          <Badge variant="secondary" className="bg-red-500/20 text-red-300 border-red-500/30">@{getRoleName(exclusion.targetId)}</Badge>
                         </div>
                         <Button
                           variant="ghost"
                           size="icon"
                           onClick={() => handleDeleteExclusion(exclusion.id)}
-                          className="text-red-400 hover:text-red-300"
+                          className="text-red-400 hover:text-red-300 hover:bg-red-500/10"
                         >
                           <Icon icon="solar:trash-bin-trash-linear" className="h-4 w-4" />
                         </Button>
@@ -1034,13 +1090,15 @@ export default function XpRulesPage() {
                     ))}
                   </div>
                 ) : (
-                  <div className="py-6 text-center">
-                    <Icon icon="solar:shield-linear" className="mx-auto h-8 w-8 text-slate-600" />
-                    <p className="mt-2 text-sm text-slate-400">차단된 역할이 없습니다.</p>
+                  <div className="py-8 text-center">
+                    <div className="w-12 h-12 rounded-xl bg-white/5 flex items-center justify-center mx-auto mb-3">
+                      <Icon icon="solar:shield-linear" className="w-6 h-6 text-white/20" />
+                    </div>
+                    <p className="text-sm text-white/40">차단된 역할이 없습니다.</p>
                   </div>
                 )}
-              </CardContent>
-            </Card>
+              </div>
+            </div>
           </div>
         </TabsContent>
       </Tabs>

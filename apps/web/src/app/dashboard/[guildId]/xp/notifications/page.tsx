@@ -111,60 +111,67 @@ export default function NotificationSettingsPage() {
 
   if (isLoading) {
     return (
-      <div className="space-y-6">
-        <div className="h-8 w-48 animate-pulse rounded bg-slate-700" />
-        <Card className="animate-pulse border-slate-700 bg-slate-800/50">
-          <CardHeader>
-            <div className="h-6 w-32 rounded bg-slate-700" />
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {[...Array(3)].map((_, i) => (
-                <div key={i} className="h-10 rounded bg-slate-700" />
-              ))}
-            </div>
-          </CardContent>
-        </Card>
+      <div className="space-y-8">
+        {/* Header Skeleton */}
+        <div className="animate-pulse">
+          <div className="h-8 w-48 rounded-lg bg-white/10" />
+          <div className="h-5 w-64 rounded-lg bg-white/5 mt-2" />
+        </div>
+
+        {/* Card Skeleton */}
+        <div className="animate-pulse bg-white/5 rounded-2xl p-6 border border-white/5">
+          <div className="space-y-4">
+            {[...Array(3)].map((_, i) => (
+              <div key={i} className="h-10 rounded-xl bg-white/10" />
+            ))}
+          </div>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-white">레벨업 알림</h1>
-        <p className="text-slate-400">레벨업 시 발송되는 알림을 설정합니다.</p>
+    <div className="space-y-8">
+      {/* Page Header */}
+      <div className="animate-fade-up">
+        <h1 className="text-2xl md:text-3xl font-bold text-white">레벨업 알림</h1>
+        <p className="text-white/50 mt-1">레벨업 시 발송되는 알림을 설정합니다.</p>
       </div>
 
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-          <Card className="border-slate-700 bg-slate-800/50">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-white">
-                <Icon icon="solar:bell-linear" className="h-5 w-5" />
-                알림 채널
-              </CardTitle>
-              <CardDescription>레벨업 알림이 전송될 채널을 설정합니다.</CardDescription>
-            </CardHeader>
-            <CardContent>
+          {/* 알림 채널 카드 */}
+          <div className="bg-white/5 backdrop-blur-sm rounded-2xl border border-white/10 overflow-hidden animate-fade-up">
+            <div className="p-6 border-b border-white/10">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center">
+                  <Icon icon="solar:bell-bold" className="w-5 h-5 text-white" />
+                </div>
+                <div>
+                  <h3 className="font-semibold text-white">알림 채널</h3>
+                  <p className="text-sm text-white/50">레벨업 알림이 전송될 채널을 설정합니다.</p>
+                </div>
+              </div>
+            </div>
+            <div className="p-6">
               <FormField
                 control={form.control}
                 name="levelUpChannelId"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="text-white">채널</FormLabel>
+                    <FormLabel className="text-white/70">채널</FormLabel>
                     <Select
                       onValueChange={(value) => field.onChange(value === "__none__" ? null : value)}
                       value={field.value || "__none__"}
                     >
                       <FormControl>
-                        <SelectTrigger className="border-slate-700 bg-slate-900">
+                        <SelectTrigger className="border-white/10 bg-white/5 hover:bg-white/10 transition-colors">
                           {(() => {
                             if (channelsLoading) {
-                              return <span className="text-slate-400">로딩 중...</span>;
+                              return <span className="text-white/40">로딩 중...</span>;
                             }
                             if (!field.value || field.value === "__none__") {
-                              return <span className="text-slate-400">채널 선택 (선택 안함 = 알림 비활성화)</span>;
+                              return <span className="text-white/40">채널 선택 (선택 안함 = 알림 비활성화)</span>;
                             }
                             const selectedChannel = channels?.find(ch => ch.id === field.value);
                             if (selectedChannel) {
@@ -175,19 +182,19 @@ export default function NotificationSettingsPage() {
                                   ) : selectedChannel.type === 5 ? (
                                     <Icon icon="solar:megaphone-linear" className="h-4 w-4 shrink-0 text-amber-400" />
                                   ) : (
-                                    <Icon icon="solar:hashtag-linear" className="h-4 w-4 shrink-0 text-slate-400" />
+                                    <Icon icon="solar:hashtag-linear" className="h-4 w-4 shrink-0 text-white/40" />
                                   )}
                                   {selectedChannel.name}
                                 </span>
                               );
                             }
-                            return <span className="text-slate-400">채널 로딩 중...</span>;
+                            return <span className="text-white/40">채널 로딩 중...</span>;
                           })()}
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
                         <SelectItem value="__none__">
-                          <span className="text-slate-400">알림 비활성화</span>
+                          <span className="text-white/40">알림 비활성화</span>
                         </SelectItem>
                         {channelsLoading ? (
                           <SelectItem value="__loading__" disabled>
@@ -204,7 +211,7 @@ export default function NotificationSettingsPage() {
                                   ) : channel.type === 5 ? (
                                     <Icon icon="solar:megaphone-linear" className="h-4 w-4 text-amber-400" />
                                   ) : (
-                                    <Icon icon="solar:hashtag-linear" className="h-4 w-4 text-slate-400" />
+                                    <Icon icon="solar:hashtag-linear" className="h-4 w-4 text-white/40" />
                                   )}
                                   {channel.name}
                                 </span>
@@ -218,37 +225,42 @@ export default function NotificationSettingsPage() {
                         )}
                       </SelectContent>
                     </Select>
-                    <FormDescription>
+                    <FormDescription className="text-white/40">
                       비워두면 레벨업 알림이 비활성화됩니다.
                     </FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}
               />
-            </CardContent>
-          </Card>
+            </div>
+          </div>
 
-          <Card className="border-slate-700 bg-slate-800/50">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-white">
-                <Icon icon="solar:chat-line-linear" className="h-5 w-5" />
-                알림 메시지
-              </CardTitle>
-              <CardDescription>레벨업 시 전송될 메시지를 커스텀합니다.</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
+          {/* 알림 메시지 카드 */}
+          <div className="bg-white/5 backdrop-blur-sm rounded-2xl border border-white/10 overflow-hidden animate-fade-up" style={{ animationDelay: '50ms' }}>
+            <div className="p-6 border-b border-white/10">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-green-500 to-emerald-500 flex items-center justify-center">
+                  <Icon icon="solar:chat-line-bold" className="w-5 h-5 text-white" />
+                </div>
+                <div>
+                  <h3 className="font-semibold text-white">알림 메시지</h3>
+                  <p className="text-sm text-white/50">레벨업 시 전송될 메시지를 커스텀합니다.</p>
+                </div>
+              </div>
+            </div>
+            <div className="p-6 space-y-6">
               <FormField
                 control={form.control}
                 name="levelUpMessage"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="text-white">메시지 템플릿</FormLabel>
+                    <FormLabel className="text-white/70">메시지 템플릿</FormLabel>
                     <FormControl>
                       <Textarea
                         placeholder={defaultMessage}
                         value={field.value ?? ""}
                         onChange={field.onChange}
-                        className="min-h-24 border-slate-700 bg-slate-900"
+                        className="min-h-24 border-white/10 bg-white/5 hover:bg-white/10 transition-colors resize-none"
                       />
                     </FormControl>
                     <FormMessage />
@@ -257,15 +269,15 @@ export default function NotificationSettingsPage() {
               />
 
               <div>
-                <p className="mb-2 text-sm font-medium text-white">사용 가능한 변수</p>
+                <p className="mb-3 text-sm font-medium text-white/70">사용 가능한 변수</p>
                 <div className="flex flex-wrap gap-2">
                   {placeholders.map((p) => (
                     <div
                       key={p.name}
-                      className="rounded-lg border border-slate-700 bg-slate-900 px-3 py-1.5"
+                      className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 hover:bg-white/10 transition-colors"
                     >
-                      <code className="text-sm text-indigo-400">{p.name}</code>
-                      <span className="ml-2 text-sm text-slate-400">{p.description}</span>
+                      <code className="text-sm text-indigo-400 font-mono">{p.name}</code>
+                      <span className="ml-2 text-sm text-white/40">{p.description}</span>
                     </div>
                   ))}
                 </div>
@@ -273,9 +285,11 @@ export default function NotificationSettingsPage() {
 
               {/* Message Preview */}
               <div>
-                <p className="mb-2 text-sm font-medium text-white">미리보기</p>
-                <div className="rounded-lg border border-slate-700 bg-slate-950 p-4">
-                  <p className="text-slate-300">
+                <p className="mb-3 text-sm font-medium text-white/70">미리보기</p>
+                <div className="relative rounded-xl border border-white/10 bg-black/50 p-4 overflow-hidden">
+                  {/* Discord-like styling */}
+                  <div className="absolute top-0 left-0 w-1 h-full bg-gradient-to-b from-indigo-500 to-purple-500" />
+                  <p className="text-white/80 pl-3">
                     {(form.watch("levelUpMessage") ?? defaultMessage)
                       .replace("{user}", "@사용자")
                       .replace("{username}", "사용자")
@@ -285,14 +299,14 @@ export default function NotificationSettingsPage() {
                   </p>
                 </div>
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </div>
 
-          <div className="flex justify-end">
+          <div className="flex justify-end animate-fade-up" style={{ animationDelay: '100ms' }}>
             <Button
               type="submit"
               disabled={updateSettings.isPending}
-              className="bg-indigo-600 hover:bg-indigo-700"
+              className="bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-400 hover:to-purple-400 text-white shadow-lg shadow-indigo-500/25"
             >
               {updateSettings.isPending ? "저장 중..." : "설정 저장"}
             </Button>
