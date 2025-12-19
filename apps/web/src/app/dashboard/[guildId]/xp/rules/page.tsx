@@ -543,7 +543,10 @@ export default function XpRulesPage() {
                         name="multiplier"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel className="text-white/70">배율</FormLabel>
+                            <FormLabel className="text-white/70 flex items-center gap-1">
+                              <Icon icon="solar:percent-linear" className="w-4 h-4" />
+                              배율
+                            </FormLabel>
                             <FormControl>
                               <Input
                                 type="number"
@@ -733,7 +736,10 @@ export default function XpRulesPage() {
                   </div>
 
                   <div className="space-y-2">
-                    <label className="text-sm font-medium text-white/70">배율</label>
+                    <label className="text-sm font-medium text-white/70 flex items-center gap-1">
+                      <Icon icon="solar:percent-linear" className="w-4 h-4" />
+                      배율
+                    </label>
                     <Input
                       type="number"
                       step="0.1"
