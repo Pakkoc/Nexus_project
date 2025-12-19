@@ -59,3 +59,7 @@ coverage/
 next-env.d.ts
 
 image.png
+
+# Database
+*.sql
+mysql_backup.cnf

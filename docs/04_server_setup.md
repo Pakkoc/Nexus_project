@@ -2,92 +2,76 @@
 
 개발 환경에서 필요한 서비스들을 실행하는 방법입니다.
 
-## 필수 서비스 목록
+## 서비스 구성
 
-| 서비스 | 포트 | 설명 |
-|--------|------|------|
-| MySQL | 3306 | 메인 데이터베이스 (Windows 서비스) |
-| Redis | 6379 | 캐시 및 세션 저장소 (Docker) |
-| Adminer | 8080 | MySQL 웹 관리 도구 (Docker) |
-| Next.js 웹 | 3000 | 프론트엔드 대시보드 |
-| Discord 봇 | 3001 | 봇 API 서버 |
+| 서비스 | 포트 | 컨테이너명 | 설명 |
+|--------|------|-----------|------|
+| MySQL | 3306 | topia-mysql | 메인 데이터베이스 |
+| Redis | 6379 | topia-redis | 캐시 및 세션 저장소 |
+| Adminer | 8080 | topia-adminer | MySQL 웹 관리 도구 |
+| Next.js 웹 | 3000 | - | 프론트엔드 대시보드 (npm) |
+| Discord 봇 | 3001 | - | 봇 API 서버 (npm) |
 
 ---
 
-## 1. MySQL 실행
+## 빠른 시작
 
-MySQL은 Windows에 직접 설치되어 있습니다.
+```bash
+# 1. Docker 서비스 시작 (MySQL, Redis, Adminer)
+docker-compose up -d
+
+# 2. 개발 서버 시작 (봇 + 웹)
+npm run dev
+```
+
+끝! 이게 전부입니다.
+
+---
+
+## Docker Compose 명령어
 
 ### 서비스 시작
-```powershell
-# PowerShell (관리자 권한)
-net start mysql
+```bash
+docker-compose up -d
 ```
 
 ### 서비스 중지
-```powershell
-net stop mysql
+```bash
+docker-compose stop
+```
+
+### 서비스 중지 및 삭제
+```bash
+docker-compose down
+```
+
+### 서비스 중지 및 볼륨(데이터)까지 삭제
+```bash
+docker-compose down -v
+```
+
+### 로그 확인
+```bash
+# 전체 로그
+docker-compose logs
+
+# 실시간 로그
+docker-compose logs -f
+
+# 특정 서비스 로그
+docker-compose logs mysql
 ```
 
 ### 상태 확인
-```powershell
-# 포트 3306 확인
-netstat -ano | findstr :3306
+```bash
+docker-compose ps
 ```
 
 ---
 
-## 2. Redis 실행 (Docker)
+## 개발 서버 (봇 + 웹)
 
-### 최초 실행 (컨테이너 생성)
-```bash
-docker run -d --name topia-redis -p 6379:6379 redis:alpine
-```
-
-### 이후 실행 (컨테이너 시작)
-```bash
-docker start topia-redis
-```
-
-### 중지
-```bash
-docker stop topia-redis
-```
-
----
-
-## 3. Adminer 실행 (Docker)
-
-MySQL 웹 관리 도구입니다.
-
-### 최초 실행 (컨테이너 생성)
-```bash
-docker run -d --name adminer -p 8080:8080 adminer
-```
-
-### 이후 실행 (컨테이너 시작)
-```bash
-docker start adminer
-```
-
-### 중지
-```bash
-docker stop adminer
-```
-
-### 접속 정보
-- URL: http://localhost:8080
-- 서버: `host.docker.internal` (Docker에서 호스트 MySQL 접속 시)
-- 사용자명: `root`
-- 데이터베이스: `topia_empire`
-
----
-
-## 4. 봇 + 웹 개발 서버 실행
-
-프로젝트 루트에서 실행합니다.
-
-### 개발 서버 시작 (봇 + 웹 동시 실행)
+### 동시 실행
 ```bash
 npm run dev
 ```
@@ -107,39 +91,50 @@ npm run dev --filter=@topia/bot
 
 ---
 
-## 빠른 시작 (전체 서비스)
+## Adminer (DB 관리 도구)
 
-모든 서비스를 한 번에 시작하는 순서:
+### 접속 정보
+- URL: http://localhost:8080
+- 시스템: MySQL
+- 서버: `mysql` (Docker 내부) 또는 `host.docker.internal` (호스트)
+- 사용자명: `root`
+- 비밀번호: `.env` 파일의 `DB_PASSWORD` 참조
+- 데이터베이스: `topia_empire`
 
+---
+
+## 문제 해결
+
+### 포트 충돌 (3306)
+Windows에 MySQL이 설치되어 있으면 포트 충돌이 발생합니다.
+
+```powershell
+# PowerShell (관리자 권한) - Windows MySQL 서비스 중지
+net stop MySQL93
+```
+
+### 컨테이너 재생성
 ```bash
-# 1. Docker 서비스 시작
-docker start topia-redis adminer
+docker-compose down
+docker-compose up -d
+```
 
-# 2. MySQL 확인 (Windows 서비스 - 보통 자동 시작됨)
-# 필요시: net start mysql (관리자 권한 PowerShell)
-
-# 3. 개발 서버 시작
-npm run dev
+### 데이터 초기화 (주의: 모든 데이터 삭제)
+```bash
+docker-compose down -v
+docker-compose up -d
 ```
 
 ---
 
-## 서비스 상태 확인
+## 데이터 백업/복원
 
-### Docker 컨테이너 상태
+### 백업
 ```bash
-docker ps
+docker exec topia-mysql mysqldump -uroot -p[비밀번호] topia_empire > backup.sql
 ```
 
-### 포트 사용 확인
+### 복원
 ```bash
-# MySQL
-netstat -ano | findstr :3306
-
-# Redis
-netstat -ano | findstr :6379
-
-# 웹/봇
-netstat -ano | findstr :3000
-netstat -ano | findstr :3001
+docker exec -i topia-mysql mysql -uroot -p[비밀번호] topia_empire < backup.sql
 ```
