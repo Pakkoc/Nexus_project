@@ -98,7 +98,7 @@ export default function Home() {
           <div className="animate-fade-up">
             <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 border border-white/10 mb-8">
               <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
-              <span className="text-sm text-white/70">ProBot 스타일 디스코드 봇</span>
+              <span className="text-sm text-white/70">올인원 커뮤니티 봇</span>
             </div>
 
             <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold text-white leading-[1.1] tracking-tight">
@@ -208,7 +208,7 @@ export default function Home() {
             강력한 기능, 간편한 설정
           </h2>
           <p className="mt-4 text-white/60 max-w-2xl mx-auto">
-            ProBot 수준의 다양한 기능을 웹 대시보드에서 쉽게 관리하세요
+            다양한 기능을 웹 대시보드에서 직관적으로 관리하세요
           </p>
         </div>
 
