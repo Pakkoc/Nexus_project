@@ -160,6 +160,7 @@ export default function XpRulesPage() {
   const [multiplierTargetType, setMultiplierTargetType] = useState<"channel" | "role">("channel");
   const [multiplierTargetId, setMultiplierTargetId] = useState<string>("");
   const [multiplierValue, setMultiplierValue] = useState<number>(1.5);
+  const [editedMultipliers, setEditedMultipliers] = useState<Record<number, number>>({});
 
   const { data: multipliers, isLoading: multipliersLoading } = useXpMultipliers(guildId);
   const createMultiplier = useCreateXpMultiplier(guildId);
@@ -178,8 +179,9 @@ export default function XpRulesPage() {
     const hasHotTimeFormData = isAddingHotTime && hotTimeFormIsDirty;
     const hasExclusionFormData = isAddingExclusion && selectedIds.length > 0;
     const hasMultiplierFormData = isAddingMultiplier && multiplierTargetId !== "";
-    setHasUnsavedChanges(hasHotTimeFormData || hasExclusionFormData || hasMultiplierFormData);
-  }, [isAddingHotTime, hotTimeFormIsDirty, isAddingExclusion, selectedIds, isAddingMultiplier, multiplierTargetId, setHasUnsavedChanges]);
+    const hasEditedMultipliers = Object.keys(editedMultipliers).length > 0;
+    setHasUnsavedChanges(hasHotTimeFormData || hasExclusionFormData || hasMultiplierFormData || hasEditedMultipliers);
+  }, [isAddingHotTime, hotTimeFormIsDirty, isAddingExclusion, selectedIds, isAddingMultiplier, multiplierTargetId, editedMultipliers, setHasUnsavedChanges]);
 
   const { data: exclusions, isLoading: exclusionsLoading } = useXpExclusions(guildId);
   const { data: channels, isLoading: channelsLoading } = useChannels(guildId, null);
@@ -342,6 +344,12 @@ export default function XpRulesPage() {
       await updateMultiplier.mutateAsync({
         id: multiplier.id,
         data: { multiplier: newValue },
+      });
+      // 저장 완료 후 편집 상태에서 제거
+      setEditedMultipliers((prev) => {
+        const next = { ...prev };
+        delete next[multiplier.id];
+        return next;
       });
       toast({
         title: "배율 수정 완료",
@@ -820,15 +828,30 @@ export default function XpRulesPage() {
                               step="0.1"
                               min="0.1"
                               max="10"
-                              defaultValue={multiplier.multiplier}
+                              value={editedMultipliers[multiplier.id] ?? multiplier.multiplier}
                               className="w-20 border-white/10 bg-white/5"
-                              onBlur={(e) => {
+                              onChange={(e) => {
                                 const newValue = parseFloat(e.target.value);
-                                if (newValue && newValue !== multiplier.multiplier) {
-                                  handleUpdateMultiplier(multiplier, newValue);
+                                if (!isNaN(newValue)) {
+                                  setEditedMultipliers((prev) => ({
+                                    ...prev,
+                                    [multiplier.id]: newValue,
+                                  }));
                                 }
                               }}
                             />
+                            {editedMultipliers[multiplier.id] !== undefined &&
+                              editedMultipliers[multiplier.id] !== multiplier.multiplier && (
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => handleUpdateMultiplier(multiplier, editedMultipliers[multiplier.id])}
+                                disabled={updateMultiplier.isPending}
+                                className="text-green-400 hover:text-green-300 hover:bg-green-500/10"
+                              >
+                                <Icon icon="solar:check-circle-linear" className="h-4 w-4" />
+                              </Button>
+                            )}
                             <Button
                               variant="ghost"
                               size="icon"
@@ -884,15 +907,30 @@ export default function XpRulesPage() {
                             step="0.1"
                             min="0.1"
                             max="10"
-                            defaultValue={multiplier.multiplier}
+                            value={editedMultipliers[multiplier.id] ?? multiplier.multiplier}
                             className="w-20 border-white/10 bg-white/5"
-                            onBlur={(e) => {
+                            onChange={(e) => {
                               const newValue = parseFloat(e.target.value);
-                              if (newValue && newValue !== multiplier.multiplier) {
-                                handleUpdateMultiplier(multiplier, newValue);
+                              if (!isNaN(newValue)) {
+                                setEditedMultipliers((prev) => ({
+                                  ...prev,
+                                  [multiplier.id]: newValue,
+                                }));
                               }
                             }}
                           />
+                          {editedMultipliers[multiplier.id] !== undefined &&
+                            editedMultipliers[multiplier.id] !== multiplier.multiplier && (
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => handleUpdateMultiplier(multiplier, editedMultipliers[multiplier.id])}
+                              disabled={updateMultiplier.isPending}
+                              className="text-green-400 hover:text-green-300 hover:bg-green-500/10"
+                            >
+                              <Icon icon="solar:check-circle-linear" className="h-4 w-4" />
+                            </Button>
+                          )}
                           <Button
                             variant="ghost"
                             size="icon"
