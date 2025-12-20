@@ -296,11 +296,24 @@ export function createXpHandler(container: Container, client: Client) {
       try {
         const guild = await client.guilds.fetch(guildId);
 
-        // 1. 모든 해금 채널 잠금 (@everyone ViewChannel 거부)
+        // 1. 모든 해금 채널 잠금 (@everyone ViewChannel 거부) + 기존 개별 권한 삭제
         for (const channelId of channelsToLock) {
           try {
             const channel = await guild.channels.fetch(channelId);
             if (channel && 'permissionOverwrites' in channel) {
+              // 기존 멤버 개별 권한 삭제 (봇과 @everyone 제외)
+              const overwrites = channel.permissionOverwrites.cache;
+              for (const [id, overwrite] of overwrites) {
+                if (overwrite.type === 1) { // 1 = member
+                  try {
+                    await overwrite.delete();
+                    console.log(`[CHANNEL SYNC] Removed permission for user ${id} on channel ${channelId}`);
+                  } catch (err) {
+                    console.error(`[CHANNEL SYNC] Failed to remove permission for ${id}:`, err);
+                  }
+                }
+              }
+
               // @everyone 권한 거부
               await channel.permissionOverwrites.edit(guild.roles.everyone, {
                 ViewChannel: false,
