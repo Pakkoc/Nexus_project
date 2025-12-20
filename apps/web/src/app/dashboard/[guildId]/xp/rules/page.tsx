@@ -158,7 +158,7 @@ export default function XpRulesPage() {
   // Multiplier State
   const [isAddingMultiplier, setIsAddingMultiplier] = useState(false);
   const [multiplierTargetType, setMultiplierTargetType] = useState<"channel" | "role">("channel");
-  const [multiplierTargetId, setMultiplierTargetId] = useState<string>("");
+  const [multiplierTargetIds, setMultiplierTargetIds] = useState<string[]>([]);
   const [multiplierValue, setMultiplierValue] = useState<number>(1.5);
   const [editedMultipliers, setEditedMultipliers] = useState<Record<number, number>>({});
 
@@ -178,10 +178,10 @@ export default function XpRulesPage() {
   useEffect(() => {
     const hasHotTimeFormData = isAddingHotTime && hotTimeFormIsDirty;
     const hasExclusionFormData = isAddingExclusion && selectedIds.length > 0;
-    const hasMultiplierFormData = isAddingMultiplier && multiplierTargetId !== "";
+    const hasMultiplierFormData = isAddingMultiplier && multiplierTargetIds.length > 0;
     const hasEditedMultipliers = Object.keys(editedMultipliers).length > 0;
     setHasUnsavedChanges(hasHotTimeFormData || hasExclusionFormData || hasMultiplierFormData || hasEditedMultipliers);
-  }, [isAddingHotTime, hotTimeFormIsDirty, isAddingExclusion, selectedIds, isAddingMultiplier, multiplierTargetId, editedMultipliers, setHasUnsavedChanges]);
+  }, [isAddingHotTime, hotTimeFormIsDirty, isAddingExclusion, selectedIds, isAddingMultiplier, multiplierTargetIds, editedMultipliers, setHasUnsavedChanges]);
 
   const { data: exclusions, isLoading: exclusionsLoading } = useXpExclusions(guildId);
   const { data: channels, isLoading: channelsLoading } = useChannels(guildId, null);
@@ -308,7 +308,7 @@ export default function XpRulesPage() {
     }));
 
   const handleSubmitMultiplier = async () => {
-    if (!multiplierTargetId) {
+    if (multiplierTargetIds.length === 0) {
       toast({
         title: "선택 필요",
         description: "채널 또는 역할을 선택해주세요.",
@@ -318,22 +318,25 @@ export default function XpRulesPage() {
     }
 
     try {
-      await createMultiplier.mutateAsync({
-        targetType: multiplierTargetType,
-        targetId: multiplierTargetId,
-        multiplier: multiplierValue,
-      });
+      // 순차적으로 생성
+      for (const targetId of multiplierTargetIds) {
+        await createMultiplier.mutateAsync({
+          targetType: multiplierTargetType,
+          targetId,
+          multiplier: multiplierValue,
+        });
+      }
       toast({
         title: "배율 추가 완료",
-        description: `${multiplierTargetType === "channel" ? "채널" : "역할"} 배율이 추가되었습니다.`,
+        description: `${multiplierTargetIds.length}개의 ${multiplierTargetType === "channel" ? "채널" : "역할"} 배율이 추가되었습니다.`,
       });
       setIsAddingMultiplier(false);
-      setMultiplierTargetId("");
+      setMultiplierTargetIds([]);
       setMultiplierValue(1.5);
     } catch {
       toast({
         title: "추가 실패",
-        description: "이미 존재하거나 오류가 발생했습니다.",
+        description: "일부 항목이 이미 존재하거나 오류가 발생했습니다.",
         variant: "destructive",
       });
     }
@@ -696,7 +699,7 @@ export default function XpRulesPage() {
                       value={multiplierTargetType}
                       onValueChange={(value: "channel" | "role") => {
                         setMultiplierTargetType(value);
-                        setMultiplierTargetId("");
+                        setMultiplierTargetIds([]);
                       }}
                     >
                       <SelectTrigger className="border-white/10 bg-white/5 hover:bg-white/10 transition-colors">
@@ -713,34 +716,21 @@ export default function XpRulesPage() {
                     <label className="text-sm font-medium text-white/70">
                       {multiplierTargetType === "channel" ? "채널 선택" : "역할 선택"}
                     </label>
-                    <Select
-                      value={multiplierTargetId}
-                      onValueChange={setMultiplierTargetId}
-                    >
-                      <SelectTrigger className="border-white/10 bg-white/5 hover:bg-white/10 transition-colors">
-                        <SelectValue placeholder={multiplierTargetType === "channel" ? "채널 선택" : "역할 선택"} />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {multiplierTargetType === "channel"
-                          ? multiplierChannelOptions.map((opt) => (
-                              <SelectItem key={opt.value} value={opt.value}>
-                                <span className="flex items-center gap-2">
-                                  {opt.icon}
-                                  {opt.label}
-                                </span>
-                              </SelectItem>
-                            ))
-                          : multiplierRoleOptions.map((opt) => (
-                              <SelectItem key={opt.value} value={opt.value}>
-                                <span
-                                  className="inline-block h-3 w-3 rounded-full mr-2"
-                                  style={{ backgroundColor: opt.color }}
-                                />
-                                {opt.label}
-                              </SelectItem>
-                            ))}
-                      </SelectContent>
-                    </Select>
+                    <MultiSelect
+                      options={multiplierTargetType === "channel" ? multiplierChannelOptions : multiplierRoleOptions}
+                      selected={multiplierTargetIds}
+                      onChange={setMultiplierTargetIds}
+                      placeholder={
+                        multiplierTargetType === "channel"
+                          ? channelsLoading
+                            ? "로딩 중..."
+                            : "채널을 선택하세요"
+                          : rolesLoading
+                          ? "로딩 중..."
+                          : "역할을 선택하세요"
+                      }
+                      isLoading={multiplierTargetType === "channel" ? channelsLoading : rolesLoading}
+                    />
                   </div>
 
                   <div className="space-y-2">
@@ -766,7 +756,7 @@ export default function XpRulesPage() {
                     variant="outline"
                     onClick={() => {
                       setIsAddingMultiplier(false);
-                      setMultiplierTargetId("");
+                      setMultiplierTargetIds([]);
                       setMultiplierValue(1.5);
                     }}
                     className="border-white/10 hover:bg-white/5"
@@ -775,10 +765,14 @@ export default function XpRulesPage() {
                   </Button>
                   <Button
                     onClick={handleSubmitMultiplier}
-                    disabled={createMultiplier.isPending || !multiplierTargetId}
+                    disabled={createMultiplier.isPending || multiplierTargetIds.length === 0}
                     className="bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-400 hover:to-purple-400 text-white"
                   >
-                    {createMultiplier.isPending ? "추가 중..." : "추가"}
+                    {createMultiplier.isPending
+                      ? "추가 중..."
+                      : multiplierTargetIds.length > 0
+                      ? `${multiplierTargetIds.length}개 추가`
+                      : "추가"}
                   </Button>
                 </div>
               </div>
