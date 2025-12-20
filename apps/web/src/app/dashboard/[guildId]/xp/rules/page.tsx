@@ -683,8 +683,8 @@ export default function XpRulesPage() {
 
           {/* Add Multiplier Form */}
           {isAddingMultiplier && (
-            <div className="relative bg-white/5 backdrop-blur-sm rounded-2xl p-6 border border-indigo-500/30 animate-fade-up">
-              <div className="absolute inset-0 bg-gradient-to-r from-indigo-500/5 to-purple-500/5 rounded-2xl" />
+            <div className="relative z-10 bg-white/5 backdrop-blur-sm rounded-2xl p-6 border border-indigo-500/30 animate-fade-up">
+              <div className="absolute inset-0 bg-gradient-to-r from-indigo-500/5 to-purple-500/5 rounded-2xl -z-10" />
 
               <div className="relative space-y-4">
                 <div>
