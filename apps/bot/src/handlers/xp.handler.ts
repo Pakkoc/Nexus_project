@@ -233,5 +233,45 @@ export function createXpHandler(container: Container, client: Client) {
         console.log(`[VOICE XP BLOCKED] ${userId} in channel ${channelId} - reason: ${result.data.reason}`);
       }
     },
+
+    /**
+     * 레벨 요구사항 변경 시 모든 유저의 레벨과 역할을 동기화합니다.
+     */
+    async syncAllUserLevelsAndRewards(guildId: string): Promise<{
+      success: boolean;
+      updatedCount: number;
+      totalUsers: number;
+    }> {
+      console.log(`[SYNC] Starting level sync for guild ${guildId}...`);
+
+      const result = await container.xpService.syncAllUserLevels(guildId);
+
+      if (!result.success) {
+        console.error('[SYNC] Failed to sync levels:', result.error);
+        return { success: false, updatedCount: 0, totalUsers: 0 };
+      }
+
+      const { updatedUsers, totalUsers } = result.data;
+      console.log(`[SYNC] Found ${updatedUsers.length} users with level changes out of ${totalUsers} total`);
+
+      // 각 유저에게 역할 적용
+      for (const user of updatedUsers) {
+        console.log(`[SYNC] User ${user.userId}: Level ${user.oldLevel} -> ${user.newLevel}`);
+
+        await this.applyLevelRewards(
+          guildId,
+          user.userId,
+          user.rolesToAdd,
+          user.rolesToRemove
+        );
+      }
+
+      console.log(`[SYNC] Completed level sync for guild ${guildId}`);
+      return {
+        success: true,
+        updatedCount: updatedUsers.length,
+        totalUsers,
+      };
+    },
   };
 }

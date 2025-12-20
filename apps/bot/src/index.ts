@@ -284,7 +284,7 @@ async function main() {
   });
 
   // 설정 변경 알림 엔드포인트 (범용)
-  app.post('/api/notify/settings-changed', (req, res) => {
+  app.post('/api/notify/settings-changed', async (req, res) => {
     const { guildId, type, action, details } = req.body;
 
     if (!guildId || !type) {
@@ -309,6 +309,13 @@ async function main() {
 
     if (details) {
       console.log(`[SETTINGS] 상세: ${details}`);
+    }
+
+    // 레벨 설정 변경 시 모든 유저의 레벨과 역할 동기화
+    if (type === 'xp-level-requirement') {
+      console.log(`[SETTINGS] 레벨 설정 변경 감지 - 역할 동기화 시작...`);
+      const syncResult = await xpHandler.syncAllUserLevelsAndRewards(guildId);
+      console.log(`[SETTINGS] 역할 동기화 완료: ${syncResult.updatedCount}/${syncResult.totalUsers}명 업데이트`);
     }
 
     return res.json({ success: true });

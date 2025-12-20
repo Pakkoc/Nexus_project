@@ -394,4 +394,110 @@ export class XpService {
     }
     return Result.ok(result.data);
   }
+
+  /**
+   * 모든 유저의 레벨을 재계산하고 역할 보상 정보를 반환합니다.
+   * 레벨 요구사항이 변경되었을 때 호출됩니다.
+   */
+  async syncAllUserLevels(guildId: string): Promise<Result<{
+    updatedUsers: Array<{
+      userId: string;
+      oldLevel: number;
+      newLevel: number;
+      rolesToAdd: LevelRewardInfo[];
+      rolesToRemove: string[];
+    }>;
+    totalUsers: number;
+  }, XpError>> {
+    // 1. 모든 유저 조회
+    const usersResult = await this.xpRepo.getAllByGuild(guildId);
+    if (!usersResult.success) {
+      return Result.err({ type: 'REPOSITORY_ERROR', cause: usersResult.error });
+    }
+
+    const users = usersResult.data;
+    if (users.length === 0) {
+      return Result.ok({ updatedUsers: [], totalUsers: 0 });
+    }
+
+    // 2. 레벨 요구사항 조회
+    const levelReqResult = await this.settingsRepo.getLevelRequirements(guildId);
+    const levelRequirements = levelReqResult.success
+      ? toLevelRequirementsMap(levelReqResult.data)
+      : new Map<number, number>();
+
+    // 3. 레벨 보상 조회
+    const rewardsResult = await this.settingsRepo.getLevelRewards(guildId);
+    const rewards = rewardsResult.success ? rewardsResult.data : [];
+
+    // 4. 각 유저의 레벨 재계산
+    const now = this.clock.now();
+    const updatedUsers: Array<{
+      userId: string;
+      oldLevel: number;
+      newLevel: number;
+      rolesToAdd: LevelRewardInfo[];
+      rolesToRemove: string[];
+    }> = [];
+
+    const usersToSave: UserXp[] = [];
+
+    for (const user of users) {
+      const newLevel = calculateLevelWithCustom(user.xp, levelRequirements);
+
+      if (newLevel !== user.level) {
+        // 레벨이 변경된 경우
+        const rolesToAdd: LevelRewardInfo[] = [];
+        const rolesToRemove: string[] = [];
+
+        // 새 레벨에 해당하는 보상 역할 찾기 (현재 레벨 이하 모든 보상)
+        for (const reward of rewards) {
+          if (reward.level <= newLevel) {
+            // 현재 레벨 이하의 모든 보상 역할 추가
+            if (!reward.removeOnHigherLevel || reward.level === newLevel) {
+              rolesToAdd.push({
+                roleId: reward.roleId,
+                removeOnHigherLevel: reward.removeOnHigherLevel,
+              });
+            }
+          }
+          // 새 레벨보다 높은 레벨의 보상 역할은 제거
+          if (reward.level > newLevel) {
+            rolesToRemove.push(reward.roleId);
+          }
+          // removeOnHigherLevel이 true이고 현재 레벨보다 낮은 보상은 제거
+          if (reward.removeOnHigherLevel && reward.level < newLevel) {
+            rolesToRemove.push(reward.roleId);
+          }
+        }
+
+        updatedUsers.push({
+          userId: user.userId,
+          oldLevel: user.level,
+          newLevel,
+          rolesToAdd,
+          rolesToRemove,
+        });
+
+        usersToSave.push({
+          ...user,
+          level: newLevel,
+          updatedAt: now,
+        });
+      }
+    }
+
+    // 5. 변경된 유저들 저장
+    if (usersToSave.length > 0) {
+      const saveResult = await this.xpRepo.saveBulk(usersToSave);
+      if (!saveResult.success) {
+        return Result.err({ type: 'REPOSITORY_ERROR', cause: saveResult.error });
+      }
+    }
+
+    return Result.ok({
+      updatedUsers,
+      totalUsers: users.length,
+    });
+  }
 }

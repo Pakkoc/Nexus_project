@@ -129,4 +129,60 @@ export class XpRepository implements XpRepositoryPort {
       });
     }
   }
+
+  async getAllByGuild(guildId: string): Promise<Result<UserXp[], RepositoryError>> {
+    try {
+      const [rows] = await this.pool.execute<UserXpRow[]>(
+        'SELECT * FROM xp_users WHERE guild_id = ?',
+        [guildId]
+      );
+
+      return Result.ok(rows.map(toUserXp));
+    } catch (error) {
+      return Result.err({
+        type: 'QUERY_ERROR',
+        message: error instanceof Error ? error.message : 'Unknown error',
+      });
+    }
+  }
+
+  async saveBulk(users: UserXp[]): Promise<Result<void, RepositoryError>> {
+    if (users.length === 0) {
+      return Result.ok(undefined);
+    }
+
+    try {
+      const values = users.map(u => [
+        u.guildId,
+        u.userId,
+        u.xp,
+        u.level,
+        u.lastTextXpAt,
+        u.textCountInCooldown,
+        u.lastVoiceXpAt,
+        u.voiceCountInCooldown,
+        u.createdAt,
+        u.updatedAt,
+      ]);
+
+      await this.pool.query(
+        `INSERT INTO xp_users
+         (guild_id, user_id, xp, level, last_text_xp_at, text_count_in_cooldown,
+          last_voice_xp_at, voice_count_in_cooldown, created_at, updated_at)
+         VALUES ?
+         ON DUPLICATE KEY UPDATE
+         xp = VALUES(xp),
+         level = VALUES(level),
+         updated_at = VALUES(updated_at)`,
+        [values]
+      );
+
+      return Result.ok(undefined);
+    } catch (error) {
+      return Result.err({
+        type: 'QUERY_ERROR',
+        message: error instanceof Error ? error.message : 'Unknown error',
+      });
+    }
+  }
 }
