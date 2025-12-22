@@ -86,6 +86,7 @@ export default function XpRulesPage() {
 
   // Hot Time State
   const [isAddingHotTime, setIsAddingHotTime] = useState(false);
+  const [selectedHotTimeChannels, setSelectedHotTimeChannels] = useState<string[]>([]);
   const { data: hotTimes, isLoading: hotTimesLoading } = useXpHotTimes(guildId);
   const createHotTime = useCreateXpHotTime(guildId);
   const updateHotTime = useUpdateXpHotTime(guildId);
@@ -104,12 +105,16 @@ export default function XpRulesPage() {
 
   const onSubmitHotTime = async (data: HotTimeFormValues) => {
     try {
-      await createHotTime.mutateAsync(data);
+      await createHotTime.mutateAsync({
+        ...data,
+        channelIds: selectedHotTimeChannels,
+      });
       toast({
         title: "핫타임 추가 완료",
         description: "새로운 핫타임이 추가되었습니다.",
       });
       setIsAddingHotTime(false);
+      setSelectedHotTimeChannels([]);
       hotTimeForm.reset();
     } catch {
       toast({
@@ -176,12 +181,12 @@ export default function XpRulesPage() {
 
   // 추가 폼이 열려 있고 값이 입력된 경우 unsaved changes로 표시
   useEffect(() => {
-    const hasHotTimeFormData = isAddingHotTime && hotTimeFormIsDirty;
+    const hasHotTimeFormData = isAddingHotTime && (hotTimeFormIsDirty || selectedHotTimeChannels.length > 0);
     const hasExclusionFormData = isAddingExclusion && selectedIds.length > 0;
     const hasMultiplierFormData = isAddingMultiplier && multiplierTargetIds.length > 0;
     const hasEditedMultipliers = Object.keys(editedMultipliers).length > 0;
     setHasUnsavedChanges(hasHotTimeFormData || hasExclusionFormData || hasMultiplierFormData || hasEditedMultipliers);
-  }, [isAddingHotTime, hotTimeFormIsDirty, isAddingExclusion, selectedIds, isAddingMultiplier, multiplierTargetIds, editedMultipliers, setHasUnsavedChanges]);
+  }, [isAddingHotTime, hotTimeFormIsDirty, selectedHotTimeChannels, isAddingExclusion, selectedIds, isAddingMultiplier, multiplierTargetIds, editedMultipliers, setHasUnsavedChanges]);
 
   const { data: exclusions, isLoading: exclusionsLoading } = useXpExclusions(guildId);
   const { data: channels, isLoading: channelsLoading } = useChannels(guildId, null);
@@ -225,6 +230,17 @@ export default function XpRulesPage() {
       label: r.name,
       color: r.color === 0 ? "#99aab5" : `#${r.color.toString(16).padStart(6, "0")}`,
     }));
+
+  // 핫타임 채널 선택용 옵션 (모든 채널 선택 가능)
+  const hotTimeChannelOptions: MultiSelectOption[] = (filteredChannels ?? []).map((ch) => ({
+    value: ch.id,
+    label: ch.name,
+    icon: isVoiceChannel(ch.type) ? (
+      <Icon icon="solar:volume-loud-linear" className="h-4 w-4 text-green-400" />
+    ) : (
+      <Icon icon="solar:hashtag-linear" className="h-4 w-4 text-slate-400" />
+    ),
+  }));
 
   const handleSubmitExclusion = async () => {
     if (selectedIds.length === 0) {
@@ -574,12 +590,32 @@ export default function XpRulesPage() {
                       />
                     </div>
 
+                    {/* 채널 선택 */}
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium text-white/70 flex items-center gap-1">
+                        <Icon icon="solar:hashtag-linear" className="w-4 h-4" />
+                        적용 채널
+                        <span className="text-white/40 text-xs">(선택)</span>
+                      </label>
+                      <MultiSelect
+                        options={hotTimeChannelOptions}
+                        selected={selectedHotTimeChannels}
+                        onChange={setSelectedHotTimeChannels}
+                        placeholder={channelsLoading ? "로딩 중..." : "채널을 선택하세요 (미선택 시 전체 적용)"}
+                        isLoading={channelsLoading}
+                      />
+                      <p className="text-xs text-white/40">
+                        선택하지 않으면 모든 채널에 적용됩니다.
+                      </p>
+                    </div>
+
                     <div className="flex justify-end gap-2">
                       <Button
                         type="button"
                         variant="outline"
                         onClick={() => {
                           setIsAddingHotTime(false);
+                          setSelectedHotTimeChannels([]);
                           hotTimeForm.reset();
                         }}
                         className="border-white/10 hover:bg-white/5"
@@ -636,6 +672,16 @@ export default function XpRulesPage() {
                           <div className="flex items-center gap-1 text-sm text-white/40 mt-1">
                             <Icon icon="solar:clock-circle-linear" className="h-3 w-3" />
                             {hotTime.enabled ? "활성화됨" : "비활성화됨"}
+                            <span className="mx-1">•</span>
+                            <Icon icon="solar:hashtag-linear" className="h-3 w-3" />
+                            {hotTime.channelIds && hotTime.channelIds.length > 0 ? (
+                              <span>
+                                {hotTime.channelIds.slice(0, 2).map(id => getChannelName(id)).join(", ")}
+                                {hotTime.channelIds.length > 2 && ` 외 ${hotTime.channelIds.length - 2}개`}
+                              </span>
+                            ) : (
+                              <span>모든 채널</span>
+                            )}
                           </div>
                         </div>
                       </div>
