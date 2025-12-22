@@ -323,6 +323,11 @@ async function main() {
       'xp-notification': '레벨업 알림',
       'xp-level-requirement': '레벨 설정',
       'xp-level-channel': '해금 채널',
+      'currency-settings': '화폐 설정',
+      'currency-exclusion': '화폐 차단',
+      'currency-hottime': '화폐 핫타임',
+      'currency-multiplier': '화폐 배율',
+      'currency-channel-category': '채널 카테고리',
     };
 
     const typeLabel = typeLabels[type] || type;

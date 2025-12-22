@@ -37,6 +37,15 @@ const navigation = [
     ],
   },
   {
+    name: "화폐 시스템",
+    icon: "solar:wallet-linear",
+    iconActive: "solar:wallet-bold",
+    children: [
+      { name: "화폐 설정", href: "/currency/settings", icon: "solar:settings-linear", iconActive: "solar:settings-bold" },
+      { name: "화폐 규칙", href: "/currency/rules", icon: "solar:book-linear", iconActive: "solar:book-bold" },
+    ],
+  },
+  {
     name: "멤버 관리",
     href: "/members",
     icon: "solar:users-group-rounded-linear",

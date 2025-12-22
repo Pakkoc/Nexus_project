@@ -13,7 +13,12 @@ export type SettingType =
   | 'xp-reward'
   | 'xp-notification'
   | 'xp-level-requirement'
-  | 'xp-level-channel';
+  | 'xp-level-channel'
+  | 'currency-settings'
+  | 'currency-exclusion'
+  | 'currency-hottime'
+  | 'currency-multiplier'
+  | 'currency-channel-category';
 
 export type SettingAction = '추가' | '수정' | '삭제' | '변경';
 
