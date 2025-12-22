@@ -33,6 +33,7 @@ export function MultiSelect({
   maxDisplay = 3,
 }: MultiSelectProps) {
   const [open, setOpen] = React.useState(false);
+  const [openUpward, setOpenUpward] = React.useState(false);
   const containerRef = React.useRef<HTMLDivElement>(null);
 
   // 외부 클릭 시 닫기
@@ -45,6 +46,19 @@ export function MultiSelect({
 
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  // 드롭다운 방향 결정
+  const calculateDropdownDirection = React.useCallback(() => {
+    if (!containerRef.current) return;
+
+    const rect = containerRef.current.getBoundingClientRect();
+    const dropdownHeight = 250; // max-h-[200px] + padding + 여유
+    const spaceBelow = window.innerHeight - rect.bottom;
+    const spaceAbove = rect.top;
+
+    // 아래 공간이 부족하고 위 공간이 더 넓으면 위로 열기
+    setOpenUpward(spaceBelow < dropdownHeight && spaceAbove > spaceBelow);
   }, []);
 
   const handleToggle = (value: string) => {
@@ -70,7 +84,10 @@ export function MultiSelect({
         role="combobox"
         aria-expanded={open}
         disabled={disabled || isLoading}
-        onClick={() => setOpen(!open)}
+        onClick={() => {
+          if (!open) calculateDropdownDirection();
+          setOpen(!open);
+        }}
         className={cn(
           "w-full justify-between border-slate-700 bg-slate-900 hover:bg-slate-800 min-h-[40px] h-auto",
           selected.length > 0 && "py-1.5"
@@ -107,7 +124,10 @@ export function MultiSelect({
       </Button>
 
       {open && (
-        <div className="absolute z-[9999] bottom-full mb-1 w-full rounded-md border border-slate-700 bg-slate-900 shadow-lg">
+        <div className={cn(
+          "absolute z-[9999] w-full rounded-md border border-slate-700 bg-slate-900 shadow-lg",
+          openUpward ? "bottom-full mb-1" : "top-full mt-1"
+        )}>
           <div className="max-h-[200px] overflow-auto p-1">
             {options.length === 0 ? (
               <div className="py-4 text-center text-sm text-slate-400">
