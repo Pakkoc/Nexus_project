@@ -497,7 +497,7 @@ export default function XpRulesPage() {
         <TabsContent value="hottime" className="space-y-6 animate-fade-up">
           {/* Add Hot Time Form */}
           {isAddingHotTime && (
-            <div className="relative bg-white/5 backdrop-blur-sm rounded-2xl p-6 border border-indigo-500/30 animate-fade-up">
+            <div className="relative z-20 bg-white/5 backdrop-blur-sm rounded-2xl p-6 border border-indigo-500/30 animate-fade-up">
               {/* Glow effect */}
               <div className="absolute inset-0 bg-gradient-to-r from-indigo-500/5 to-purple-500/5 rounded-2xl" />
 
@@ -729,7 +729,7 @@ export default function XpRulesPage() {
 
           {/* Add Multiplier Form */}
           {isAddingMultiplier && (
-            <div className="relative z-10 bg-white/5 backdrop-blur-sm rounded-2xl p-6 border border-indigo-500/30 animate-fade-up">
+            <div className="relative z-20 bg-white/5 backdrop-blur-sm rounded-2xl p-6 border border-indigo-500/30 animate-fade-up">
               <div className="absolute inset-0 bg-gradient-to-r from-indigo-500/5 to-purple-500/5 rounded-2xl -z-10" />
 
               <div className="relative space-y-4">
@@ -1000,8 +1000,8 @@ export default function XpRulesPage() {
         <TabsContent value="exclusions" className="space-y-6 animate-fade-up">
           {/* Add Exclusion Form */}
           {isAddingExclusion && (
-            <div className="relative bg-white/5 backdrop-blur-sm rounded-2xl p-6 border border-indigo-500/30 animate-fade-up">
-              <div className="absolute inset-0 bg-gradient-to-r from-indigo-500/5 to-purple-500/5 rounded-2xl" />
+            <div className="relative z-20 bg-white/5 backdrop-blur-sm rounded-2xl p-6 border border-indigo-500/30 animate-fade-up">
+              <div className="absolute inset-0 bg-gradient-to-r from-indigo-500/5 to-purple-500/5 rounded-2xl -z-10" />
 
               <div className="relative space-y-4">
                 <div>
