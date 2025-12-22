@@ -107,7 +107,7 @@ export function MultiSelect({
       </Button>
 
       {open && (
-        <div className="absolute z-[100] mt-1 w-full rounded-md border border-slate-700 bg-slate-900 shadow-lg">
+        <div className="absolute z-[9999] mt-1 w-full rounded-md border border-slate-700 bg-slate-900 shadow-lg">
           <div className="max-h-[200px] overflow-auto p-1">
             {options.length === 0 ? (
               <div className="py-4 text-center text-sm text-slate-400">
