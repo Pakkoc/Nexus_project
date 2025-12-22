@@ -167,16 +167,21 @@ type Result<T, E> =
 
 1. `@/lib/bot-notify.ts`의 `notifyBotSettingsChanged` 함수 사용
 2. POST/PATCH/DELETE 성공 후 호출
+3. **`await` 없이 호출** (봇 알림은 실패해도 에러를 던지지 않으므로 대기 불필요)
 
 ```typescript
 import { notifyBotSettingsChanged } from "@/lib/bot-notify";
 
-await notifyBotSettingsChanged({
+// ✅ 올바른 사용법 - await 없이 호출
+notifyBotSettingsChanged({
   guildId,
   type: 'feature-name',  // 기능 타입
   action: '추가',        // '추가' | '수정' | '삭제' | '변경'
   details: '상세 내용',  // 선택사항
 });
+
+// ❌ 잘못된 사용법 - 불필요한 대기로 응답 지연
+await notifyBotSettingsChanged({ ... });
 ```
 
 ### 새 타입 추가 시
@@ -216,3 +221,38 @@ DB에 레벨 요구사항 저장
 - [ ] 영향받는 기능들이 모두 동기화되는가?
 - [ ] 역방향도 고려했는가? (예: 레벨↔역할↔채널)
 - [ ] 기존 유저 데이터도 소급 적용되는가?
+
+## 봇 재시작 없이 즉시 반영 원칙
+
+**웹에서 설정 변경 시 봇 재시작 없이 바로 적용되어야 합니다.**
+
+### 원칙
+
+1. **설정은 캐싱하지 않음** - 봇이 설정을 메모리에 캐싱하면 웹 변경이 반영 안됨
+2. **매번 DB에서 조회** - 설정이 필요할 때마다 Repository에서 조회
+3. **실시간 동기화** - 웹 변경 → DB 저장 → 봇의 다음 요청에서 새 설정 사용
+
+### 올바른 패턴
+
+```typescript
+// ✅ 올바른 패턴 - 매번 DB 조회
+async grantXp(guildId: string, userId: string) {
+  const settings = await this.settingsRepo.findByGuild(guildId);  // 매번 조회
+  const exclusions = await this.settingsRepo.getExcludedChannels(guildId);
+  // ...
+}
+
+// ❌ 잘못된 패턴 - 캐싱 (재시작 전까지 변경 미반영)
+class XpService {
+  private settingsCache = new Map<string, Settings>();
+
+  async grantXp(guildId: string, userId: string) {
+    const settings = this.settingsCache.get(guildId);  // 캐시 사용
+  }
+}
+```
+
+### 체크리스트
+
+- [ ] 설정을 메모리에 캐싱하고 있지 않은가?
+- [ ] 웹에서 설정 변경 후 봇 재시작 없이 테스트했는가?
