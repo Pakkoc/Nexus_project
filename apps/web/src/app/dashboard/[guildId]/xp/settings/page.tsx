@@ -127,7 +127,9 @@ export default function XpSettingsPage() {
   const { data: levelData, isLoading: levelLoading } = useQuery<LevelRequirement[]>({
     queryKey: ["levelRequirements", guildId],
     queryFn: async () => {
-      const res = await fetch(`/api/guilds/${guildId}/xp/level-requirements`);
+      const res = await fetch(`/api/guilds/${guildId}/xp/level-requirements`, {
+        credentials: "include",
+      });
       if (!res.ok) throw new Error("Failed to fetch");
       return res.json();
     },
@@ -144,6 +146,7 @@ export default function XpSettingsPage() {
     mutationFn: async (requirements: { level: number; requiredXp: number }[]) => {
       const res = await fetch(`/api/guilds/${guildId}/xp/level-requirements`, {
         method: "PATCH",
+        credentials: "include",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(requirements),
       });
