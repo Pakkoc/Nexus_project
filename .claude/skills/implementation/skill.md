@@ -256,3 +256,112 @@ class XpService {
 
 - [ ] 설정을 메모리에 캐싱하고 있지 않은가?
 - [ ] 웹에서 설정 변경 후 봇 재시작 없이 테스트했는가?
+
+## UI 일관성 규칙
+
+### 채널 선택 드롭다운
+
+채널 선택 시 **음성 채널**과 **텍스트 채널**을 그룹으로 분리하여 표시합니다.
+
+#### Select 컴포넌트 사용 시
+
+```tsx
+import { SelectGroup, SelectLabel } from "@/components/ui/select";
+
+<SelectContent>
+  {voiceChannels.length > 0 && (
+    <SelectGroup>
+      <SelectLabel className="text-xs text-slate-400">🔊 음성 채널</SelectLabel>
+      {voiceChannels.map((ch) => (
+        <SelectItem key={ch.id} value={ch.id}>...</SelectItem>
+      ))}
+    </SelectGroup>
+  )}
+  {textChannels.length > 0 && (
+    <SelectGroup>
+      <SelectLabel className="text-xs text-slate-400"># 텍스트 채널</SelectLabel>
+      {textChannels.map((ch) => (
+        <SelectItem key={ch.id} value={ch.id}>...</SelectItem>
+      ))}
+    </SelectGroup>
+  )}
+</SelectContent>
+```
+
+#### MultiSelect 컴포넌트 사용 시
+
+`group` 필드를 추가하면 자동으로 그룹화됩니다.
+
+```tsx
+const channelOptions: MultiSelectOption[] = channels.map(ch => ({
+  value: ch.id,
+  label: ch.name,
+  icon: isVoiceChannel(ch.type) ? <VoiceIcon /> : <TextIcon />,
+  group: isVoiceChannel(ch.type) ? "🔊 음성 채널" : "# 텍스트 채널",
+}));
+```
+
+### 목록 UI 패턴
+
+목록(핫타임, 제외, 배율 등)은 **카드 형태 컨테이너**로 통일합니다.
+
+```tsx
+{/* 목록 컨테이너 */}
+<div className="bg-white/5 backdrop-blur-sm rounded-2xl border border-white/10 overflow-hidden">
+  {/* 헤더 */}
+  <div className="p-6 border-b border-white/10">
+    <div className="flex items-center gap-3">
+      <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500 to-orange-500 flex items-center justify-center">
+        <Icon icon="solar:fire-bold" className="w-5 h-5 text-white" />
+      </div>
+      <div>
+        <h3 className="font-semibold text-white">목록 제목</h3>
+        <p className="text-sm text-white/50">목록 설명</p>
+      </div>
+    </div>
+  </div>
+
+  {/* 목록 내용 */}
+  <div className="p-6">
+    {items.length > 0 ? (
+      <div className="space-y-3">
+        {items.map((item) => (
+          <div className="group flex items-center justify-between rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 p-4 transition-all">
+            {/* 아이템 내용 */}
+          </div>
+        ))}
+      </div>
+    ) : (
+      {/* 빈 상태 */}
+      <div className="py-12 text-center">
+        <div className="w-16 h-16 rounded-2xl bg-white/5 flex items-center justify-center mx-auto mb-4">
+          <Icon icon="solar:fire-linear" className="w-8 h-8 text-white/20" />
+        </div>
+        <p className="text-white/50">항목이 없습니다.</p>
+        <p className="text-sm text-white/30 mt-1">안내 메시지</p>
+      </div>
+    )}
+  </div>
+</div>
+```
+
+### 아이템 정보 표시
+
+Badge를 사용하여 유형, 배율 등을 표시합니다.
+
+```tsx
+<div className="flex items-center gap-2 flex-wrap">
+  <span className="font-medium text-white">주요 정보</span>
+  <Badge variant="secondary" className="bg-white/10 text-white/70">유형</Badge>
+  <Badge className="bg-gradient-to-r from-amber-500 to-orange-500 text-white border-0">x2.0</Badge>
+</div>
+<div className="flex items-center gap-1 text-sm text-white/40 mt-1">
+  <Icon icon="solar:clock-circle-linear" className="h-3 w-3" />
+  부가 정보
+</div>
+```
+
+### 참고 페이지
+
+- XP 규칙: `/xp/rules` - 핫타임, 제외, 배율 목록 UI
+- 화폐 규칙: `/currency/rules` - 동일한 패턴 적용
