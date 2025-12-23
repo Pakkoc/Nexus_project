@@ -201,15 +201,25 @@ export default function CurrencyRulesPage() {
     } else if (hotTimeType === "voice") {
       filteredChannels = voiceChannels;
     }
-    return filteredChannels.map(ch => ({
-      value: ch.id,
-      label: ch.name,
-      icon: ch.type === CHANNEL_TYPE_VOICE ? (
-        <Icon icon="solar:volume-loud-linear" className="h-4 w-4 text-green-400" />
-      ) : (
-        <Icon icon="solar:hashtag-linear" className="h-4 w-4 text-slate-400" />
-      ),
-    }));
+    return filteredChannels
+      .sort((a, b) => {
+        // 음성 채널 먼저, 텍스트 채널 나중에 정렬
+        const aIsVoice = a.type === CHANNEL_TYPE_VOICE;
+        const bIsVoice = b.type === CHANNEL_TYPE_VOICE;
+        if (aIsVoice && !bIsVoice) return -1;
+        if (!aIsVoice && bIsVoice) return 1;
+        return 0;
+      })
+      .map(ch => ({
+        value: ch.id,
+        label: ch.name,
+        icon: ch.type === CHANNEL_TYPE_VOICE ? (
+          <Icon icon="solar:volume-loud-linear" className="h-4 w-4 text-green-400" />
+        ) : (
+          <Icon icon="solar:hashtag-linear" className="h-4 w-4 text-slate-400" />
+        ),
+        group: ch.type === CHANNEL_TYPE_VOICE ? "🔊 음성 채널" : "# 텍스트 채널",
+      }));
   })();
 
   const isLoading = hotTimesLoading || exclusionsLoading || multipliersLoading || categoriesLoading;

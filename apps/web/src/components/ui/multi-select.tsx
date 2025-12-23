@@ -11,6 +11,7 @@ export interface MultiSelectOption {
   label: string;
   icon?: React.ReactNode;
   color?: string;
+  group?: string;
 }
 
 interface MultiSelectProps {
@@ -76,6 +77,27 @@ export function MultiSelect({
 
   const selectedOptions = options.filter((opt) => selected.includes(opt.value));
 
+  // 그룹별로 옵션 분류
+  const groupedOptions = React.useMemo(() => {
+    const groups: Record<string, MultiSelectOption[]> = {};
+    const ungrouped: MultiSelectOption[] = [];
+
+    options.forEach((opt) => {
+      if (opt.group) {
+        if (!groups[opt.group]) {
+          groups[opt.group] = [];
+        }
+        groups[opt.group].push(opt);
+      } else {
+        ungrouped.push(opt);
+      }
+    });
+
+    return { groups, ungrouped };
+  }, [options]);
+
+  const hasGroups = Object.keys(groupedOptions.groups).length > 0;
+
   return (
     <div ref={containerRef} className="relative">
       <Button
@@ -133,7 +155,90 @@ export function MultiSelect({
               <div className="py-4 text-center text-sm text-slate-400">
                 항목이 없습니다
               </div>
+            ) : hasGroups ? (
+              // 그룹화된 렌더링
+              <>
+                {Object.entries(groupedOptions.groups).map(([groupName, groupOptions]) => (
+                  <div key={groupName}>
+                    <div className="px-2 py-1.5 text-xs font-semibold text-slate-400 sticky top-0 bg-slate-900">
+                      {groupName}
+                    </div>
+                    {groupOptions.map((option) => {
+                      const isSelected = selected.includes(option.value);
+                      return (
+                        <div
+                          key={option.value}
+                          onClick={() => handleToggle(option.value)}
+                          className={cn(
+                            "flex cursor-pointer items-center gap-2 rounded-sm px-2 py-1.5 text-sm hover:bg-slate-800 ml-1",
+                            isSelected && "bg-slate-800"
+                          )}
+                        >
+                          <div
+                            className={cn(
+                              "flex h-4 w-4 items-center justify-center rounded border",
+                              isSelected
+                                ? "border-indigo-500 bg-indigo-500"
+                                : "border-slate-600"
+                            )}
+                          >
+                            {isSelected && <Icon icon="solar:check-read-linear" className="h-3 w-3 text-white" />}
+                          </div>
+                          {option.icon}
+                          <span className="flex-1 truncate">{option.label}</span>
+                          {option.color && (
+                            <span
+                              className="h-3 w-3 rounded-full"
+                              style={{ backgroundColor: option.color }}
+                            />
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                ))}
+                {groupedOptions.ungrouped.length > 0 && (
+                  <div>
+                    <div className="px-2 py-1.5 text-xs font-semibold text-slate-400 sticky top-0 bg-slate-900">
+                      기타
+                    </div>
+                    {groupedOptions.ungrouped.map((option) => {
+                      const isSelected = selected.includes(option.value);
+                      return (
+                        <div
+                          key={option.value}
+                          onClick={() => handleToggle(option.value)}
+                          className={cn(
+                            "flex cursor-pointer items-center gap-2 rounded-sm px-2 py-1.5 text-sm hover:bg-slate-800 ml-1",
+                            isSelected && "bg-slate-800"
+                          )}
+                        >
+                          <div
+                            className={cn(
+                              "flex h-4 w-4 items-center justify-center rounded border",
+                              isSelected
+                                ? "border-indigo-500 bg-indigo-500"
+                                : "border-slate-600"
+                            )}
+                          >
+                            {isSelected && <Icon icon="solar:check-read-linear" className="h-3 w-3 text-white" />}
+                          </div>
+                          {option.icon}
+                          <span className="flex-1 truncate">{option.label}</span>
+                          {option.color && (
+                            <span
+                              className="h-3 w-3 rounded-full"
+                              style={{ backgroundColor: option.color }}
+                            />
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </>
             ) : (
+              // 기존 플랫 렌더링
               options.map((option) => {
                 const isSelected = selected.includes(option.value);
                 return (
