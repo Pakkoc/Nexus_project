@@ -37,6 +37,7 @@ interface HotTimeRow extends RowDataPacket {
   end_time: string;
   multiplier: string;
   enabled: number;
+  channel_ids: string | null;
 }
 
 interface MultiplierRow extends RowDataPacket {
@@ -204,6 +205,7 @@ export class CurrencySettingsRepository implements CurrencySettingsRepositoryPor
         endTime: r.end_time,
         multiplier: parseFloat(r.multiplier),
         enabled: r.enabled === 1,
+        channelIds: r.channel_ids ? JSON.parse(r.channel_ids) : [],
       })));
     } catch (error) {
       return Result.err({
