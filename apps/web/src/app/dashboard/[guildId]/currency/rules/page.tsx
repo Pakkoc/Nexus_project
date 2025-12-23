@@ -89,6 +89,9 @@ export default function CurrencyRulesPage() {
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState("hottime");
   const [isAddingHotTime, setIsAddingHotTime] = useState(false);
+  const [isAddingMultiplier, setIsAddingMultiplier] = useState(false);
+  const [isAddingExclusion, setIsAddingExclusion] = useState(false);
+  const [isAddingChannelCategory, setIsAddingChannelCategory] = useState(false);
   const [selectedHotTimeChannels, setSelectedHotTimeChannels] = useState<string[]>([]);
 
   // Data queries
@@ -167,6 +170,7 @@ export default function CurrencyRulesPage() {
     try {
       await createExclusion.mutateAsync(data);
       exclusionForm.reset();
+      setIsAddingExclusion(false);
       toast({ title: "제외 대상 추가 완료" });
     } catch {
       toast({ title: "추가 실패", variant: "destructive" });
@@ -177,6 +181,7 @@ export default function CurrencyRulesPage() {
     try {
       await createMultiplier.mutateAsync(data);
       multiplierForm.reset();
+      setIsAddingMultiplier(false);
       toast({ title: "배율 추가 완료" });
     } catch {
       toast({ title: "추가 실패", variant: "destructive" });
@@ -187,6 +192,7 @@ export default function CurrencyRulesPage() {
     try {
       await createChannelCategory.mutateAsync(data);
       channelCategoryForm.reset();
+      setIsAddingChannelCategory(false);
       toast({ title: "채널 카테고리 추가 완료" });
     } catch {
       toast({ title: "추가 실패", variant: "destructive" });
@@ -261,28 +267,28 @@ export default function CurrencyRulesPage() {
           <TabsList className="bg-white/5 border border-white/10 p-1 rounded-xl">
             <TabsTrigger
               value="hottime"
-              className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-amber-500 data-[state=active]:to-orange-500 data-[state=active]:text-white rounded-lg px-4 py-2 text-white/60"
+              className="rounded-lg data-[state=active]:bg-gradient-to-r data-[state=active]:from-amber-500 data-[state=active]:to-orange-500 data-[state=active]:text-white data-[state=active]:shadow-lg transition-all"
             >
               <Icon icon="solar:fire-linear" className="mr-2 h-4 w-4" />
               핫타임
             </TabsTrigger>
             <TabsTrigger
-              value="exclusion"
-              className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-amber-500 data-[state=active]:to-orange-500 data-[state=active]:text-white rounded-lg px-4 py-2 text-white/60"
-            >
-              <Icon icon="solar:close-circle-linear" className="mr-2 h-4 w-4" />
-              제외
-            </TabsTrigger>
-            <TabsTrigger
               value="multiplier"
-              className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-amber-500 data-[state=active]:to-orange-500 data-[state=active]:text-white rounded-lg px-4 py-2 text-white/60"
+              className="rounded-lg data-[state=active]:bg-gradient-to-r data-[state=active]:from-amber-500 data-[state=active]:to-orange-500 data-[state=active]:text-white data-[state=active]:shadow-lg transition-all"
             >
-              <Icon icon="solar:graph-up-linear" className="mr-2 h-4 w-4" />
+              <Icon icon="solar:chart-2-linear" className="mr-2 h-4 w-4" />
               배율
             </TabsTrigger>
             <TabsTrigger
+              value="exclusion"
+              className="rounded-lg data-[state=active]:bg-gradient-to-r data-[state=active]:from-amber-500 data-[state=active]:to-orange-500 data-[state=active]:text-white data-[state=active]:shadow-lg transition-all"
+            >
+              <Icon icon="solar:shield-linear" className="mr-2 h-4 w-4" />
+              토피 차단
+            </TabsTrigger>
+            <TabsTrigger
               value="channel-category"
-              className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-amber-500 data-[state=active]:to-orange-500 data-[state=active]:text-white rounded-lg px-4 py-2 text-white/60"
+              className="rounded-lg data-[state=active]:bg-gradient-to-r data-[state=active]:from-amber-500 data-[state=active]:to-orange-500 data-[state=active]:text-white data-[state=active]:shadow-lg transition-all"
             >
               <Icon icon="solar:volume-loud-linear" className="mr-2 h-4 w-4" />
               채널 유형
@@ -296,6 +302,36 @@ export default function CurrencyRulesPage() {
             >
               <Icon icon="solar:add-circle-linear" className="mr-2 h-4 w-4" />
               핫타임 추가
+            </Button>
+          )}
+
+          {activeTab === "multiplier" && (
+            <Button
+              onClick={() => setIsAddingMultiplier(true)}
+              className="bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-white shadow-lg shadow-amber-500/25"
+            >
+              <Icon icon="solar:add-circle-linear" className="mr-2 h-4 w-4" />
+              배율 추가
+            </Button>
+          )}
+
+          {activeTab === "exclusion" && (
+            <Button
+              onClick={() => setIsAddingExclusion(true)}
+              className="bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-white shadow-lg shadow-amber-500/25"
+            >
+              <Icon icon="solar:add-circle-linear" className="mr-2 h-4 w-4" />
+              차단 추가
+            </Button>
+          )}
+
+          {activeTab === "channel-category" && (
+            <Button
+              onClick={() => setIsAddingChannelCategory(true)}
+              className="bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-white shadow-lg shadow-amber-500/25"
+            >
+              <Icon icon="solar:add-circle-linear" className="mr-2 h-4 w-4" />
+              채널 유형 추가
             </Button>
           )}
         </div>
@@ -520,296 +556,391 @@ export default function CurrencyRulesPage() {
           </div>
         </TabsContent>
 
-        {/* 제외 탭 */}
-        <TabsContent value="exclusion" className="space-y-6 animate-fade-up">
-          <div className="bg-white/5 backdrop-blur-sm rounded-2xl border border-white/10 p-6">
-            <h3 className="font-semibold text-white mb-4">제외 대상 추가</h3>
-            <Form {...exclusionForm}>
-              <form onSubmit={exclusionForm.handleSubmit(onSubmitExclusion)} className="space-y-4">
-                <div className="grid gap-4 sm:grid-cols-3">
-                  <FormField
-                    control={exclusionForm.control}
-                    name="targetType"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel className="text-white/70 text-sm">유형</FormLabel>
-                        <Select onValueChange={field.onChange} defaultValue={field.value}>
-                          <FormControl>
-                            <SelectTrigger className="bg-white/5 border-white/10 text-white">
-                              <SelectValue />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            <SelectItem value="channel">채널</SelectItem>
-                            <SelectItem value="role">역할</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={exclusionForm.control}
-                    name="targetId"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel className="text-white/70 text-sm">대상</FormLabel>
-                        <Select onValueChange={field.onChange} value={field.value}>
-                          <FormControl>
-                            <SelectTrigger className="bg-white/5 border-white/10 text-white">
-                              <SelectValue placeholder="선택..." />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            {exclusionForm.watch("targetType") === "channel" ? (
-                              <>
-                                {voiceChannels.length > 0 && (
-                                  <SelectGroup>
-                                    <SelectLabel className="text-xs text-slate-400">🔊 음성 채널</SelectLabel>
-                                    {voiceChannels.map((ch) => (
-                                      <SelectItem key={ch.id} value={ch.id}>
-                                        <span className="flex items-center gap-2">
-                                          <Icon icon="solar:volume-loud-linear" className="h-4 w-4 text-green-400" />
-                                          {ch.name}
-                                        </span>
-                                      </SelectItem>
-                                    ))}
-                                  </SelectGroup>
+        {/* 배율 탭 */}
+        <TabsContent value="multiplier" className="space-y-6 animate-fade-up">
+          {/* Add Multiplier Form */}
+          {isAddingMultiplier && (
+            <div className="relative z-20 bg-white/5 backdrop-blur-sm rounded-2xl p-6 border border-amber-500/30 animate-fade-up">
+              <div className="absolute inset-0 bg-gradient-to-r from-amber-500/5 to-orange-500/5 rounded-2xl" />
+              <div className="relative">
+                <h3 className="text-lg font-semibold text-white mb-4">새 배율 추가</h3>
+                <Form {...multiplierForm}>
+                  <form onSubmit={multiplierForm.handleSubmit(onSubmitMultiplier)} className="space-y-4">
+                    <div className="grid gap-4 sm:grid-cols-3">
+                      <FormField
+                        control={multiplierForm.control}
+                        name="targetType"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel className="text-white/70 text-sm">유형</FormLabel>
+                            <Select onValueChange={field.onChange} defaultValue={field.value}>
+                              <FormControl>
+                                <SelectTrigger className="bg-white/5 border-white/10 text-white">
+                                  <SelectValue />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent>
+                                <SelectItem value="channel">채널</SelectItem>
+                                <SelectItem value="role">역할</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={multiplierForm.control}
+                        name="targetId"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel className="text-white/70 text-sm">대상</FormLabel>
+                            <Select onValueChange={field.onChange} value={field.value}>
+                              <FormControl>
+                                <SelectTrigger className="bg-white/5 border-white/10 text-white">
+                                  <SelectValue placeholder="선택..." />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent>
+                                {multiplierForm.watch("targetType") === "channel" ? (
+                                  <>
+                                    {voiceChannels.length > 0 && (
+                                      <SelectGroup>
+                                        <SelectLabel className="text-xs text-slate-400">🔊 음성 채널</SelectLabel>
+                                        {voiceChannels.map((ch) => (
+                                          <SelectItem key={ch.id} value={ch.id}>
+                                            <span className="flex items-center gap-2">
+                                              <Icon icon="solar:volume-loud-linear" className="h-4 w-4 text-green-400" />
+                                              {ch.name}
+                                            </span>
+                                          </SelectItem>
+                                        ))}
+                                      </SelectGroup>
+                                    )}
+                                    {textChannels.length > 0 && (
+                                      <SelectGroup>
+                                        <SelectLabel className="text-xs text-slate-400"># 텍스트 채널</SelectLabel>
+                                        {textChannels.map((ch) => (
+                                          <SelectItem key={ch.id} value={ch.id}>
+                                            <span className="flex items-center gap-2">
+                                              <Icon icon="solar:hashtag-linear" className="h-4 w-4 text-slate-400" />
+                                              {ch.name}
+                                            </span>
+                                          </SelectItem>
+                                        ))}
+                                      </SelectGroup>
+                                    )}
+                                  </>
+                                ) : (
+                                  roles.map((r) => (
+                                    <SelectItem key={r.id} value={r.id}>
+                                      @{r.name}
+                                    </SelectItem>
+                                  ))
                                 )}
-                                {textChannels.length > 0 && (
-                                  <SelectGroup>
-                                    <SelectLabel className="text-xs text-slate-400"># 텍스트 채널</SelectLabel>
-                                    {textChannels.map((ch) => (
-                                      <SelectItem key={ch.id} value={ch.id}>
-                                        <span className="flex items-center gap-2">
-                                          <Icon icon="solar:hashtag-linear" className="h-4 w-4 text-slate-400" />
-                                          {ch.name}
-                                        </span>
-                                      </SelectItem>
-                                    ))}
-                                  </SelectGroup>
-                                )}
-                              </>
-                            ) : (
-                              roles.map((r) => (
-                                <SelectItem key={r.id} value={r.id}>
-                                  @{r.name}
-                                </SelectItem>
-                              ))
-                            )}
-                          </SelectContent>
-                        </Select>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <div className="flex items-end">
-                    <Button
-                      type="submit"
-                      disabled={createExclusion.isPending}
-                      className="bg-gradient-to-r from-amber-600 to-orange-600"
-                    >
-                      <Icon icon="solar:add-circle-linear" className="mr-2 h-4 w-4" />
-                      추가
-                    </Button>
-                  </div>
-                </div>
-              </form>
-            </Form>
-          </div>
-
-          {/* 제외 목록 */}
-          <div className="space-y-3">
-            {exclusions.map((ex) => {
-              const target = ex.targetType === "channel"
-                ? channels.find(c => c.id === ex.targetId)
-                : roles.find(r => r.id === ex.targetId);
-              return (
-                <div
-                  key={ex.id}
-                  className="flex items-center justify-between rounded-xl bg-white/5 border border-white/10 p-4"
-                >
-                  <div className="flex items-center gap-4">
-                    <Icon
-                      icon={ex.targetType === "channel" ? "solar:hashtag-linear" : "solar:shield-user-linear"}
-                      className="h-5 w-5 text-white/60"
-                    />
-                    <span className="text-white">
-                      {ex.targetType === "channel" ? "#" : "@"}
-                      {target?.name ?? ex.targetId}
-                    </span>
-                  </div>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => deleteExclusion.mutate(ex.id)}
-                    className="text-red-400 hover:text-red-300 hover:bg-red-500/10"
-                  >
-                    <Icon icon="solar:trash-bin-trash-linear" className="h-4 w-4" />
-                  </Button>
-                </div>
-              );
-            })}
-            {exclusions.length === 0 && (
-              <div className="text-center py-8 text-white/40">
-                제외된 채널/역할이 없습니다
+                              </SelectContent>
+                            </Select>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={multiplierForm.control}
+                        name="multiplier"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel className="text-white/70 text-sm">배율</FormLabel>
+                            <FormControl>
+                              <Input
+                                type="number"
+                                step="0.1"
+                                {...field}
+                                className="bg-white/5 border-white/10 text-white"
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+                    <div className="flex gap-2">
+                      <Button
+                        type="submit"
+                        disabled={createMultiplier.isPending}
+                        className="bg-gradient-to-r from-amber-600 to-orange-600"
+                      >
+                        <Icon icon="solar:add-circle-linear" className="mr-2 h-4 w-4" />
+                        추가
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        onClick={() => {
+                          setIsAddingMultiplier(false);
+                          multiplierForm.reset();
+                        }}
+                        className="text-white/60 hover:text-white"
+                      >
+                        취소
+                      </Button>
+                    </div>
+                  </form>
+                </Form>
               </div>
-            )}
+            </div>
+          )}
+
+          {/* 배율 목록 */}
+          <div className="bg-white/5 backdrop-blur-sm rounded-2xl border border-white/10 overflow-hidden">
+            <div className="p-6 border-b border-white/10">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500 to-orange-500 flex items-center justify-center">
+                  <Icon icon="solar:chart-2-bold" className="w-5 h-5 text-white" />
+                </div>
+                <div>
+                  <h3 className="font-semibold text-white">배율 목록</h3>
+                  <p className="text-sm text-white/50">채널/역할별 토피 획득 배율을 설정합니다.</p>
+                </div>
+              </div>
+            </div>
+            <div className="p-6">
+              {multipliers.length > 0 ? (
+                <div className="space-y-3">
+                  {multipliers.map((m) => {
+                    const target = m.targetType === "channel"
+                      ? channels.find(c => c.id === m.targetId)
+                      : roles.find(r => r.id === m.targetId);
+                    return (
+                      <div
+                        key={m.id}
+                        className="group flex items-center justify-between rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 p-4 transition-all"
+                      >
+                        <div className="flex items-center gap-4">
+                          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-amber-500/20 to-orange-500/20 border border-amber-500/30">
+                            <Icon
+                              icon={m.targetType === "channel" ? "solar:hashtag-linear" : "solar:shield-user-linear"}
+                              className="h-5 w-5 text-amber-400"
+                            />
+                          </div>
+                          <div>
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <span className="font-medium text-white">
+                                {m.targetType === "channel" ? "#" : "@"}
+                                {target?.name ?? m.targetId}
+                              </span>
+                              <Badge className="bg-gradient-to-r from-amber-500 to-orange-500 text-white border-0">x{m.multiplier}</Badge>
+                            </div>
+                            <div className="flex items-center gap-1 text-sm text-white/40 mt-1">
+                              <Icon icon="solar:tag-linear" className="h-3 w-3" />
+                              {m.targetType === "channel" ? "채널 배율" : "역할 배율"}
+                            </div>
+                          </div>
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => deleteMultiplier.mutate(m.id)}
+                          className="text-red-400 hover:text-red-300 hover:bg-red-500/10"
+                        >
+                          <Icon icon="solar:trash-bin-trash-linear" className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className="py-12 text-center">
+                  <div className="w-16 h-16 rounded-2xl bg-white/5 flex items-center justify-center mx-auto mb-4">
+                    <Icon icon="solar:chart-2-linear" className="w-8 h-8 text-white/20" />
+                  </div>
+                  <p className="text-white/50">설정된 배율이 없습니다.</p>
+                  <p className="text-sm text-white/30 mt-1">배율을 추가하여 특정 채널/역할에 보너스를 적용하세요.</p>
+                </div>
+              )}
+            </div>
           </div>
         </TabsContent>
 
-        {/* 배율 탭 */}
-        <TabsContent value="multiplier" className="space-y-6 animate-fade-up">
-          <div className="bg-white/5 backdrop-blur-sm rounded-2xl border border-white/10 p-6">
-            <h3 className="font-semibold text-white mb-4">배율 추가</h3>
-            <Form {...multiplierForm}>
-              <form onSubmit={multiplierForm.handleSubmit(onSubmitMultiplier)} className="space-y-4">
-                <div className="grid gap-4 sm:grid-cols-4">
-                  <FormField
-                    control={multiplierForm.control}
-                    name="targetType"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel className="text-white/70 text-sm">유형</FormLabel>
-                        <Select onValueChange={field.onChange} defaultValue={field.value}>
-                          <FormControl>
-                            <SelectTrigger className="bg-white/5 border-white/10 text-white">
-                              <SelectValue />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            <SelectItem value="channel">채널</SelectItem>
-                            <SelectItem value="role">역할</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={multiplierForm.control}
-                    name="targetId"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel className="text-white/70 text-sm">대상</FormLabel>
-                        <Select onValueChange={field.onChange} value={field.value}>
-                          <FormControl>
-                            <SelectTrigger className="bg-white/5 border-white/10 text-white">
-                              <SelectValue placeholder="선택..." />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            {multiplierForm.watch("targetType") === "channel" ? (
-                              <>
-                                {voiceChannels.length > 0 && (
-                                  <SelectGroup>
-                                    <SelectLabel className="text-xs text-slate-400">🔊 음성 채널</SelectLabel>
-                                    {voiceChannels.map((ch) => (
-                                      <SelectItem key={ch.id} value={ch.id}>
-                                        <span className="flex items-center gap-2">
-                                          <Icon icon="solar:volume-loud-linear" className="h-4 w-4 text-green-400" />
-                                          {ch.name}
-                                        </span>
-                                      </SelectItem>
-                                    ))}
-                                  </SelectGroup>
+        {/* 제외 탭 */}
+        <TabsContent value="exclusion" className="space-y-6 animate-fade-up">
+          {/* Add Exclusion Form */}
+          {isAddingExclusion && (
+            <div className="relative z-20 bg-white/5 backdrop-blur-sm rounded-2xl p-6 border border-amber-500/30 animate-fade-up">
+              <div className="absolute inset-0 bg-gradient-to-r from-amber-500/5 to-orange-500/5 rounded-2xl" />
+              <div className="relative">
+                <h3 className="text-lg font-semibold text-white mb-4">새 차단 추가</h3>
+                <Form {...exclusionForm}>
+                  <form onSubmit={exclusionForm.handleSubmit(onSubmitExclusion)} className="space-y-4">
+                    <div className="grid gap-4 sm:grid-cols-2">
+                      <FormField
+                        control={exclusionForm.control}
+                        name="targetType"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel className="text-white/70 text-sm">유형</FormLabel>
+                            <Select onValueChange={field.onChange} defaultValue={field.value}>
+                              <FormControl>
+                                <SelectTrigger className="bg-white/5 border-white/10 text-white">
+                                  <SelectValue />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent>
+                                <SelectItem value="channel">채널</SelectItem>
+                                <SelectItem value="role">역할</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={exclusionForm.control}
+                        name="targetId"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel className="text-white/70 text-sm">대상</FormLabel>
+                            <Select onValueChange={field.onChange} value={field.value}>
+                              <FormControl>
+                                <SelectTrigger className="bg-white/5 border-white/10 text-white">
+                                  <SelectValue placeholder="선택..." />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent>
+                                {exclusionForm.watch("targetType") === "channel" ? (
+                                  <>
+                                    {voiceChannels.length > 0 && (
+                                      <SelectGroup>
+                                        <SelectLabel className="text-xs text-slate-400">🔊 음성 채널</SelectLabel>
+                                        {voiceChannels.map((ch) => (
+                                          <SelectItem key={ch.id} value={ch.id}>
+                                            <span className="flex items-center gap-2">
+                                              <Icon icon="solar:volume-loud-linear" className="h-4 w-4 text-green-400" />
+                                              {ch.name}
+                                            </span>
+                                          </SelectItem>
+                                        ))}
+                                      </SelectGroup>
+                                    )}
+                                    {textChannels.length > 0 && (
+                                      <SelectGroup>
+                                        <SelectLabel className="text-xs text-slate-400"># 텍스트 채널</SelectLabel>
+                                        {textChannels.map((ch) => (
+                                          <SelectItem key={ch.id} value={ch.id}>
+                                            <span className="flex items-center gap-2">
+                                              <Icon icon="solar:hashtag-linear" className="h-4 w-4 text-slate-400" />
+                                              {ch.name}
+                                            </span>
+                                          </SelectItem>
+                                        ))}
+                                      </SelectGroup>
+                                    )}
+                                  </>
+                                ) : (
+                                  roles.map((r) => (
+                                    <SelectItem key={r.id} value={r.id}>
+                                      @{r.name}
+                                    </SelectItem>
+                                  ))
                                 )}
-                                {textChannels.length > 0 && (
-                                  <SelectGroup>
-                                    <SelectLabel className="text-xs text-slate-400"># 텍스트 채널</SelectLabel>
-                                    {textChannels.map((ch) => (
-                                      <SelectItem key={ch.id} value={ch.id}>
-                                        <span className="flex items-center gap-2">
-                                          <Icon icon="solar:hashtag-linear" className="h-4 w-4 text-slate-400" />
-                                          {ch.name}
-                                        </span>
-                                      </SelectItem>
-                                    ))}
-                                  </SelectGroup>
-                                )}
-                              </>
-                            ) : (
-                              roles.map((r) => (
-                                <SelectItem key={r.id} value={r.id}>
-                                  @{r.name}
-                                </SelectItem>
-                              ))
-                            )}
-                          </SelectContent>
-                        </Select>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={multiplierForm.control}
-                    name="multiplier"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel className="text-white/70 text-sm">배율</FormLabel>
-                        <FormControl>
-                          <Input
-                            type="number"
-                            step="0.1"
-                            {...field}
-                            className="bg-white/5 border-white/10 text-white"
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <div className="flex items-end">
-                    <Button
-                      type="submit"
-                      disabled={createMultiplier.isPending}
-                      className="bg-gradient-to-r from-amber-600 to-orange-600"
-                    >
-                      <Icon icon="solar:add-circle-linear" className="mr-2 h-4 w-4" />
-                      추가
-                    </Button>
-                  </div>
-                </div>
-              </form>
-            </Form>
-          </div>
-
-          {/* 배율 목록 */}
-          <div className="space-y-3">
-            {multipliers.map((m) => {
-              const target = m.targetType === "channel"
-                ? channels.find(c => c.id === m.targetId)
-                : roles.find(r => r.id === m.targetId);
-              return (
-                <div
-                  key={m.id}
-                  className="flex items-center justify-between rounded-xl bg-white/5 border border-white/10 p-4"
-                >
-                  <div className="flex items-center gap-4">
-                    <Icon
-                      icon={m.targetType === "channel" ? "solar:hashtag-linear" : "solar:shield-user-linear"}
-                      className="h-5 w-5 text-white/60"
-                    />
-                    <span className="text-white">
-                      {m.targetType === "channel" ? "#" : "@"}
-                      {target?.name ?? m.targetId}
-                    </span>
-                    <span className="text-amber-400 font-medium">x{m.multiplier}</span>
-                  </div>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => deleteMultiplier.mutate(m.id)}
-                    className="text-red-400 hover:text-red-300 hover:bg-red-500/10"
-                  >
-                    <Icon icon="solar:trash-bin-trash-linear" className="h-4 w-4" />
-                  </Button>
-                </div>
-              );
-            })}
-            {multipliers.length === 0 && (
-              <div className="text-center py-8 text-white/40">
-                설정된 배율이 없습니다
+                              </SelectContent>
+                            </Select>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+                    <div className="flex gap-2">
+                      <Button
+                        type="submit"
+                        disabled={createExclusion.isPending}
+                        className="bg-gradient-to-r from-amber-600 to-orange-600"
+                      >
+                        <Icon icon="solar:add-circle-linear" className="mr-2 h-4 w-4" />
+                        추가
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        onClick={() => {
+                          setIsAddingExclusion(false);
+                          exclusionForm.reset();
+                        }}
+                        className="text-white/60 hover:text-white"
+                      >
+                        취소
+                      </Button>
+                    </div>
+                  </form>
+                </Form>
               </div>
-            )}
+            </div>
+          )}
+
+          {/* 제외 목록 */}
+          <div className="bg-white/5 backdrop-blur-sm rounded-2xl border border-white/10 overflow-hidden">
+            <div className="p-6 border-b border-white/10">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500 to-orange-500 flex items-center justify-center">
+                  <Icon icon="solar:shield-bold" className="w-5 h-5 text-white" />
+                </div>
+                <div>
+                  <h3 className="font-semibold text-white">토피 차단 목록</h3>
+                  <p className="text-sm text-white/50">토피 획득이 차단된 채널/역할입니다.</p>
+                </div>
+              </div>
+            </div>
+            <div className="p-6">
+              {exclusions.length > 0 ? (
+                <div className="space-y-3">
+                  {exclusions.map((ex) => {
+                    const target = ex.targetType === "channel"
+                      ? channels.find(c => c.id === ex.targetId)
+                      : roles.find(r => r.id === ex.targetId);
+                    return (
+                      <div
+                        key={ex.id}
+                        className="group flex items-center justify-between rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 p-4 transition-all"
+                      >
+                        <div className="flex items-center gap-4">
+                          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-amber-500/20 to-orange-500/20 border border-amber-500/30">
+                            <Icon
+                              icon={ex.targetType === "channel" ? "solar:hashtag-linear" : "solar:shield-user-linear"}
+                              className="h-5 w-5 text-amber-400"
+                            />
+                          </div>
+                          <div>
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <span className="font-medium text-white">
+                                {ex.targetType === "channel" ? "#" : "@"}
+                                {target?.name ?? ex.targetId}
+                              </span>
+                              <Badge variant="secondary" className="bg-red-500/20 text-red-400">차단됨</Badge>
+                            </div>
+                            <div className="flex items-center gap-1 text-sm text-white/40 mt-1">
+                              <Icon icon="solar:tag-linear" className="h-3 w-3" />
+                              {ex.targetType === "channel" ? "채널 차단" : "역할 차단"}
+                            </div>
+                          </div>
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => deleteExclusion.mutate(ex.id)}
+                          className="text-red-400 hover:text-red-300 hover:bg-red-500/10"
+                        >
+                          <Icon icon="solar:trash-bin-trash-linear" className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className="py-12 text-center">
+                  <div className="w-16 h-16 rounded-2xl bg-white/5 flex items-center justify-center mx-auto mb-4">
+                    <Icon icon="solar:shield-linear" className="w-8 h-8 text-white/20" />
+                  </div>
+                  <p className="text-white/50">차단된 채널/역할이 없습니다.</p>
+                  <p className="text-sm text-white/30 mt-1">차단을 추가하여 특정 채널/역할의 토피 획득을 막으세요.</p>
+                </div>
+              )}
+            </div>
           </div>
         </TabsContent>
 
@@ -838,105 +969,152 @@ export default function CurrencyRulesPage() {
             </div>
           </div>
 
-          <div className="bg-white/5 backdrop-blur-sm rounded-2xl border border-white/10 p-6">
-            <h3 className="font-semibold text-white mb-4">채널 카테고리 설정</h3>
-            <Form {...channelCategoryForm}>
-              <form onSubmit={channelCategoryForm.handleSubmit(onSubmitChannelCategory)} className="space-y-4">
-                <div className="grid gap-4 sm:grid-cols-3">
-                  <FormField
-                    control={channelCategoryForm.control}
-                    name="channelId"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel className="text-white/70 text-sm">음성 채널</FormLabel>
-                        <Select onValueChange={field.onChange} value={field.value}>
-                          <FormControl>
-                            <SelectTrigger className="bg-white/5 border-white/10 text-white">
-                              <SelectValue placeholder="채널 선택..." />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            {voiceChannels.map((ch) => (
-                              <SelectItem key={ch.id} value={ch.id}>
-                                🔊 {ch.name}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={channelCategoryForm.control}
-                    name="category"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel className="text-white/70 text-sm">카테고리</FormLabel>
-                        <Select onValueChange={field.onChange} defaultValue={field.value}>
-                          <FormControl>
-                            <SelectTrigger className="bg-white/5 border-white/10 text-white">
-                              <SelectValue />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            {Object.entries(CHANNEL_CATEGORY_LABELS).map(([key, label]) => (
-                              <SelectItem key={key} value={key}>
-                                {label} (x{CHANNEL_CATEGORY_MULTIPLIERS[key]})
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </FormItem>
-                    )}
-                  />
-                  <div className="flex items-end">
-                    <Button
-                      type="submit"
-                      disabled={createChannelCategory.isPending}
-                      className="bg-gradient-to-r from-amber-600 to-orange-600"
-                    >
-                      <Icon icon="solar:add-circle-linear" className="mr-2 h-4 w-4" />
-                      추가
-                    </Button>
-                  </div>
-                </div>
-              </form>
-            </Form>
-          </div>
+          {/* Add Channel Category Form */}
+          {isAddingChannelCategory && (
+            <div className="relative z-20 bg-white/5 backdrop-blur-sm rounded-2xl p-6 border border-amber-500/30 animate-fade-up">
+              <div className="absolute inset-0 bg-gradient-to-r from-amber-500/5 to-orange-500/5 rounded-2xl" />
+              <div className="relative">
+                <h3 className="text-lg font-semibold text-white mb-4">새 채널 유형 설정</h3>
+                <Form {...channelCategoryForm}>
+                  <form onSubmit={channelCategoryForm.handleSubmit(onSubmitChannelCategory)} className="space-y-4">
+                    <div className="grid gap-4 sm:grid-cols-2">
+                      <FormField
+                        control={channelCategoryForm.control}
+                        name="channelId"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel className="text-white/70 text-sm">음성 채널</FormLabel>
+                            <Select onValueChange={field.onChange} value={field.value}>
+                              <FormControl>
+                                <SelectTrigger className="bg-white/5 border-white/10 text-white">
+                                  <SelectValue placeholder="채널 선택..." />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent>
+                                {voiceChannels.map((ch) => (
+                                  <SelectItem key={ch.id} value={ch.id}>
+                                    🔊 {ch.name}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={channelCategoryForm.control}
+                        name="category"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel className="text-white/70 text-sm">카테고리</FormLabel>
+                            <Select onValueChange={field.onChange} defaultValue={field.value}>
+                              <FormControl>
+                                <SelectTrigger className="bg-white/5 border-white/10 text-white">
+                                  <SelectValue />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent>
+                                {Object.entries(CHANNEL_CATEGORY_LABELS).map(([key, label]) => (
+                                  <SelectItem key={key} value={key}>
+                                    {label} (x{CHANNEL_CATEGORY_MULTIPLIERS[key]})
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+                    <div className="flex gap-2">
+                      <Button
+                        type="submit"
+                        disabled={createChannelCategory.isPending}
+                        className="bg-gradient-to-r from-amber-600 to-orange-600"
+                      >
+                        <Icon icon="solar:add-circle-linear" className="mr-2 h-4 w-4" />
+                        추가
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        onClick={() => {
+                          setIsAddingChannelCategory(false);
+                          channelCategoryForm.reset();
+                        }}
+                        className="text-white/60 hover:text-white"
+                      >
+                        취소
+                      </Button>
+                    </div>
+                  </form>
+                </Form>
+              </div>
+            </div>
+          )}
 
           {/* 채널 카테고리 목록 */}
-          <div className="space-y-3">
-            {channelCategories.map((cc) => {
-              const channel = voiceChannels.find(c => c.id === cc.channelId);
-              return (
-                <div
-                  key={cc.id}
-                  className="flex items-center justify-between rounded-xl bg-white/5 border border-white/10 p-4"
-                >
-                  <div className="flex items-center gap-4">
-                    <Icon icon="solar:volume-loud-linear" className="h-5 w-5 text-white/60" />
-                    <span className="text-white">{channel?.name ?? cc.channelId}</span>
-                    <span className="px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-400 text-sm">
-                      {CHANNEL_CATEGORY_LABELS[cc.category]} (x{CHANNEL_CATEGORY_MULTIPLIERS[cc.category]})
-                    </span>
-                  </div>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => deleteChannelCategory.mutate(cc.id)}
-                    className="text-red-400 hover:text-red-300 hover:bg-red-500/10"
-                  >
-                    <Icon icon="solar:trash-bin-trash-linear" className="h-4 w-4" />
-                  </Button>
+          <div className="bg-white/5 backdrop-blur-sm rounded-2xl border border-white/10 overflow-hidden">
+            <div className="p-6 border-b border-white/10">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500 to-orange-500 flex items-center justify-center">
+                  <Icon icon="solar:volume-loud-bold" className="w-5 h-5 text-white" />
                 </div>
-              );
-            })}
-            {channelCategories.length === 0 && (
-              <div className="text-center py-8 text-white/40">
-                설정된 채널 카테고리가 없습니다. 기본값(일반 통화방)이 적용됩니다.
+                <div>
+                  <h3 className="font-semibold text-white">채널 유형 목록</h3>
+                  <p className="text-sm text-white/50">음성 채널의 유형을 설정합니다.</p>
+                </div>
               </div>
-            )}
+            </div>
+            <div className="p-6">
+              {channelCategories.length > 0 ? (
+                <div className="space-y-3">
+                  {channelCategories.map((cc) => {
+                    const channel = voiceChannels.find(c => c.id === cc.channelId);
+                    return (
+                      <div
+                        key={cc.id}
+                        className="group flex items-center justify-between rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 p-4 transition-all"
+                      >
+                        <div className="flex items-center gap-4">
+                          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-amber-500/20 to-orange-500/20 border border-amber-500/30">
+                            <Icon icon="solar:volume-loud-linear" className="h-5 w-5 text-amber-400" />
+                          </div>
+                          <div>
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <span className="font-medium text-white">{channel?.name ?? cc.channelId}</span>
+                              <Badge className="bg-gradient-to-r from-amber-500 to-orange-500 text-white border-0">
+                                {CHANNEL_CATEGORY_LABELS[cc.category]} (x{CHANNEL_CATEGORY_MULTIPLIERS[cc.category]})
+                              </Badge>
+                            </div>
+                            <div className="flex items-center gap-1 text-sm text-white/40 mt-1">
+                              <Icon icon="solar:tag-linear" className="h-3 w-3" />
+                              음성 채널 유형
+                            </div>
+                          </div>
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => deleteChannelCategory.mutate(cc.id)}
+                          className="text-red-400 hover:text-red-300 hover:bg-red-500/10"
+                        >
+                          <Icon icon="solar:trash-bin-trash-linear" className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className="py-12 text-center">
+                  <div className="w-16 h-16 rounded-2xl bg-white/5 flex items-center justify-center mx-auto mb-4">
+                    <Icon icon="solar:volume-loud-linear" className="w-8 h-8 text-white/20" />
+                  </div>
+                  <p className="text-white/50">설정된 채널 유형이 없습니다.</p>
+                  <p className="text-sm text-white/30 mt-1">기본값(일반 통화방)이 적용됩니다.</p>
+                </div>
+              )}
+            </div>
           </div>
         </TabsContent>
       </Tabs>
