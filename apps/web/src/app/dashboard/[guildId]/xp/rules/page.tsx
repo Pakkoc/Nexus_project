@@ -228,6 +228,7 @@ export default function XpRulesPage() {
       ) : (
         <Icon icon="solar:hashtag-linear" className="h-4 w-4 text-slate-400" />
       ),
+      group: isVoiceChannel(ch.type) ? "🔊 음성 채널" : "# 텍스트 채널",
     }));
 
   const roleOptions: MultiSelectOption[] = (roles ?? [])
@@ -267,6 +268,7 @@ export default function XpRulesPage() {
       ) : (
         <Icon icon="solar:hashtag-linear" className="h-4 w-4 text-slate-400" />
       ),
+      group: isVoiceChannel(ch.type) ? "🔊 음성 채널" : "# 텍스트 채널",
     }));
 
   // 음성 유형 선택 시 이미 선택된 텍스트 채널 자동 제거
@@ -347,6 +349,13 @@ export default function XpRulesPage() {
 
   const multiplierChannelOptions: MultiSelectOption[] = (filteredChannels ?? [])
     .filter((ch) => !existingMultiplierChannelIds.has(ch.id))
+    .sort((a, b) => {
+      const aIsVoice = isVoiceChannel(a.type);
+      const bIsVoice = isVoiceChannel(b.type);
+      if (aIsVoice && !bIsVoice) return -1;
+      if (!aIsVoice && bIsVoice) return 1;
+      return 0;
+    })
     .map((ch) => ({
       value: ch.id,
       label: ch.name,
@@ -355,6 +364,7 @@ export default function XpRulesPage() {
       ) : (
         <Icon icon="solar:hashtag-linear" className="h-4 w-4 text-slate-400" />
       ),
+      group: isVoiceChannel(ch.type) ? "🔊 음성 채널" : "# 텍스트 채널",
     }));
 
   const multiplierRoleOptions: MultiSelectOption[] = (roles ?? [])

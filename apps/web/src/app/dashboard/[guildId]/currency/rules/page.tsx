@@ -28,7 +28,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Select,
   SelectContent,
+  SelectGroup,
   SelectItem,
+  SelectLabel,
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
@@ -498,24 +500,42 @@ export default function CurrencyRulesPage() {
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            {exclusionForm.watch("targetType") === "channel"
-                              ? sortedChannels.map((ch) => (
-                                  <SelectItem key={ch.id} value={ch.id}>
-                                    <span className="flex items-center gap-2">
-                                      {ch.type === 2 ? (
-                                        <Icon icon="solar:volume-loud-linear" className="h-4 w-4 text-green-400" />
-                                      ) : (
-                                        <Icon icon="solar:hashtag-linear" className="h-4 w-4 text-slate-400" />
-                                      )}
-                                      {ch.name}
-                                    </span>
-                                  </SelectItem>
-                                ))
-                              : roles.map((r) => (
-                                  <SelectItem key={r.id} value={r.id}>
-                                    @{r.name}
-                                  </SelectItem>
-                                ))}
+                            {exclusionForm.watch("targetType") === "channel" ? (
+                              <>
+                                {voiceChannels.length > 0 && (
+                                  <SelectGroup>
+                                    <SelectLabel className="text-xs text-slate-400">🔊 음성 채널</SelectLabel>
+                                    {voiceChannels.map((ch) => (
+                                      <SelectItem key={ch.id} value={ch.id}>
+                                        <span className="flex items-center gap-2">
+                                          <Icon icon="solar:volume-loud-linear" className="h-4 w-4 text-green-400" />
+                                          {ch.name}
+                                        </span>
+                                      </SelectItem>
+                                    ))}
+                                  </SelectGroup>
+                                )}
+                                {textChannels.length > 0 && (
+                                  <SelectGroup>
+                                    <SelectLabel className="text-xs text-slate-400"># 텍스트 채널</SelectLabel>
+                                    {textChannels.map((ch) => (
+                                      <SelectItem key={ch.id} value={ch.id}>
+                                        <span className="flex items-center gap-2">
+                                          <Icon icon="solar:hashtag-linear" className="h-4 w-4 text-slate-400" />
+                                          {ch.name}
+                                        </span>
+                                      </SelectItem>
+                                    ))}
+                                  </SelectGroup>
+                                )}
+                              </>
+                            ) : (
+                              roles.map((r) => (
+                                <SelectItem key={r.id} value={r.id}>
+                                  @{r.name}
+                                </SelectItem>
+                              ))
+                            )}
                           </SelectContent>
                         </Select>
                         <FormMessage />
@@ -617,24 +637,42 @@ export default function CurrencyRulesPage() {
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            {multiplierForm.watch("targetType") === "channel"
-                              ? sortedChannels.map((ch) => (
-                                  <SelectItem key={ch.id} value={ch.id}>
-                                    <span className="flex items-center gap-2">
-                                      {ch.type === 2 ? (
-                                        <Icon icon="solar:volume-loud-linear" className="h-4 w-4 text-green-400" />
-                                      ) : (
-                                        <Icon icon="solar:hashtag-linear" className="h-4 w-4 text-slate-400" />
-                                      )}
-                                      {ch.name}
-                                    </span>
-                                  </SelectItem>
-                                ))
-                              : roles.map((r) => (
-                                  <SelectItem key={r.id} value={r.id}>
-                                    @{r.name}
-                                  </SelectItem>
-                                ))}
+                            {multiplierForm.watch("targetType") === "channel" ? (
+                              <>
+                                {voiceChannels.length > 0 && (
+                                  <SelectGroup>
+                                    <SelectLabel className="text-xs text-slate-400">🔊 음성 채널</SelectLabel>
+                                    {voiceChannels.map((ch) => (
+                                      <SelectItem key={ch.id} value={ch.id}>
+                                        <span className="flex items-center gap-2">
+                                          <Icon icon="solar:volume-loud-linear" className="h-4 w-4 text-green-400" />
+                                          {ch.name}
+                                        </span>
+                                      </SelectItem>
+                                    ))}
+                                  </SelectGroup>
+                                )}
+                                {textChannels.length > 0 && (
+                                  <SelectGroup>
+                                    <SelectLabel className="text-xs text-slate-400"># 텍스트 채널</SelectLabel>
+                                    {textChannels.map((ch) => (
+                                      <SelectItem key={ch.id} value={ch.id}>
+                                        <span className="flex items-center gap-2">
+                                          <Icon icon="solar:hashtag-linear" className="h-4 w-4 text-slate-400" />
+                                          {ch.name}
+                                        </span>
+                                      </SelectItem>
+                                    ))}
+                                  </SelectGroup>
+                                )}
+                              </>
+                            ) : (
+                              roles.map((r) => (
+                                <SelectItem key={r.id} value={r.id}>
+                                  @{r.name}
+                                </SelectItem>
+                              ))
+                            )}
                           </SelectContent>
                         </Select>
                         <FormMessage />
