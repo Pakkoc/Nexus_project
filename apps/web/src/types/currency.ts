@@ -113,3 +113,20 @@ export const CHANNEL_CATEGORY_MULTIPLIERS: Record<string, number> = {
   afk: 0.1,
   premium: 1.0,
 };
+
+// Category Multiplier (서버별 커스텀 배율)
+export const categoryMultiplierConfigSchema = z.object({
+  id: z.number(),
+  guildId: z.string(),
+  category: z.enum(["normal", "music", "afk", "premium"]),
+  multiplier: z.number().min(0).max(10),
+});
+
+export type CategoryMultiplierConfig = z.infer<typeof categoryMultiplierConfigSchema>;
+
+export const saveCategoryMultiplierSchema = z.object({
+  category: z.enum(["normal", "music", "afk", "premium"]),
+  multiplier: z.number().min(0).max(10),
+});
+
+export type SaveCategoryMultiplier = z.infer<typeof saveCategoryMultiplierSchema>;

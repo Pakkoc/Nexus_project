@@ -12,7 +12,7 @@ import { checkCooldown } from '../functions/check-cooldown';
 import { checkDailyLimit, calculateActualEarning } from '../functions/check-daily-limit';
 import { generateRandomCurrency, applyMultiplier } from '../functions/generate-random-currency';
 import { checkHotTime, formatTimeForHotTime } from '../functions/check-hot-time';
-import { getChannelCategoryMultiplier } from '../functions/calculate-channel-multiplier';
+import { getChannelCategoryMultiplierWithCustom } from '../functions/calculate-channel-multiplier';
 
 export interface CurrencyGrantResult {
   granted: boolean;
@@ -279,7 +279,12 @@ export class CurrencyService {
     // 8. 채널 카테고리 배율 적용 (음성 전용)
     const categoryResult = await this.settingsRepo.getChannelCategory(guildId, channelId);
     if (categoryResult.success) {
-      const categoryMultiplier = getChannelCategoryMultiplier(categoryResult.data);
+      const category = categoryResult.data;
+      // 서버의 커스텀 배율 조회
+      const customMultiplierResult = await this.settingsRepo.getCategoryMultiplier(guildId, category);
+      const customMultiplier = customMultiplierResult.success ? customMultiplierResult.data : null;
+      // 커스텀 또는 기본 배율 적용
+      const categoryMultiplier = getChannelCategoryMultiplierWithCustom(category, customMultiplier);
       earnedAmount = applyMultiplier(earnedAmount, categoryMultiplier);
     }
 

@@ -30,7 +30,11 @@ export {
   type HotTimeResult as CurrencyHotTimeResult,
 } from './functions/check-hot-time';
 
-export { getChannelCategoryMultiplier } from './functions/calculate-channel-multiplier';
+export {
+  getChannelCategoryMultiplier,
+  getChannelCategoryMultiplierWithCustom,
+  getDefaultCategoryMultipliers,
+} from './functions/calculate-channel-multiplier';
 
 // Service
 export * from './service';

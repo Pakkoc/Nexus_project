@@ -19,6 +19,9 @@ import {
   useChannelCategories,
   useCreateChannelCategory,
   useDeleteChannelCategory,
+  useCategoryMultipliers,
+  useSaveCategoryMultiplier,
+  useResetCategoryMultiplier,
   useChannels,
   useRoles,
 } from "@/hooks/queries";
@@ -99,6 +102,7 @@ export default function CurrencyRulesPage() {
   const { data: exclusions = [], isLoading: exclusionsLoading } = useCurrencyExclusions(guildId);
   const { data: multipliers = [], isLoading: multipliersLoading } = useCurrencyMultipliers(guildId);
   const { data: channelCategories = [], isLoading: categoriesLoading } = useChannelCategories(guildId);
+  const { data: categoryMultipliers = [] } = useCategoryMultipliers(guildId);
   const { data: channels = [] } = useChannels(guildId);
   const { data: roles = [] } = useRoles(guildId);
 
@@ -112,6 +116,8 @@ export default function CurrencyRulesPage() {
   const deleteMultiplier = useDeleteCurrencyMultiplier(guildId);
   const createChannelCategory = useCreateChannelCategory(guildId);
   const deleteChannelCategory = useDeleteChannelCategory(guildId);
+  const saveCategoryMultiplier = useSaveCategoryMultiplier(guildId);
+  const resetCategoryMultiplier = useResetCategoryMultiplier(guildId);
 
   // Forms
   const hotTimeForm = useForm({
@@ -946,26 +952,83 @@ export default function CurrencyRulesPage() {
 
         {/* 채널 유형 탭 */}
         <TabsContent value="channel-category" className="space-y-6 animate-fade-up">
-          {/* Info */}
-          <div className="bg-blue-500/10 border border-blue-500/20 rounded-2xl p-5">
-            <div className="flex items-start gap-3">
-              <Icon icon="solar:info-circle-linear" className="w-5 h-5 text-blue-400 mt-0.5" />
-              <div>
-                <p className="text-sm text-blue-300 font-medium">채널 카테고리별 배율</p>
-                <p className="text-sm text-blue-300/70 mt-1">
-                  음성 채널 유형에 따라 토피 획득 배율이 달라집니다.
-                </p>
-                <div className="mt-3 grid gap-2 sm:grid-cols-2">
-                  {Object.entries(CHANNEL_CATEGORY_LABELS).map(([key, label]) => (
-                    <div key={key} className="flex items-center gap-2 text-sm">
-                      <span className="text-white/60">{label}:</span>
-                      <span className="text-amber-400 font-medium">
-                        x{CHANNEL_CATEGORY_MULTIPLIERS[key]}
-                      </span>
-                    </div>
-                  ))}
+          {/* 카테고리별 배율 설정 */}
+          <div className="bg-white/5 backdrop-blur-sm rounded-2xl border border-white/10 overflow-hidden">
+            <div className="p-6 border-b border-white/10">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500 to-orange-500 flex items-center justify-center">
+                  <Icon icon="solar:settings-bold" className="w-5 h-5 text-white" />
+                </div>
+                <div>
+                  <h3 className="font-semibold text-white">채널 유형별 배율</h3>
+                  <p className="text-sm text-white/50">각 유형별 토피 획득 배율을 설정합니다.</p>
                 </div>
               </div>
+            </div>
+            <div className="p-6">
+              <div className="grid gap-3 sm:grid-cols-2">
+                {Object.entries(CHANNEL_CATEGORY_LABELS).map(([key, label]) => {
+                  const customConfig = categoryMultipliers.find(cm => cm.category === key);
+                  const currentValue = customConfig?.multiplier ?? CHANNEL_CATEGORY_MULTIPLIERS[key];
+                  const isCustom = customConfig !== undefined;
+                  const defaultValue = CHANNEL_CATEGORY_MULTIPLIERS[key];
+
+                  return (
+                    <div
+                      key={key}
+                      className="flex items-center justify-between p-4 rounded-xl bg-white/5 border border-white/10"
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br from-amber-500/20 to-orange-500/20 border border-amber-500/30">
+                          <Icon
+                            icon={key === 'music' ? 'solar:music-note-linear' : key === 'afk' ? 'solar:moon-linear' : key === 'premium' ? 'solar:crown-linear' : 'solar:microphone-2-linear'}
+                            className="h-4 w-4 text-amber-400"
+                          />
+                        </div>
+                        <div>
+                          <span className="text-white font-medium">{label}</span>
+                          {isCustom ? (
+                            <Badge className="ml-2 bg-amber-500/20 text-amber-400 text-xs">커스텀</Badge>
+                          ) : (
+                            <span className="ml-2 text-xs text-white/40">(기본값)</span>
+                          )}
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-white/50 text-sm">x</span>
+                        <Input
+                          type="number"
+                          step="0.1"
+                          min="0"
+                          max="10"
+                          value={currentValue}
+                          onChange={(e) => {
+                            const value = parseFloat(e.target.value);
+                            if (!isNaN(value) && value >= 0 && value <= 10) {
+                              saveCategoryMultiplier.mutate({ category: key as "normal" | "music" | "afk" | "premium", multiplier: value });
+                            }
+                          }}
+                          className="w-20 h-9 bg-white/5 border-white/10 text-white text-center"
+                        />
+                        {isCustom && (
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => resetCategoryMultiplier.mutate(key)}
+                            className="h-9 px-2 text-white/50 hover:text-white"
+                            title={`기본값 (x${defaultValue})으로 초기화`}
+                          >
+                            <Icon icon="solar:restart-linear" className="h-4 w-4" />
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+              <p className="mt-4 text-xs text-white/40">
+                배율을 변경하면 자동으로 저장됩니다. 초기화 버튼을 누르면 기본값으로 되돌립니다.
+              </p>
             </div>
           </div>
 

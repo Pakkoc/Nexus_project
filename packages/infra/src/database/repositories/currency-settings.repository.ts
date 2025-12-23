@@ -6,6 +6,7 @@ import type {
   CurrencyMultiplier,
   ChannelCategory,
   ChannelCategoryConfig,
+  CategoryMultiplierConfig,
   RepositoryError,
 } from '@topia/core';
 import { Result } from '@topia/core';
@@ -58,6 +59,15 @@ interface ChannelCategoryRow extends RowDataPacket {
   channel_id: string;
   category: ChannelCategory;
   created_at: Date;
+}
+
+interface CategoryMultiplierRow extends RowDataPacket {
+  id: number;
+  guild_id: string;
+  category: ChannelCategory;
+  multiplier: string;
+  created_at: Date;
+  updated_at: Date;
 }
 
 function toCurrencySettings(row: CurrencySettingsRow): CurrencySettings {
@@ -274,6 +284,80 @@ export class CurrencySettingsRepository implements CurrencySettingsRepositoryPor
         category: r.category,
         createdAt: r.created_at,
       })));
+    } catch (error) {
+      return Result.err({
+        type: 'QUERY_ERROR',
+        message: error instanceof Error ? error.message : 'Unknown error',
+      });
+    }
+  }
+
+  async getCategoryMultipliers(guildId: string): Promise<Result<CategoryMultiplierConfig[], RepositoryError>> {
+    try {
+      const [rows] = await this.pool.execute<CategoryMultiplierRow[]>(
+        'SELECT * FROM currency_category_multipliers WHERE guild_id = ?',
+        [guildId]
+      );
+
+      return Result.ok(rows.map(r => ({
+        id: r.id,
+        guildId: r.guild_id,
+        category: r.category,
+        multiplier: parseFloat(r.multiplier),
+        createdAt: r.created_at,
+        updatedAt: r.updated_at,
+      })));
+    } catch (error) {
+      return Result.err({
+        type: 'QUERY_ERROR',
+        message: error instanceof Error ? error.message : 'Unknown error',
+      });
+    }
+  }
+
+  async getCategoryMultiplier(guildId: string, category: ChannelCategory): Promise<Result<number | null, RepositoryError>> {
+    try {
+      const [rows] = await this.pool.execute<CategoryMultiplierRow[]>(
+        'SELECT multiplier FROM currency_category_multipliers WHERE guild_id = ? AND category = ?',
+        [guildId, category]
+      );
+
+      const firstRow = rows[0];
+      return Result.ok(firstRow ? parseFloat(firstRow.multiplier) : null);
+    } catch (error) {
+      return Result.err({
+        type: 'QUERY_ERROR',
+        message: error instanceof Error ? error.message : 'Unknown error',
+      });
+    }
+  }
+
+  async saveCategoryMultiplier(guildId: string, category: ChannelCategory, multiplier: number): Promise<Result<void, RepositoryError>> {
+    try {
+      await this.pool.execute(
+        `INSERT INTO currency_category_multipliers (guild_id, category, multiplier)
+         VALUES (?, ?, ?)
+         ON DUPLICATE KEY UPDATE multiplier = VALUES(multiplier), updated_at = NOW()`,
+        [guildId, category, multiplier]
+      );
+
+      return Result.ok(undefined);
+    } catch (error) {
+      return Result.err({
+        type: 'QUERY_ERROR',
+        message: error instanceof Error ? error.message : 'Unknown error',
+      });
+    }
+  }
+
+  async deleteCategoryMultiplier(guildId: string, category: ChannelCategory): Promise<Result<void, RepositoryError>> {
+    try {
+      await this.pool.execute(
+        'DELETE FROM currency_category_multipliers WHERE guild_id = ? AND category = ?',
+        [guildId, category]
+      );
+
+      return Result.ok(undefined);
     } catch (error) {
       return Result.err({
         type: 'QUERY_ERROR',
