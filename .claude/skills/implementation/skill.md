@@ -361,6 +361,28 @@ Badge를 사용하여 유형, 배율 등을 표시합니다.
 </div>
 ```
 
+### 드롭다운이 있는 카드
+
+**드롭다운(Select, MultiSelect)이 포함된 카드에는 `overflow-hidden`을 사용하지 마세요.**
+
+드롭다운이 카드 영역을 벗어나면 잘리는 문제가 발생합니다.
+
+```tsx
+// ❌ 잘못된 패턴 - 드롭다운이 잘림
+<div className="rounded-2xl border border-white/10 overflow-hidden">
+  <MultiSelect ... />
+</div>
+
+// ✅ 올바른 패턴 - overflow-hidden 제거
+<div className="rounded-2xl border border-white/10">
+  <MultiSelect ... />
+</div>
+```
+
+**규칙:**
+- 드롭다운이 있는 폼 카드: `overflow-hidden` 사용 금지
+- 드롭다운이 없는 목록 카드: `overflow-hidden` 사용 가능
+
 ### 참고 페이지
 
 - XP 규칙: `/xp/rules` - 핫타임, 제외, 배율 목록 UI
