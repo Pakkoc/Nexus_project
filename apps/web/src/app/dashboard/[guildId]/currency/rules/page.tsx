@@ -8,6 +8,7 @@ import { z } from "zod";
 import {
   useCurrencyHotTimes,
   useCreateCurrencyHotTime,
+  useUpdateCurrencyHotTime,
   useDeleteCurrencyHotTime,
   useCurrencyExclusions,
   useCreateCurrencyExclusion,
@@ -99,6 +100,7 @@ export default function CurrencyRulesPage() {
 
   // Mutations
   const createHotTime = useCreateCurrencyHotTime(guildId);
+  const updateHotTime = useUpdateCurrencyHotTime(guildId);
   const deleteHotTime = useDeleteCurrencyHotTime(guildId);
   const createExclusion = useCreateCurrencyExclusion(guildId);
   const deleteExclusion = useDeleteCurrencyExclusion(guildId);
@@ -290,7 +292,7 @@ export default function CurrencyRulesPage() {
             <h3 className="font-semibold text-white mb-4">핫타임 추가</h3>
             <Form {...hotTimeForm}>
               <form onSubmit={hotTimeForm.handleSubmit(onSubmitHotTime)} className="space-y-4">
-                <div className="grid gap-4 sm:grid-cols-5">
+                <div className="grid gap-4 sm:grid-cols-4">
                   <FormField
                     control={hotTimeForm.control}
                     name="type"
@@ -367,18 +369,6 @@ export default function CurrencyRulesPage() {
                           />
                         </FormControl>
                         <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={hotTimeForm.control}
-                    name="enabled"
-                    render={({ field }) => (
-                      <FormItem className="flex items-end gap-2 pb-2">
-                        <FormControl>
-                          <Switch checked={field.value} onCheckedChange={field.onChange} />
-                        </FormControl>
-                        <FormLabel className="text-white/70 text-sm">활성화</FormLabel>
                       </FormItem>
                     )}
                   />
@@ -466,6 +456,10 @@ export default function CurrencyRulesPage() {
                           </div>
                         </div>
                         <div className="flex items-center gap-3">
+                          <Switch
+                            checked={ht.enabled}
+                            onCheckedChange={() => updateHotTime.mutate({ id: ht.id, data: { enabled: !ht.enabled } })}
+                          />
                           <Button
                             variant="ghost"
                             size="icon"

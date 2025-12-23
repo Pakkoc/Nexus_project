@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { authOptions } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { notifyBotSettingsChanged } from "@/lib/bot-notify";
-import { createCurrencyHotTimeSchema } from "@/types/currency";
+import { createCurrencyHotTimeSchema, updateCurrencyHotTimeSchema } from "@/types/currency";
 import type { RowDataPacket, ResultSetHeader } from "mysql2";
 
 interface HotTimeRow extends RowDataPacket {
@@ -112,6 +112,90 @@ export async function POST(
       );
     }
     console.error("Error creating currency hot time:", error);
+    return NextResponse.json(
+      { error: "Internal server error" },
+      { status: 500 }
+    );
+  }
+}
+
+export async function PATCH(
+  request: NextRequest,
+  { params }: { params: Promise<{ guildId: string }> }
+) {
+  const session = await getServerSession(authOptions);
+  if (!session?.user?.accessToken) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const { guildId } = await params;
+
+  try {
+    const body = await request.json();
+    const { id, ...data } = body;
+
+    if (!id) {
+      return NextResponse.json({ error: "ID is required" }, { status: 400 });
+    }
+
+    const validatedData = updateCurrencyHotTimeSchema.parse(data);
+
+    const pool = db();
+
+    // Build dynamic update query
+    const updates: string[] = [];
+    const values: (string | number | null)[] = [];
+
+    if (validatedData.type !== undefined) {
+      updates.push("type = ?");
+      values.push(validatedData.type);
+    }
+    if (validatedData.startTime !== undefined) {
+      updates.push("start_time = ?");
+      values.push(validatedData.startTime);
+    }
+    if (validatedData.endTime !== undefined) {
+      updates.push("end_time = ?");
+      values.push(validatedData.endTime);
+    }
+    if (validatedData.multiplier !== undefined) {
+      updates.push("multiplier = ?");
+      values.push(validatedData.multiplier);
+    }
+    if (validatedData.enabled !== undefined) {
+      updates.push("enabled = ?");
+      values.push(validatedData.enabled ? 1 : 0);
+    }
+    if (validatedData.channelIds !== undefined) {
+      updates.push("channel_ids = ?");
+      values.push(validatedData.channelIds.length ? JSON.stringify(validatedData.channelIds) : null);
+    }
+
+    if (updates.length === 0) {
+      return NextResponse.json({ error: "No fields to update" }, { status: 400 });
+    }
+
+    values.push(id, guildId);
+    await pool.query(
+      `UPDATE currency_hot_times SET ${updates.join(", ")} WHERE id = ? AND guild_id = ?`,
+      values
+    );
+
+    notifyBotSettingsChanged({
+      guildId,
+      type: 'currency-hottime',
+      action: '수정',
+    });
+
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    if (error instanceof Error && error.name === "ZodError") {
+      return NextResponse.json(
+        { error: "Validation failed", details: error },
+        { status: 400 }
+      );
+    }
+    console.error("Error updating currency hot time:", error);
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }

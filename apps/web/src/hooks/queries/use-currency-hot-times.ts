@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiClient } from "@/lib/remote/api-client";
-import { CurrencyHotTime, CreateCurrencyHotTime } from "@/types/currency";
+import { CurrencyHotTime, CreateCurrencyHotTime, UpdateCurrencyHotTime } from "@/types/currency";
 
 export function useCurrencyHotTimes(guildId: string) {
   return useQuery({
@@ -23,6 +23,23 @@ export function useCreateCurrencyHotTime(guildId: string) {
       const response = await apiClient.post<CurrencyHotTime>(
         `/api/guilds/${guildId}/currency/hot-times`,
         data
+      );
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["currency-hot-times", guildId] });
+    },
+  });
+}
+
+export function useUpdateCurrencyHotTime(guildId: string) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ id, data }: { id: number; data: UpdateCurrencyHotTime }) => {
+      const response = await apiClient.patch<{ success: boolean }>(
+        `/api/guilds/${guildId}/currency/hot-times`,
+        { id, ...data }
       );
       return response.data;
     },

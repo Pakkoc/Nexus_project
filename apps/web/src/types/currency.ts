@@ -40,6 +40,9 @@ export type CurrencyHotTime = z.infer<typeof currencyHotTimeSchema>;
 export const createCurrencyHotTimeSchema = currencyHotTimeSchema.omit({ id: true, guildId: true });
 export type CreateCurrencyHotTime = z.infer<typeof createCurrencyHotTimeSchema>;
 
+export const updateCurrencyHotTimeSchema = currencyHotTimeSchema.partial().omit({ id: true, guildId: true });
+export type UpdateCurrencyHotTime = z.infer<typeof updateCurrencyHotTimeSchema>;
+
 // Currency Exclusion
 export const currencyExclusionSchema = z.object({
   id: z.number(),
