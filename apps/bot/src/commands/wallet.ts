@@ -1,14 +1,6 @@
 import { SlashCommandBuilder, EmbedBuilder } from 'discord.js';
 import type { Command } from './types';
 
-// 이모지 제거 함수 (모든 이모지 범위 커버)
-function removeEmoji(text: string): string {
-  return text
-    .replace(/[\u{1F300}-\u{1FAFF}]|[\u{2600}-\u{26FF}]|[\u{2700}-\u{27BF}]|[\u{FE00}-\u{FE0F}]|[\u{1F000}-\u{1F02F}]/gu, '')
-    .replace(/\s+/g, ' ')
-    .trim();
-}
-
 export const walletCommand: Command = {
   data: new SlashCommandBuilder()
     .setName('지갑')
@@ -55,28 +47,24 @@ export const walletCommand: Command = {
     const isSelf = targetUser.id === interaction.user.id;
     const title = isSelf ? '내 지갑' : `${targetUser.displayName}님의 지갑`;
 
-    // value에는 이모지 제거된 이름 사용
-    const topyNameClean = removeEmoji(topyName);
-    const rubyNameClean = removeEmoji(rubyName);
-
     const embed = new EmbedBuilder()
       .setTitle(title)
       .setColor(0x5865F2)
       .setThumbnail(targetUser.displayAvatarURL())
       .addFields(
         {
-          name: topyNameClean,
-          value: `${topyBalance.toLocaleString()} ${topyNameClean}`,
+          name: topyName,
+          value: `${topyBalance.toLocaleString()} 토피`,
           inline: true,
         },
         {
-          name: rubyNameClean,
-          value: `${rubyBalance.toLocaleString()} ${rubyNameClean}`,
+          name: rubyName,
+          value: `${rubyBalance.toLocaleString()} 루비`,
           inline: true,
         },
         {
           name: `총 획득`,
-          value: `${topyTotalEarned.toLocaleString()} ${topyNameClean}`,
+          value: `${topyTotalEarned.toLocaleString()} 토피`,
           inline: true,
         }
       )
