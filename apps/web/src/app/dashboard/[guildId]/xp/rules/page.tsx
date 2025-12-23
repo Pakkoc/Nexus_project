@@ -163,8 +163,8 @@ export default function XpRulesPage() {
   const [isAddingMultiplier, setIsAddingMultiplier] = useState(false);
   const [multiplierTargetType, setMultiplierTargetType] = useState<"channel" | "role">("channel");
   const [multiplierTargetIds, setMultiplierTargetIds] = useState<string[]>([]);
-  const [multiplierValue, setMultiplierValue] = useState<number>(1);
-  const [editedMultipliers, setEditedMultipliers] = useState<Record<number, number>>({});
+  const [multiplierValue, setMultiplierValue] = useState<string>("1");
+  const [editedMultipliers, setEditedMultipliers] = useState<Record<number, string>>({});
 
   const { data: multipliers, isLoading: multipliersLoading } = useXpMultipliers(guildId);
   const createMultiplier = useCreateXpMultiplier(guildId);
@@ -385,13 +385,23 @@ export default function XpRulesPage() {
       return;
     }
 
+    const numValue = parseInt(multiplierValue);
+    if (multiplierValue.trim() === "" || isNaN(numValue)) {
+      toast({
+        title: "입력 필요",
+        description: "배율 값을 입력해주세요.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     try {
       // 순차적으로 생성
       for (const targetId of multiplierTargetIds) {
         await createMultiplier.mutateAsync({
           targetType: multiplierTargetType,
           targetId,
-          multiplier: multiplierValue,
+          multiplier: numValue,
         });
       }
       toast({
@@ -400,7 +410,7 @@ export default function XpRulesPage() {
       });
       setIsAddingMultiplier(false);
       setMultiplierTargetIds([]);
-      setMultiplierValue(1);
+      setMultiplierValue("1");
     } catch {
       toast({
         title: "추가 실패",
@@ -410,11 +420,21 @@ export default function XpRulesPage() {
     }
   };
 
-  const handleUpdateMultiplier = async (multiplier: XpMultiplier, newValue: number) => {
+  const handleUpdateMultiplier = async (multiplier: XpMultiplier, newValueStr: string) => {
+    const numValue = parseInt(newValueStr);
+    if (newValueStr.trim() === "" || isNaN(numValue)) {
+      toast({
+        title: "입력 필요",
+        description: "배율 값을 입력해주세요.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     try {
       await updateMultiplier.mutateAsync({
         id: multiplier.id,
-        data: { multiplier: newValue },
+        data: { multiplier: numValue },
       });
       // 저장 완료 후 편집 상태에서 제거
       setEditedMultipliers((prev) => {
@@ -424,7 +444,7 @@ export default function XpRulesPage() {
       });
       toast({
         title: "배율 수정 완료",
-        description: `배율이 ${newValue}x로 변경되었습니다.`,
+        description: `배율이 ${numValue}x로 변경되었습니다.`,
       });
     } catch {
       toast({
@@ -842,7 +862,7 @@ export default function XpRulesPage() {
                       min="0"
                       max="10"
                       value={multiplierValue}
-                      onChange={(e) => setMultiplierValue(parseInt(e.target.value) || 0)}
+                      onChange={(e) => setMultiplierValue(e.target.value)}
                       className="border-white/10 bg-white/5 hover:bg-white/10 transition-colors"
                     />
                   </div>
@@ -855,7 +875,7 @@ export default function XpRulesPage() {
                     onClick={() => {
                       setIsAddingMultiplier(false);
                       setMultiplierTargetIds([]);
-                      setMultiplierValue(1);
+                      setMultiplierValue("1");
                     }}
                     className="border-white/10 hover:bg-white/5"
                   >
@@ -920,20 +940,17 @@ export default function XpRulesPage() {
                               step="1"
                               min="0"
                               max="10"
-                              value={editedMultipliers[multiplier.id] ?? multiplier.multiplier}
+                              value={editedMultipliers[multiplier.id] ?? String(multiplier.multiplier)}
                               className="w-20 border-white/10 bg-white/5"
                               onChange={(e) => {
-                                const newValue = parseInt(e.target.value);
-                                if (!isNaN(newValue)) {
-                                  setEditedMultipliers((prev) => ({
-                                    ...prev,
-                                    [multiplier.id]: newValue,
-                                  }));
-                                }
+                                setEditedMultipliers((prev) => ({
+                                  ...prev,
+                                  [multiplier.id]: e.target.value,
+                                }));
                               }}
                             />
                             {editedMultipliers[multiplier.id] !== undefined &&
-                              editedMultipliers[multiplier.id] !== multiplier.multiplier && (
+                              editedMultipliers[multiplier.id] !== String(multiplier.multiplier) && (
                               <Button
                                 variant="ghost"
                                 size="icon"
@@ -999,20 +1016,17 @@ export default function XpRulesPage() {
                             step="1"
                             min="0"
                             max="10"
-                            value={editedMultipliers[multiplier.id] ?? multiplier.multiplier}
+                            value={editedMultipliers[multiplier.id] ?? String(multiplier.multiplier)}
                             className="w-20 border-white/10 bg-white/5"
                             onChange={(e) => {
-                              const newValue = parseInt(e.target.value);
-                              if (!isNaN(newValue)) {
-                                setEditedMultipliers((prev) => ({
-                                  ...prev,
-                                  [multiplier.id]: newValue,
-                                }));
-                              }
+                              setEditedMultipliers((prev) => ({
+                                ...prev,
+                                [multiplier.id]: e.target.value,
+                              }));
                             }}
                           />
                           {editedMultipliers[multiplier.id] !== undefined &&
-                            editedMultipliers[multiplier.id] !== multiplier.multiplier && (
+                            editedMultipliers[multiplier.id] !== String(multiplier.multiplier) && (
                             <Button
                               variant="ghost"
                               size="icon"

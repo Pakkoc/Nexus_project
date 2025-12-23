@@ -62,7 +62,7 @@ const hotTimeSchema = z.object({
   type: z.enum(["text", "voice", "all"]),
   startTime: z.string().regex(/^\d{2}:\d{2}$/, "HH:MM 형식이어야 합니다"),
   endTime: z.string().regex(/^\d{2}:\d{2}$/, "HH:MM 형식이어야 합니다"),
-  multiplier: z.coerce.number().min(1).max(10),
+  multiplier: z.coerce.number().min(0).max(10),
   enabled: z.boolean(),
 });
 
@@ -74,7 +74,7 @@ const exclusionSchema = z.object({
 const multiplierSchema = z.object({
   targetType: z.enum(["channel", "role"]),
   targetId: z.string().min(1, "대상을 선택해주세요"),
-  multiplier: z.coerce.number().min(0.1).max(10),
+  multiplier: z.coerce.number().min(0).max(10),
 });
 
 const channelCategorySchema = z.object({
@@ -126,7 +126,7 @@ export default function CurrencyRulesPage() {
       type: "all" as const,
       startTime: "20:00",
       endTime: "23:00",
-      multiplier: 1.5,
+      multiplier: 2,
       enabled: true,
     },
   });
@@ -144,7 +144,7 @@ export default function CurrencyRulesPage() {
     defaultValues: {
       targetType: "channel" as const,
       targetId: "",
-      multiplier: 1.5,
+      multiplier: 1,
     },
   });
 
@@ -423,7 +423,9 @@ export default function CurrencyRulesPage() {
                             <FormControl>
                               <Input
                                 type="number"
-                                step="0.1"
+                                step="1"
+                                min="0"
+                                max="10"
                                 {...field}
                                 className="bg-white/5 border-white/10 text-white"
                               />
@@ -657,7 +659,9 @@ export default function CurrencyRulesPage() {
                             <FormControl>
                               <Input
                                 type="number"
-                                step="0.1"
+                                step="1"
+                                min="0"
+                                max="10"
                                 {...field}
                                 className="bg-white/5 border-white/10 text-white"
                               />
@@ -998,13 +1002,17 @@ export default function CurrencyRulesPage() {
                         <span className="text-white/50 text-sm">x</span>
                         <Input
                           type="number"
-                          step="0.1"
+                          step="1"
                           min="0"
                           max="10"
-                          value={currentValue}
-                          onChange={(e) => {
-                            const value = parseFloat(e.target.value);
-                            if (!isNaN(value) && value >= 0 && value <= 10) {
+                          defaultValue={currentValue}
+                          onBlur={(e) => {
+                            const value = parseInt(e.target.value);
+                            if (e.target.value.trim() === "" || isNaN(value)) {
+                              e.target.value = String(currentValue);
+                              return;
+                            }
+                            if (value >= 0 && value <= 10) {
                               saveCategoryMultiplier.mutate({ category: key as "normal" | "music" | "afk" | "premium", multiplier: value });
                             }
                           }}
