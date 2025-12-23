@@ -43,9 +43,16 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { MultiSelect, type MultiSelectOption } from "@/components/ui/multi-select";
+import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { Icon } from "@iconify/react";
 import { CHANNEL_CATEGORY_LABELS, CHANNEL_CATEGORY_MULTIPLIERS } from "@/types/currency";
+
+const typeLabels: Record<string, string> = {
+  text: "텍스트",
+  voice: "음성",
+  all: "전체",
+};
 
 const hotTimeSchema = z.object({
   type: z.enum(["text", "voice", "all"]),
@@ -408,65 +415,80 @@ export default function CurrencyRulesPage() {
           </div>
 
           {/* 핫타임 목록 */}
-          <div className="space-y-3">
-            {hotTimes.map((ht) => {
-              const appliedChannels = (ht.channelIds ?? [])
-                .map(id => channels.find(c => c.id === id))
-                .filter(Boolean);
-              return (
-                <div
-                  key={ht.id}
-                  className="flex items-center justify-between rounded-xl bg-white/5 border border-white/10 p-4"
-                >
-                  <div className="flex items-center gap-4 flex-wrap">
-                    <div className={`w-2 h-2 rounded-full ${ht.enabled ? 'bg-green-500' : 'bg-white/30'}`} />
-                    <span className="text-white font-medium">
-                      {ht.type === 'all' ? '전체' : ht.type === 'text' ? '텍스트' : '음성'}
-                    </span>
-                    <span className="text-white/60">
-                      {ht.startTime} ~ {ht.endTime}
-                    </span>
-                    <span className="text-amber-400 font-medium">x{ht.multiplier}</span>
-                    {appliedChannels.length > 0 ? (
-                      <div className="flex items-center gap-1 flex-wrap">
-                        <Icon icon="solar:map-point-linear" className="h-4 w-4 text-white/40" />
-                        {appliedChannels.slice(0, 3).map(ch => (
-                          <span
-                            key={ch!.id}
-                            className="px-2 py-0.5 rounded-full bg-white/10 text-white/70 text-xs flex items-center gap-1"
-                          >
-                            {ch!.type === CHANNEL_TYPE_VOICE ? (
-                              <Icon icon="solar:volume-loud-linear" className="h-3 w-3 text-green-400" />
-                            ) : (
-                              <Icon icon="solar:hashtag-linear" className="h-3 w-3 text-slate-400" />
-                            )}
-                            {ch!.name}
-                          </span>
-                        ))}
-                        {appliedChannels.length > 3 && (
-                          <span className="text-white/40 text-xs">+{appliedChannels.length - 3}</span>
-                        )}
-                      </div>
-                    ) : (
-                      <span className="text-white/40 text-xs">모든 채널</span>
-                    )}
-                  </div>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => deleteHotTime.mutate(ht.id)}
-                    className="text-red-400 hover:text-red-300 hover:bg-red-500/10"
-                  >
-                    <Icon icon="solar:trash-bin-trash-linear" className="h-4 w-4" />
-                  </Button>
+          <div className="bg-white/5 backdrop-blur-sm rounded-2xl border border-white/10 overflow-hidden">
+            <div className="p-6 border-b border-white/10">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500 to-orange-500 flex items-center justify-center">
+                  <Icon icon="solar:fire-bold" className="w-5 h-5 text-white" />
                 </div>
-              );
-            })}
-            {hotTimes.length === 0 && (
-              <div className="text-center py-8 text-white/40">
-                등록된 핫타임이 없습니다
+                <div>
+                  <h3 className="font-semibold text-white">핫타임 목록</h3>
+                  <p className="text-sm text-white/50">특정 시간대에 토피 배율이 증가합니다.</p>
+                </div>
               </div>
-            )}
+            </div>
+            <div className="p-6">
+              {hotTimes.length > 0 ? (
+                <div className="space-y-3">
+                  {hotTimes.map((ht) => {
+                    const getChannelName = (id: string) => channels.find(c => c.id === id)?.name ?? id;
+                    return (
+                      <div
+                        key={ht.id}
+                        className="group flex items-center justify-between rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 p-4 transition-all"
+                      >
+                        <div className="flex items-center gap-4">
+                          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-amber-500/20 to-orange-500/20 border border-amber-500/30">
+                            <Icon icon="solar:fire-linear" className="h-5 w-5 text-amber-400" />
+                          </div>
+                          <div>
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <span className="font-medium text-white">
+                                {ht.startTime} - {ht.endTime}
+                              </span>
+                              <Badge variant="secondary" className="bg-white/10 text-white/70">{typeLabels[ht.type]}</Badge>
+                              <Badge className="bg-gradient-to-r from-amber-500 to-orange-500 text-white border-0">x{ht.multiplier}</Badge>
+                            </div>
+                            <div className="flex items-center gap-1 text-sm text-white/40 mt-1">
+                              <Icon icon="solar:clock-circle-linear" className="h-3 w-3" />
+                              {ht.enabled ? "활성화됨" : "비활성화됨"}
+                              <span className="mx-1">•</span>
+                              <Icon icon="solar:hashtag-linear" className="h-3 w-3" />
+                              {ht.channelIds && ht.channelIds.length > 0 ? (
+                                <span>
+                                  {ht.channelIds.slice(0, 2).map(id => getChannelName(id)).join(", ")}
+                                  {ht.channelIds.length > 2 && ` 외 ${ht.channelIds.length - 2}개`}
+                                </span>
+                              ) : (
+                                <span>모든 채널</span>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-3">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => deleteHotTime.mutate(ht.id)}
+                            className="text-red-400 hover:text-red-300 hover:bg-red-500/10"
+                          >
+                            <Icon icon="solar:trash-bin-trash-linear" className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className="py-12 text-center">
+                  <div className="w-16 h-16 rounded-2xl bg-white/5 flex items-center justify-center mx-auto mb-4">
+                    <Icon icon="solar:fire-linear" className="w-8 h-8 text-white/20" />
+                  </div>
+                  <p className="text-white/50">설정된 핫타임이 없습니다.</p>
+                  <p className="text-sm text-white/30 mt-1">핫타임을 추가하여 특정 시간대에 토피 배율을 높이세요.</p>
+                </div>
+              )}
+            </div>
           </div>
         </TabsContent>
 
