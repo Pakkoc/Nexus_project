@@ -12,7 +12,6 @@ import { checkCooldown } from '../functions/check-cooldown';
 import { checkDailyLimit, calculateActualEarning } from '../functions/check-daily-limit';
 import { generateRandomCurrency, applyMultiplier } from '../functions/generate-random-currency';
 import { checkHotTime, formatTimeForHotTime } from '../functions/check-hot-time';
-import { getChannelCategoryMultiplierWithCustom } from '../functions/calculate-channel-multiplier';
 
 export interface CurrencyGrantResult {
   granted: boolean;
@@ -276,19 +275,7 @@ export class CurrencyService {
     const randomValue = Math.random();
     let earnedAmount = generateRandomCurrency(settings.voiceEarnMin, settings.voiceEarnMax, randomValue);
 
-    // 8. 채널 카테고리 배율 적용 (음성 전용)
-    const categoryResult = await this.settingsRepo.getChannelCategory(guildId, channelId);
-    if (categoryResult.success) {
-      const category = categoryResult.data;
-      // 서버의 커스텀 배율 조회
-      const customMultiplierResult = await this.settingsRepo.getCategoryMultiplier(guildId, category);
-      const customMultiplier = customMultiplierResult.success ? customMultiplierResult.data : null;
-      // 커스텀 또는 기본 배율 적용
-      const categoryMultiplier = getChannelCategoryMultiplierWithCustom(category, customMultiplier);
-      earnedAmount = applyMultiplier(earnedAmount, categoryMultiplier);
-    }
-
-    // 9. 핫타임 / 역할 / 채널 배율 적용
+    // 8. 배율 적용 (핫타임 > 역할 > 채널)
     const currentTime = formatTimeForHotTime(now);
     let appliedMultiplier = 1;
 
@@ -326,14 +313,14 @@ export class CurrencyService {
       earnedAmount = applyMultiplier(earnedAmount, appliedMultiplier);
     }
 
-    // 10. 일일 상한 적용
+    // 9. 일일 상한 적용
     earnedAmount = calculateActualEarning(wallet.dailyEarned, settings.voiceDailyLimit, earnedAmount);
 
     if (earnedAmount <= 0) {
       return Result.ok({ granted: false, reason: 'daily_limit' });
     }
 
-    // 11. 지갑 업데이트
+    // 10. 지갑 업데이트
     const newBalance = wallet.balance + BigInt(earnedAmount);
     const updatedWallet: TopyWallet = {
       ...wallet,
@@ -350,7 +337,7 @@ export class CurrencyService {
       return Result.err({ type: 'REPOSITORY_ERROR', cause: saveResult.error });
     }
 
-    // 12. 거래 기록 저장
+    // 11. 거래 기록 저장
     await this.transactionRepo.save(
       createTransaction(guildId, userId, 'topy', 'earn_voice', BigInt(earnedAmount), newBalance)
     );
