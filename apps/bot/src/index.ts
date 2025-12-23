@@ -1,9 +1,10 @@
 import 'dotenv/config';
 import express from 'express';
-import { Client, GatewayIntentBits, Events, VoiceState } from 'discord.js';
-import { createPool, createRedisClient, createContainer, getPool } from '@topia/infra';
+import { Client, GatewayIntentBits, Events, VoiceState, REST, Routes, Collection } from 'discord.js';
+import { createPool, createRedisClient, createContainer, getPool, type Container } from '@topia/infra';
 import { createXpHandler } from './handlers/xp.handler';
 import { createCurrencyHandler } from './handlers/currency.handler';
+import { commands, type Command } from './commands';
 
 const client = new Client({
   intents: [
@@ -17,6 +18,25 @@ const client = new Client({
 
 // Track users in voice channels for XP
 const voiceUsers = new Map<string, { guildId: string; channelId: string; roleIds: string[]; joinedAt: Date }>();
+
+// Command collection
+const commandCollection = new Collection<string, Command>();
+
+// Register slash commands to Discord
+async function registerCommands(token: string, clientId: string) {
+  const rest = new REST().setToken(token);
+  const commandData = commands.map(cmd => cmd.data.toJSON());
+
+  try {
+    console.log(`[COMMANDS] Registering ${commands.length} slash commands...`);
+
+    await rest.put(Routes.applicationCommands(clientId), { body: commandData });
+
+    console.log(`[COMMANDS] Successfully registered ${commands.length} commands`);
+  } catch (error) {
+    console.error('[COMMANDS] Failed to register commands:', error);
+  }
+}
 
 async function main() {
   // Database 초기화
@@ -41,6 +61,25 @@ async function main() {
   // Handlers 생성
   const xpHandler = createXpHandler(container, client);
   const currencyHandler = createCurrencyHandler(container, client);
+
+  // Load commands into collection
+  for (const command of commands) {
+    commandCollection.set(command.data.name, command);
+  }
+
+  // Token 가져오기 (명령어 등록에 필요)
+  const token = process.env['DISCORD_TOKEN'];
+  if (!token) {
+    throw new Error('DISCORD_TOKEN is required');
+  }
+
+  // Register slash commands
+  const clientId = process.env['DISCORD_CLIENT_ID'];
+  if (clientId) {
+    await registerCommands(token, clientId);
+  } else {
+    console.warn('[COMMANDS] DISCORD_CLIENT_ID not set, skipping command registration');
+  }
 
   // Events
   client.once(Events.ClientReady, async (c) => {
@@ -223,12 +262,32 @@ async function main() {
     }
   }, VOICE_XP_INTERVAL);
 
-  // Login
-  const token = process.env['DISCORD_TOKEN'];
-  if (!token) {
-    throw new Error('DISCORD_TOKEN is required');
-  }
+  // Slash command handler
+  client.on(Events.InteractionCreate, async (interaction) => {
+    if (!interaction.isChatInputCommand()) return;
 
+    const command = commandCollection.get(interaction.commandName);
+    if (!command) return;
+
+    try {
+      await command.execute(interaction, container);
+    } catch (error) {
+      console.error(`[COMMAND] Error executing ${interaction.commandName}:`, error);
+
+      const reply = {
+        content: '명령어 실행 중 오류가 발생했습니다.',
+        ephemeral: true,
+      };
+
+      if (interaction.replied || interaction.deferred) {
+        await interaction.followUp(reply);
+      } else {
+        await interaction.reply(reply);
+      }
+    }
+  });
+
+  // Login
   await client.login(token);
 
   // HTTP Server for web notifications

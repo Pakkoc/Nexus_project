@@ -44,6 +44,7 @@ const navigation = [
     children: [
       { name: "화폐 설정", href: "/currency/settings", icon: "solar:settings-linear", iconActive: "solar:settings-bold" },
       { name: "화폐 규칙", href: "/currency/rules", icon: "solar:book-linear", iconActive: "solar:book-bold" },
+      { name: "지갑 관리", href: "/currency/wallets", icon: "solar:card-linear", iconActive: "solar:card-bold" },
     ],
   },
   {

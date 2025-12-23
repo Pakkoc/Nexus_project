@@ -4,6 +4,7 @@ import type { RubyWalletRepositoryPort } from '../port/ruby-wallet-repository.po
 import type { CurrencySettingsRepositoryPort } from '../port/currency-settings-repository.port';
 import type { CurrencyTransactionRepositoryPort } from '../port/currency-transaction-repository.port';
 import type { TopyWallet } from '../domain/topy-wallet';
+import type { RubyWallet } from '../domain/ruby-wallet';
 import type { CurrencyError } from '../errors';
 import { Result } from '../../shared/types/result';
 import { createTopyWallet, needsDailyReset, applyDailyReset } from '../domain/topy-wallet';
@@ -377,5 +378,42 @@ export class CurrencyService {
       return Result.err({ type: 'REPOSITORY_ERROR', cause: result.error });
     }
     return Result.ok(result.data);
+  }
+
+  /**
+   * 루비 지갑 조회
+   */
+  async getRubyWallet(
+    guildId: string,
+    userId: string
+  ): Promise<Result<RubyWallet | null, CurrencyError>> {
+    const result = await this.rubyWalletRepo.findByUser(guildId, userId);
+    if (!result.success) {
+      return Result.err({ type: 'REPOSITORY_ERROR', cause: result.error });
+    }
+    return Result.ok(result.data);
+  }
+
+  /**
+   * 토피 + 루비 지갑 조회
+   */
+  async getWallets(
+    guildId: string,
+    userId: string
+  ): Promise<Result<{ topy: TopyWallet | null; ruby: RubyWallet | null }, CurrencyError>> {
+    const topyResult = await this.topyWalletRepo.findByUser(guildId, userId);
+    if (!topyResult.success) {
+      return Result.err({ type: 'REPOSITORY_ERROR', cause: topyResult.error });
+    }
+
+    const rubyResult = await this.rubyWalletRepo.findByUser(guildId, userId);
+    if (!rubyResult.success) {
+      return Result.err({ type: 'REPOSITORY_ERROR', cause: rubyResult.error });
+    }
+
+    return Result.ok({
+      topy: topyResult.data,
+      ruby: rubyResult.data,
+    });
   }
 }
