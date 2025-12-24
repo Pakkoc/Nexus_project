@@ -105,6 +105,21 @@ async function main() {
           ]
         );
         console.log(`📝 Registered guild: ${guild.name} (${guildId})`);
+
+        // 기존 멤버 지갑/XP 초기화 (INSERT IGNORE로 이미 있으면 무시)
+        const members = await guild.members.fetch();
+        let initialized = 0;
+        for (const [memberId, member] of members) {
+          if (member.user.bot) continue;
+          try {
+            await container.currencyService.initializeWallet(guildId, memberId);
+            await container.xpService.initializeUser(guildId, memberId);
+            initialized++;
+          } catch {
+            // 개별 멤버 실패는 무시
+          }
+        }
+        console.log(`👥 Initialized ${initialized} members in ${guild.name}`);
       } catch (err) {
         console.error(`Failed to register guild ${guildId}:`, err);
       }
@@ -147,6 +162,36 @@ async function main() {
       );
     } catch (err) {
       console.error(`Failed to update guild ${guild.id}:`, err);
+    }
+  });
+
+  // Member join event - 신규 유저 지갑/XP 초기화
+  client.on(Events.GuildMemberAdd, async (member) => {
+    if (member.user.bot) return;
+
+    const guildId = member.guild.id;
+    const userId = member.id;
+
+    console.log(`👋 New member joined: ${member.user.tag} in ${member.guild.name}`);
+
+    try {
+      // 지갑 초기화
+      const walletResult = await container.currencyService.initializeWallet(guildId, userId);
+      if (walletResult.success) {
+        console.log(`[INIT] Wallet initialized for ${userId} in ${guildId}`);
+      } else {
+        console.error(`[INIT] Failed to initialize wallet:`, walletResult.error);
+      }
+
+      // XP 초기화
+      const xpResult = await container.xpService.initializeUser(guildId, userId);
+      if (xpResult.success) {
+        console.log(`[INIT] XP initialized for ${userId} in ${guildId}`);
+      } else {
+        console.error(`[INIT] Failed to initialize XP:`, xpResult.error);
+      }
+    } catch (err) {
+      console.error(`[INIT] Error initializing user ${userId}:`, err);
     }
   });
 

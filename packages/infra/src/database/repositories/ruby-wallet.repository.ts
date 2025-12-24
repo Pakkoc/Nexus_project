@@ -95,6 +95,32 @@ export class RubyWalletRepository implements RubyWalletRepositoryPort {
     }
   }
 
+  async upsert(guildId: string, userId: string): Promise<Result<RubyWallet, RepositoryError>> {
+    try {
+      const now = new Date();
+      // INSERT IGNORE: 이미 존재하면 무시
+      await this.pool.execute(
+        `INSERT IGNORE INTO ruby_wallets
+         (guild_id, user_id, balance, total_earned, created_at, updated_at)
+         VALUES (?, ?, 0, 0, ?, ?)`,
+        [guildId, userId, now, now]
+      );
+
+      // 생성되었든 이미 있었든 조회해서 반환
+      const result = await this.findByUser(guildId, userId);
+      if (!result.success || !result.data) {
+        return Result.err({ type: 'NOT_FOUND', message: 'Wallet not found after upsert' });
+      }
+
+      return Result.ok(result.data);
+    } catch (error) {
+      return Result.err({
+        type: 'QUERY_ERROR',
+        message: error instanceof Error ? error.message : 'Unknown error',
+      });
+    }
+  }
+
   async updateBalance(
     guildId: string,
     userId: string,

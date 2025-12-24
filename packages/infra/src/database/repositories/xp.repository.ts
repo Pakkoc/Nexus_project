@@ -189,4 +189,41 @@ export class XpRepository implements XpRepositoryPort {
       });
     }
   }
+
+  async upsert(userXp: UserXp): Promise<Result<UserXp, RepositoryError>> {
+    try {
+      // INSERT IGNORE: 이미 존재하면 무시
+      await this.pool.execute(
+        `INSERT IGNORE INTO xp_users
+         (guild_id, user_id, xp, level, last_text_xp_at, text_count_in_cooldown,
+          last_voice_xp_at, voice_count_in_cooldown, created_at, updated_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [
+          userXp.guildId,
+          userXp.userId,
+          userXp.xp,
+          userXp.level,
+          userXp.lastTextXpAt,
+          userXp.textCountInCooldown,
+          userXp.lastVoiceXpAt,
+          userXp.voiceCountInCooldown,
+          userXp.createdAt,
+          userXp.updatedAt,
+        ]
+      );
+
+      // 생성되었든 이미 있었든 조회해서 반환
+      const result = await this.findByUser(userXp.guildId, userXp.userId);
+      if (!result.success || !result.data) {
+        return Result.err({ type: 'NOT_FOUND', message: 'UserXp not found after upsert' });
+      }
+
+      return Result.ok(result.data);
+    } catch (error) {
+      return Result.err({
+        type: 'QUERY_ERROR',
+        message: error instanceof Error ? error.message : 'Unknown error',
+      });
+    }
+  }
 }

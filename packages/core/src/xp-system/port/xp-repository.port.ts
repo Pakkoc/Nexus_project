@@ -9,4 +9,9 @@ export interface XpRepositoryPort {
   getLeaderboard(guildId: string, limit: number, offset?: number): Promise<Result<UserXp[], RepositoryError>>;
   getUserRank(guildId: string, userId: string): Promise<Result<number | null, RepositoryError>>;
   getAllByGuild(guildId: string): Promise<Result<UserXp[], RepositoryError>>;
+
+  /**
+   * XP 데이터 생성 또는 업데이트 (없으면 생성, 있으면 무시)
+   */
+  upsert(userXp: UserXp): Promise<Result<UserXp, RepositoryError>>;
 }

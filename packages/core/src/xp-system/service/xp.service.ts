@@ -594,4 +594,21 @@ export class XpService {
       totalUsers: users.length,
     });
   }
+
+  /**
+   * 신규 유저 XP 초기화 (서버 가입 시 호출)
+   */
+  async initializeUser(
+    guildId: string,
+    userId: string
+  ): Promise<Result<UserXp, XpError>> {
+    const userXp = createUserXp(guildId, userId);
+    const result = await this.xpRepo.upsert(userXp);
+
+    if (!result.success) {
+      return Result.err({ type: 'REPOSITORY_ERROR', cause: result.error });
+    }
+
+    return Result.ok(result.data);
+  }
 }

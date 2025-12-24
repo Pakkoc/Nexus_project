@@ -137,6 +137,46 @@ export class TopyWalletRepository implements TopyWalletRepositoryPort {
     }
   }
 
+  async upsert(wallet: TopyWallet): Promise<Result<TopyWallet, RepositoryError>> {
+    try {
+      // INSERT IGNORE: 이미 존재하면 무시
+      await this.pool.execute(
+        `INSERT IGNORE INTO topy_wallets
+         (guild_id, user_id, balance, total_earned, daily_earned, daily_reset_at,
+          last_text_earn_at, text_count_in_cooldown, last_voice_earn_at, voice_count_in_cooldown,
+          created_at, updated_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [
+          wallet.guildId,
+          wallet.userId,
+          wallet.balance.toString(),
+          wallet.totalEarned.toString(),
+          wallet.dailyEarned,
+          wallet.dailyResetAt,
+          wallet.lastTextEarnAt,
+          wallet.textCountInCooldown,
+          wallet.lastVoiceEarnAt,
+          wallet.voiceCountInCooldown,
+          wallet.createdAt,
+          wallet.updatedAt,
+        ]
+      );
+
+      // 생성되었든 이미 있었든 조회해서 반환
+      const result = await this.findByUser(wallet.guildId, wallet.userId);
+      if (!result.success || !result.data) {
+        return Result.err({ type: 'NOT_FOUND', message: 'Wallet not found after upsert' });
+      }
+
+      return Result.ok(result.data);
+    } catch (error) {
+      return Result.err({
+        type: 'QUERY_ERROR',
+        message: error instanceof Error ? error.message : 'Unknown error',
+      });
+    }
+  }
+
   async updateBalance(
     guildId: string,
     userId: string,

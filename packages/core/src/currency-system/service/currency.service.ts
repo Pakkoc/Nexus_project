@@ -430,4 +430,33 @@ export class CurrencyService {
     }
     return Result.ok(result.data);
   }
+
+  /**
+   * 신규 유저 지갑 초기화 (서버 가입 시 호출)
+   */
+  async initializeWallet(
+    guildId: string,
+    userId: string
+  ): Promise<Result<{ topy: TopyWallet; ruby: RubyWallet }, CurrencyError>> {
+    const now = this.clock.now();
+
+    // 토피 지갑 생성
+    const topyResult = await this.topyWalletRepo.upsert(
+      createTopyWallet(guildId, userId, now)
+    );
+    if (!topyResult.success) {
+      return Result.err({ type: 'REPOSITORY_ERROR', cause: topyResult.error });
+    }
+
+    // 루비 지갑 생성
+    const rubyResult = await this.rubyWalletRepo.upsert(guildId, userId);
+    if (!rubyResult.success) {
+      return Result.err({ type: 'REPOSITORY_ERROR', cause: rubyResult.error });
+    }
+
+    return Result.ok({
+      topy: topyResult.data,
+      ruby: rubyResult.data,
+    });
+  }
 }
