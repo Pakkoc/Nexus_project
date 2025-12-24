@@ -2,15 +2,12 @@
 
 import { useState } from "react";
 import { useParams } from "next/navigation";
-import { useCurrencyWallets, useCurrencyLeaderboard } from "@/hooks/queries";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { useCurrencyWallets, useCurrencyLeaderboard, useCurrencySettings } from "@/hooks/queries";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Icon } from "@iconify/react";
 import { useDebounce } from "react-use";
-
-const MEDALS = ["", "", ""];
 
 export default function WalletsPage() {
   const params = useParams();
@@ -31,6 +28,10 @@ export default function WalletsPage() {
 
   const { data, isLoading, error } = useCurrencyWallets(guildId, page, 20, search);
   const { data: leaderboardData } = useCurrencyLeaderboard(guildId, "topy", 5);
+  const { data: settings } = useCurrencySettings(guildId);
+
+  const topyName = settings?.topyName ?? "토피";
+  const rubyName = settings?.rubyName ?? "루비";
 
   const formatBalance = (balance: string) => {
     return BigInt(balance).toLocaleString();
@@ -41,7 +42,7 @@ export default function WalletsPage() {
       {/* Page Header */}
       <div className="animate-fade-up">
         <h1 className="text-2xl md:text-3xl font-bold text-white">지갑 관리</h1>
-        <p className="text-white/50 mt-1">서버 멤버의 토피/루비 잔액을 확인합니다</p>
+        <p className="text-white/50 mt-1">서버 멤버의 {topyName}/{rubyName} 잔액을 확인합니다</p>
       </div>
 
       {/* Top 5 Leaderboard */}
@@ -52,8 +53,8 @@ export default function WalletsPage() {
               <Icon icon="solar:crown-linear" className="h-5 w-5 text-white" />
             </div>
             <div>
-              <h3 className="font-semibold text-white">토피 랭킹 TOP 5</h3>
-              <p className="text-white/50 text-sm">가장 많은 토피를 보유한 유저</p>
+              <h3 className="font-semibold text-white">{topyName} 랭킹 TOP 5</h3>
+              <p className="text-white/50 text-sm">가장 많은 {topyName}를 보유한 유저</p>
             </div>
           </div>
           <div className="grid gap-2">
@@ -62,8 +63,8 @@ export default function WalletsPage() {
                 key={entry.userId}
                 className="flex items-center gap-4 rounded-xl bg-white/5 border border-white/10 p-3"
               >
-                <span className="w-8 text-center text-lg">
-                  {MEDALS[entry.rank - 1] ?? `#${entry.rank}`}
+                <span className="w-8 text-center text-lg text-white/70 font-bold">
+                  #{entry.rank}
                 </span>
                 <div className="flex-1">
                   <p className="text-white font-medium truncate">
@@ -72,7 +73,7 @@ export default function WalletsPage() {
                 </div>
                 <div className="text-right">
                   <p className="text-amber-400 font-bold">
-                    {formatBalance(entry.balance)} 토피
+                    {formatBalance(entry.balance)} {topyName}
                   </p>
                 </div>
               </div>
@@ -122,7 +123,7 @@ export default function WalletsPage() {
           <Icon icon="solar:wallet-linear" className="mx-auto h-12 w-12 text-white/30" />
           <p className="mt-4 text-white/50">지갑 데이터가 없습니다.</p>
           <p className="text-sm text-white/30">
-            활동을 통해 토피를 획득하면 여기에 표시됩니다.
+            활동을 통해 {topyName}를 획득하면 여기에 표시됩니다.
           </p>
         </div>
       )}
@@ -134,8 +135,8 @@ export default function WalletsPage() {
           <div className="grid grid-cols-12 gap-4 p-4 border-b border-white/10 bg-white/5">
             <div className="col-span-1 text-white/50 text-sm font-medium">#</div>
             <div className="col-span-5 text-white/50 text-sm font-medium">유저 ID</div>
-            <div className="col-span-3 text-white/50 text-sm font-medium text-right">토피</div>
-            <div className="col-span-3 text-white/50 text-sm font-medium text-right">루비</div>
+            <div className="col-span-3 text-white/50 text-sm font-medium text-right">{topyName}</div>
+            <div className="col-span-3 text-white/50 text-sm font-medium text-right">{rubyName}</div>
           </div>
 
           {/* Rows */}
@@ -212,10 +213,10 @@ export default function WalletsPage() {
           <Badge className="bg-blue-600">안내</Badge>
           <div>
             <p className="text-blue-100">
-              토피는 채팅 및 음성 활동으로 획득하는 무상 화폐입니다.
+              {topyName}는 채팅 및 음성 활동으로 획득하는 무상 화폐입니다.
             </p>
             <p className="mt-1 text-sm text-blue-200/70">
-              루비는 유상 화폐로 별도 구매 또는 장터 거래를 통해 획득할 수 있습니다.
+              {rubyName}는 유상 화폐로 별도 구매 또는 장터 거래를 통해 획득할 수 있습니다.
             </p>
           </div>
         </div>
