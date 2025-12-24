@@ -272,7 +272,7 @@ export default function TransactionsPage() {
                   </Avatar>
                   <div className="min-w-0">
                     <p className="text-white text-sm font-medium truncate">{tx.displayName}</p>
-                    <p className="text-white/40 text-xs truncate">@{tx.username}</p>
+                    <p className="text-white/40 text-xs truncate">{tx.userId}</p>
                   </div>
                 </div>
 
