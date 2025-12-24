@@ -10,6 +10,7 @@ import {
   useCreateShopItem,
   useUpdateShopItem,
   useDeleteShopItem,
+  useRoles,
 } from "@/hooks/queries";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -72,6 +73,7 @@ export default function ShopPage() {
   const [editingItem, setEditingItem] = useState<ShopItem | null>(null);
 
   const { data: items, isLoading } = useShopItems(guildId);
+  const { data: roles } = useRoles(guildId);
   const createItem = useCreateShopItem(guildId);
   const updateItem = useUpdateShopItem(guildId);
   const deleteItem = useDeleteShopItem(guildId);
@@ -90,6 +92,9 @@ export default function ShopPage() {
       maxPerUser: undefined,
     },
   });
+
+  // 현재 선택된 아이템 타입 감시
+  const watchedItemType = form.watch("itemType");
 
   const onSubmit = async (data: ShopItemFormValues) => {
     try {
@@ -262,6 +267,43 @@ export default function ShopPage() {
             </FormItem>
           )}
         />
+
+        {/* 역할 아이템일 때만 역할 선택 표시 */}
+        {watchedItemType === "role" && (
+          <FormField
+            control={form.control}
+            name="roleId"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel className="text-white/70">부여할 역할</FormLabel>
+                <Select onValueChange={field.onChange} value={field.value || ""}>
+                  <FormControl>
+                    <SelectTrigger className="bg-white/5 border-white/10 text-white">
+                      <SelectValue placeholder="역할을 선택하세요" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    {roles?.map((role) => (
+                      <SelectItem key={role.id} value={role.id}>
+                        <div className="flex items-center gap-2">
+                          <div
+                            className="w-3 h-3 rounded-full"
+                            style={{ backgroundColor: `#${role.color.toString(16).padStart(6, "0")}` }}
+                          />
+                          {role.name}
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <FormDescription className="text-xs text-white/40">
+                  구매 시 자동으로 부여될 역할
+                </FormDescription>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        )}
 
         <div className="grid grid-cols-2 gap-4">
           <FormField

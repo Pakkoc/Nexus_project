@@ -309,6 +309,27 @@ export const shopCommand: Command = {
 
           const { item, price, fee: actualFee, newBalance } = purchaseResult.data;
 
+          // 역할 아이템인 경우 역할 부여
+          let roleGranted = false;
+          let roleError = '';
+          if (item.itemType === 'role' && item.roleId) {
+            try {
+              const member = await interaction.guild?.members.fetch(userId);
+              if (member) {
+                const role = await interaction.guild?.roles.fetch(item.roleId);
+                if (role) {
+                  await member.roles.add(role);
+                  roleGranted = true;
+                } else {
+                  roleError = '역할을 찾을 수 없습니다.';
+                }
+              }
+            } catch (err) {
+              console.error('역할 부여 오류:', err);
+              roleError = '역할 부여 중 오류가 발생했습니다.';
+            }
+          }
+
           const successEmbed = new EmbedBuilder()
             .setColor(0x00FF00)
             .setTitle('✅ 구매 완료!')
@@ -319,6 +340,23 @@ export const shopCommand: Command = {
               { name: '💵 남은 잔액', value: `${newBalance.toLocaleString()} ${currencyName}`, inline: true }
             )
             .setTimestamp();
+
+          // 역할 부여 결과 표시
+          if (item.itemType === 'role' && item.roleId) {
+            if (roleGranted) {
+              successEmbed.addFields({
+                name: '🎭 역할 부여',
+                value: `<@&${item.roleId}> 역할이 부여되었습니다!`,
+                inline: false,
+              });
+            } else if (roleError) {
+              successEmbed.addFields({
+                name: '⚠️ 역할 부여 실패',
+                value: roleError,
+                inline: false,
+              });
+            }
+          }
 
           await buttonInteraction.editReply({
             embeds: [successEmbed],
