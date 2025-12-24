@@ -4,3 +4,4 @@ export * from './topy-wallet.repository';
 export * from './ruby-wallet.repository';
 export * from './currency-settings.repository';
 export * from './currency-transaction.repository';
+export * from './daily-reward.repository';

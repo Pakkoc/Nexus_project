@@ -7,6 +7,7 @@ import {
   RubyWalletRepository,
   CurrencySettingsRepository,
   CurrencyTransactionRepository,
+  DailyRewardRepository,
 } from '../database/repositories';
 import { SystemClock } from '../clock';
 import type { Container } from './types';
@@ -26,6 +27,7 @@ export function createContainer(): Container {
   const rubyWalletRepo = new RubyWalletRepository(pool);
   const currencySettingsRepo = new CurrencySettingsRepository(pool);
   const currencyTransactionRepo = new CurrencyTransactionRepository(pool);
+  const dailyRewardRepo = new DailyRewardRepository(pool);
 
   // Services
   const xpService = new XpService(xpRepo, xpSettingsRepo, clock);
@@ -34,7 +36,8 @@ export function createContainer(): Container {
     rubyWalletRepo,
     currencySettingsRepo,
     currencyTransactionRepo,
-    clock
+    clock,
+    dailyRewardRepo
   );
 
   return {

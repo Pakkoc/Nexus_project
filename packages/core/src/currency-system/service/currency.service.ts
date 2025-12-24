@@ -3,14 +3,17 @@ import type { TopyWalletRepositoryPort } from '../port/topy-wallet-repository.po
 import type { RubyWalletRepositoryPort } from '../port/ruby-wallet-repository.port';
 import type { CurrencySettingsRepositoryPort } from '../port/currency-settings-repository.port';
 import type { CurrencyTransactionRepositoryPort } from '../port/currency-transaction-repository.port';
+import type { DailyRewardRepositoryPort } from '../port/daily-reward-repository.port';
 import type { TopyWallet } from '../domain/topy-wallet';
 import type { RubyWallet } from '../domain/ruby-wallet';
 import type { CurrencySettings } from '../domain/currency-settings';
 import type { CurrencyTransaction, CurrencyType, TransactionType } from '../domain/currency-transaction';
+import type { DailyReward } from '../domain/daily-reward';
 import type { CurrencyError } from '../errors';
 import { Result } from '../../shared/types/result';
 import { createTopyWallet, needsDailyReset, applyDailyReset } from '../domain/topy-wallet';
 import { createTransaction } from '../domain/currency-transaction';
+import { createDailyReward, canClaimReward, calculateStreak, getNextClaimTime } from '../domain/daily-reward';
 import { checkCooldown } from '../functions/check-cooldown';
 import { checkDailyLimit, calculateActualEarning } from '../functions/check-daily-limit';
 import { generateRandomCurrency, applyMultiplier } from '../functions/generate-random-currency';
@@ -32,13 +35,29 @@ export interface TransferResult {
   toBalance: bigint;
 }
 
+export interface AttendanceResult {
+  reward: number;
+  streakCount: number;
+  totalCount: number;
+  newBalance: bigint;
+  nextClaimAt: Date;
+}
+
+export interface AttendanceStatus {
+  canClaim: boolean;
+  nextClaimAt: Date | null;
+  streakCount: number;
+  totalCount: number;
+}
+
 export class CurrencyService {
   constructor(
     private readonly topyWalletRepo: TopyWalletRepositoryPort,
     private readonly rubyWalletRepo: RubyWalletRepositoryPort,
     private readonly settingsRepo: CurrencySettingsRepositoryPort,
     private readonly transactionRepo: CurrencyTransactionRepositoryPort,
-    private readonly clock: ClockPort
+    private readonly clock: ClockPort,
+    private readonly dailyRewardRepo?: DailyRewardRepositoryPort
   ) {}
 
   /**
@@ -673,6 +692,146 @@ export class CurrencyService {
       fee: BigInt(0),
       fromBalance,
       toBalance,
+    });
+  }
+
+  /**
+   * 출석 보상 수령
+   */
+  async claimAttendance(
+    guildId: string,
+    userId: string
+  ): Promise<Result<AttendanceResult, CurrencyError>> {
+    if (!this.dailyRewardRepo) {
+      return Result.err({ type: 'SETTINGS_NOT_FOUND', guildId });
+    }
+
+    const now = this.clock.now();
+    const ATTENDANCE_REWARD = 10; // 10토피
+
+    // 1. 기존 출석 기록 조회
+    const rewardResult = await this.dailyRewardRepo.findByUser(guildId, userId, 'attendance');
+    if (!rewardResult.success) {
+      return Result.err({ type: 'REPOSITORY_ERROR', cause: rewardResult.error });
+    }
+
+    const existingReward = rewardResult.data;
+
+    // 2. 쿨다운 확인
+    if (existingReward) {
+      const claimCheck = canClaimReward(existingReward.lastClaimedAt, now);
+      if (!claimCheck.canClaim) {
+        const nextClaimAt = getNextClaimTime(existingReward.lastClaimedAt);
+        return Result.err({ type: 'ALREADY_CLAIMED', nextClaimAt });
+      }
+    }
+
+    // 3. 연속 출석 계산
+    const newStreak = existingReward
+      ? calculateStreak(existingReward.lastClaimedAt, existingReward.streakCount, now)
+      : 1;
+
+    const newTotalCount = existingReward ? existingReward.totalCount + 1 : 1;
+
+    // 4. 출석 기록 저장
+    const updatedReward: DailyReward = existingReward
+      ? {
+          ...existingReward,
+          lastClaimedAt: now,
+          streakCount: newStreak,
+          totalCount: newTotalCount,
+          updatedAt: now,
+        }
+      : createDailyReward(guildId, userId, 'attendance', now);
+
+    const saveRewardResult = await this.dailyRewardRepo.save(updatedReward);
+    if (!saveRewardResult.success) {
+      return Result.err({ type: 'REPOSITORY_ERROR', cause: saveRewardResult.error });
+    }
+
+    // 5. 지갑 조회 또는 생성
+    const walletResult = await this.topyWalletRepo.findByUser(guildId, userId);
+    if (!walletResult.success) {
+      return Result.err({ type: 'REPOSITORY_ERROR', cause: walletResult.error });
+    }
+
+    let wallet = walletResult.data ?? createTopyWallet(guildId, userId, now);
+
+    // 6. 일일 리셋 체크
+    if (needsDailyReset(wallet, now)) {
+      wallet = applyDailyReset(wallet, now);
+    }
+
+    // 7. 지갑에 토피 추가
+    const newBalance = wallet.balance + BigInt(ATTENDANCE_REWARD);
+    const updatedWallet: TopyWallet = {
+      ...wallet,
+      balance: newBalance,
+      totalEarned: wallet.totalEarned + BigInt(ATTENDANCE_REWARD),
+      dailyEarned: wallet.dailyEarned + ATTENDANCE_REWARD,
+      updatedAt: now,
+    };
+
+    const saveWalletResult = await this.topyWalletRepo.save(updatedWallet);
+    if (!saveWalletResult.success) {
+      return Result.err({ type: 'REPOSITORY_ERROR', cause: saveWalletResult.error });
+    }
+
+    // 8. 거래 기록 저장
+    await this.transactionRepo.save(
+      createTransaction(guildId, userId, 'topy', 'earn_attendance', BigInt(ATTENDANCE_REWARD), newBalance, {
+        description: `출석 보상 (${newStreak}일 연속)`,
+      })
+    );
+
+    return Result.ok({
+      reward: ATTENDANCE_REWARD,
+      streakCount: newStreak,
+      totalCount: newTotalCount,
+      newBalance,
+      nextClaimAt: getNextClaimTime(now),
+    });
+  }
+
+  /**
+   * 출석 상태 조회
+   */
+  async getAttendanceStatus(
+    guildId: string,
+    userId: string
+  ): Promise<Result<AttendanceStatus, CurrencyError>> {
+    if (!this.dailyRewardRepo) {
+      return Result.err({ type: 'SETTINGS_NOT_FOUND', guildId });
+    }
+
+    const now = this.clock.now();
+
+    // 출석 기록 조회
+    const rewardResult = await this.dailyRewardRepo.findByUser(guildId, userId, 'attendance');
+    if (!rewardResult.success) {
+      return Result.err({ type: 'REPOSITORY_ERROR', cause: rewardResult.error });
+    }
+
+    const existingReward = rewardResult.data;
+
+    if (!existingReward) {
+      // 첫 출석 가능
+      return Result.ok({
+        canClaim: true,
+        nextClaimAt: null,
+        streakCount: 0,
+        totalCount: 0,
+      });
+    }
+
+    const claimCheck = canClaimReward(existingReward.lastClaimedAt, now);
+    const nextClaimAt = claimCheck.canClaim ? null : getNextClaimTime(existingReward.lastClaimedAt);
+
+    return Result.ok({
+      canClaim: claimCheck.canClaim,
+      nextClaimAt,
+      streakCount: existingReward.streakCount,
+      totalCount: existingReward.totalCount,
     });
   }
 }

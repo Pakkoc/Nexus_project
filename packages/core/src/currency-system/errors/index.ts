@@ -16,4 +16,5 @@ export type CurrencyError =
   | { type: 'INVALID_AMOUNT'; message: string }
   | { type: 'MESSAGE_TOO_SHORT'; minLength: number; actualLength: number }
   | { type: 'SELF_TRANSFER' }
-  | { type: 'USER_NOT_FOUND'; userId: string };
+  | { type: 'USER_NOT_FOUND'; userId: string }
+  | { type: 'ALREADY_CLAIMED'; nextClaimAt: Date };

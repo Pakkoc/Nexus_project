@@ -8,10 +8,10 @@
 
 ## 현재 상태
 
-- [ ] DB 테이블: `daily_rewards`
-- [ ] Domain: `DailyReward`
-- [ ] Repository: `DailyRewardRepository`
-- [ ] Service: 출석체크 메서드
+- [x] DB 테이블: `daily_rewards`
+- [x] Domain: `DailyReward`
+- [x] Repository: `DailyRewardRepository`
+- [x] Service: 출석체크 메서드
 - [ ] Bot: 출석 버튼 (UI 마지막에)
 
 ## 수치/규칙
