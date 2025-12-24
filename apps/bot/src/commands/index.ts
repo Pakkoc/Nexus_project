@@ -1,10 +1,8 @@
-import { walletCommand } from './wallet';
-import { leaderboardCommand } from './leaderboard';
+import { myInfoCommand } from './my-info';
 import type { Command } from './types';
 
 export const commands: Command[] = [
-  walletCommand,
-  leaderboardCommand,
+  myInfoCommand,
 ];
 
 export type { Command } from './types';

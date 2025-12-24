@@ -10,6 +10,7 @@
     "lint": "eslint src/"
   },
   "dependencies": {
+    "@napi-rs/canvas": "^0.1.86",
     "@topia/core": "*",
     "@topia/infra": "*",
     "@topia/shared": "*",
