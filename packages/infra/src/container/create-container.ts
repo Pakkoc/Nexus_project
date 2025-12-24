@@ -1,4 +1,4 @@
-import { XpService, CurrencyService } from '@topia/core';
+import { XpService, CurrencyService, ShopService } from '@topia/core';
 import { getPool } from '../database/pool';
 import {
   XpRepository,
@@ -8,6 +8,7 @@ import {
   CurrencySettingsRepository,
   CurrencyTransactionRepository,
   DailyRewardRepository,
+  ShopRepository,
 } from '../database/repositories';
 import { SystemClock } from '../clock';
 import type { Container } from './types';
@@ -28,6 +29,7 @@ export function createContainer(): Container {
   const currencySettingsRepo = new CurrencySettingsRepository(pool);
   const currencyTransactionRepo = new CurrencyTransactionRepository(pool);
   const dailyRewardRepo = new DailyRewardRepository(pool);
+  const shopRepo = new ShopRepository(pool);
 
   // Services
   const xpService = new XpService(xpRepo, xpSettingsRepo, clock);
@@ -39,9 +41,17 @@ export function createContainer(): Container {
     clock,
     dailyRewardRepo
   );
+  const shopService = new ShopService(
+    shopRepo,
+    topyWalletRepo,
+    rubyWalletRepo,
+    currencyTransactionRepo,
+    clock
+  );
 
   return {
     xpService,
     currencyService,
+    shopService,
   };
 }

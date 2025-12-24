@@ -1,0 +1,515 @@
+"use client";
+
+import { useParams } from "next/navigation";
+import { useState } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
+import {
+  useShopItems,
+  useCreateShopItem,
+  useUpdateShopItem,
+  useDeleteShopItem,
+} from "@/hooks/queries";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Switch } from "@/components/ui/switch";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import {
+  Form,
+  FormControl,
+  FormDescription,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { useToast } from "@/hooks/use-toast";
+import { Icon } from "@iconify/react";
+import { ITEM_TYPE_LABELS, type ShopItem, type ItemType } from "@/types/shop";
+
+const shopItemFormSchema = z.object({
+  name: z.string().min(1, "이름을 입력하세요").max(100),
+  description: z.string().max(500).optional(),
+  price: z.coerce.number().min(0, "가격은 0 이상이어야 합니다"),
+  currencyType: z.enum(["topy", "ruby"]),
+  itemType: z.enum([
+    "role",
+    "color",
+    "premium_room",
+    "random_box",
+    "warning_remove",
+    "tax_exempt",
+    "custom",
+  ]),
+  durationDays: z.coerce.number().optional(),
+  roleId: z.string().optional(),
+  stock: z.coerce.number().optional(),
+  maxPerUser: z.coerce.number().optional(),
+});
+
+type ShopItemFormValues = z.infer<typeof shopItemFormSchema>;
+
+export default function ShopPage() {
+  const params = useParams();
+  const guildId = params["guildId"] as string;
+  const { toast } = useToast();
+
+  const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [editingItem, setEditingItem] = useState<ShopItem | null>(null);
+
+  const { data: items, isLoading } = useShopItems(guildId);
+  const createItem = useCreateShopItem(guildId);
+  const updateItem = useUpdateShopItem(guildId);
+  const deleteItem = useDeleteShopItem(guildId);
+
+  const form = useForm<ShopItemFormValues>({
+    resolver: zodResolver(shopItemFormSchema),
+    defaultValues: {
+      name: "",
+      description: "",
+      price: 0,
+      currencyType: "topy",
+      itemType: "custom",
+      durationDays: undefined,
+      roleId: "",
+      stock: undefined,
+      maxPerUser: undefined,
+    },
+  });
+
+  const onSubmit = async (data: ShopItemFormValues) => {
+    try {
+      if (editingItem) {
+        await updateItem.mutateAsync({
+          id: editingItem.id,
+          data: {
+            ...data,
+            durationDays: data.durationDays || null,
+            roleId: data.roleId || null,
+            stock: data.stock || null,
+            maxPerUser: data.maxPerUser || null,
+          },
+        });
+        toast({ title: "아이템 수정 완료", description: "상점 아이템이 수정되었습니다." });
+        setEditingItem(null);
+      } else {
+        await createItem.mutateAsync(data);
+        toast({ title: "아이템 생성 완료", description: "새 상점 아이템이 추가되었습니다." });
+        setIsCreateOpen(false);
+      }
+      form.reset();
+    } catch {
+      toast({
+        title: "오류 발생",
+        description: "작업 중 오류가 발생했습니다.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleEdit = (item: ShopItem) => {
+    setEditingItem(item);
+    form.reset({
+      name: item.name,
+      description: item.description || "",
+      price: item.price,
+      currencyType: item.currencyType,
+      itemType: item.itemType as ItemType,
+      durationDays: item.durationDays || undefined,
+      roleId: item.roleId || "",
+      stock: item.stock || undefined,
+      maxPerUser: item.maxPerUser || undefined,
+    });
+  };
+
+  const handleDelete = async (id: number) => {
+    if (!confirm("정말로 이 아이템을 삭제하시겠습니까?")) return;
+    try {
+      await deleteItem.mutateAsync(id);
+      toast({ title: "삭제 완료", description: "아이템이 삭제되었습니다." });
+    } catch {
+      toast({
+        title: "삭제 실패",
+        description: "아이템 삭제 중 오류가 발생했습니다.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleToggleEnabled = async (item: ShopItem) => {
+    try {
+      await updateItem.mutateAsync({
+        id: item.id,
+        data: { enabled: !item.enabled },
+      });
+    } catch {
+      toast({
+        title: "오류 발생",
+        description: "상태 변경 중 오류가 발생했습니다.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const ItemFormContent = () => (
+    <Form {...form}>
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+        <FormField
+          control={form.control}
+          name="name"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel className="text-white/70">아이템 이름</FormLabel>
+              <FormControl>
+                <Input {...field} className="bg-white/5 border-white/10 text-white" />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <FormField
+          control={form.control}
+          name="description"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel className="text-white/70">설명 (선택)</FormLabel>
+              <FormControl>
+                <Input {...field} className="bg-white/5 border-white/10 text-white" />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <div className="grid grid-cols-2 gap-4">
+          <FormField
+            control={form.control}
+            name="price"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel className="text-white/70">가격</FormLabel>
+                <FormControl>
+                  <Input
+                    type="number"
+                    {...field}
+                    className="bg-white/5 border-white/10 text-white"
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="currencyType"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel className="text-white/70">화폐 종류</FormLabel>
+                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                  <FormControl>
+                    <SelectTrigger className="bg-white/5 border-white/10 text-white">
+                      <SelectValue />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    <SelectItem value="topy">토피</SelectItem>
+                    <SelectItem value="ruby">루비</SelectItem>
+                  </SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
+
+        <FormField
+          control={form.control}
+          name="itemType"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel className="text-white/70">아이템 타입</FormLabel>
+              <Select onValueChange={field.onChange} defaultValue={field.value}>
+                <FormControl>
+                  <SelectTrigger className="bg-white/5 border-white/10 text-white">
+                    <SelectValue />
+                  </SelectTrigger>
+                </FormControl>
+                <SelectContent>
+                  {Object.entries(ITEM_TYPE_LABELS).map(([value, label]) => (
+                    <SelectItem key={value} value={value}>
+                      {label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <div className="grid grid-cols-2 gap-4">
+          <FormField
+            control={form.control}
+            name="durationDays"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel className="text-white/70">유효 기간 (일)</FormLabel>
+                <FormControl>
+                  <Input
+                    type="number"
+                    placeholder="무제한"
+                    {...field}
+                    value={field.value || ""}
+                    className="bg-white/5 border-white/10 text-white"
+                  />
+                </FormControl>
+                <FormDescription className="text-xs text-white/40">
+                  비워두면 무제한
+                </FormDescription>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="stock"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel className="text-white/70">재고</FormLabel>
+                <FormControl>
+                  <Input
+                    type="number"
+                    placeholder="무제한"
+                    {...field}
+                    value={field.value || ""}
+                    className="bg-white/5 border-white/10 text-white"
+                  />
+                </FormControl>
+                <FormDescription className="text-xs text-white/40">
+                  비워두면 무제한
+                </FormDescription>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
+
+        <FormField
+          control={form.control}
+          name="maxPerUser"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel className="text-white/70">유저당 최대 구매 횟수</FormLabel>
+              <FormControl>
+                <Input
+                  type="number"
+                  placeholder="무제한"
+                  {...field}
+                  value={field.value || ""}
+                  className="bg-white/5 border-white/10 text-white"
+                />
+              </FormControl>
+              <FormDescription className="text-xs text-white/40">
+                비워두면 무제한
+              </FormDescription>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <div className="flex justify-end gap-2 pt-4">
+          <Button
+            type="button"
+            variant="ghost"
+            onClick={() => {
+              setIsCreateOpen(false);
+              setEditingItem(null);
+              form.reset();
+            }}
+          >
+            취소
+          </Button>
+          <Button
+            type="submit"
+            disabled={createItem.isPending || updateItem.isPending}
+            className="bg-gradient-to-r from-amber-600 to-orange-600"
+          >
+            {editingItem ? "수정" : "추가"}
+          </Button>
+        </div>
+      </form>
+    </Form>
+  );
+
+  if (isLoading) {
+    return (
+      <div className="space-y-8">
+        <div className="animate-pulse">
+          <div className="h-8 w-48 rounded-lg bg-white/10" />
+          <div className="h-5 w-64 rounded-lg bg-white/5 mt-2" />
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-8">
+      {/* Page Header */}
+      <div className="flex items-center justify-between">
+        <div className="animate-fade-up">
+          <h1 className="text-2xl md:text-3xl font-bold text-white">상점 관리</h1>
+          <p className="text-white/50 mt-1">토피/루비로 구매할 수 있는 아이템을 관리합니다</p>
+        </div>
+
+        <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
+          <DialogTrigger asChild>
+            <Button className="bg-gradient-to-r from-amber-600 to-orange-600">
+              <Icon icon="solar:add-circle-linear" className="mr-2 h-4 w-4" />
+              아이템 추가
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="bg-zinc-900 border-white/10">
+            <DialogHeader>
+              <DialogTitle className="text-white">새 아이템 추가</DialogTitle>
+            </DialogHeader>
+            <ItemFormContent />
+          </DialogContent>
+        </Dialog>
+      </div>
+
+      {/* Edit Dialog */}
+      <Dialog open={!!editingItem} onOpenChange={(open: boolean) => !open && setEditingItem(null)}>
+        <DialogContent className="bg-zinc-900 border-white/10">
+          <DialogHeader>
+            <DialogTitle className="text-white">아이템 수정</DialogTitle>
+          </DialogHeader>
+          <ItemFormContent />
+        </DialogContent>
+      </Dialog>
+
+      {/* Items List */}
+      <div className="bg-white/5 backdrop-blur-sm rounded-2xl border border-white/10 overflow-hidden">
+        <div className="p-6 border-b border-white/10">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500 to-orange-500 flex items-center justify-center">
+              <Icon icon="solar:shop-linear" className="h-5 w-5 text-white" />
+            </div>
+            <div>
+              <h3 className="font-semibold text-white">상점 아이템</h3>
+              <p className="text-white/50 text-sm">
+                {items?.length || 0}개의 아이템
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {items && items.length > 0 ? (
+          <div className="divide-y divide-white/10">
+            {items.map((item) => (
+              <div
+                key={item.id}
+                className="p-4 flex items-center justify-between hover:bg-white/5 transition-colors"
+              >
+                <div className="flex items-center gap-4">
+                  <div
+                    className={`w-10 h-10 rounded-lg flex items-center justify-center ${
+                      item.currencyType === "topy"
+                        ? "bg-amber-500/20 text-amber-400"
+                        : "bg-pink-500/20 text-pink-400"
+                    }`}
+                  >
+                    <Icon
+                      icon={
+                        item.currencyType === "topy"
+                          ? "solar:coin-linear"
+                          : "solar:diamond-linear"
+                      }
+                      className="h-5 w-5"
+                    />
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-white font-medium">{item.name}</span>
+                      <span
+                        className={`text-xs px-2 py-0.5 rounded-full ${
+                          item.enabled
+                            ? "bg-green-500/20 text-green-400"
+                            : "bg-red-500/20 text-red-400"
+                        }`}
+                      >
+                        {item.enabled ? "활성" : "비활성"}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-3 text-sm text-white/50">
+                      <span>
+                        {item.price.toLocaleString()}{" "}
+                        {item.currencyType === "topy" ? "토피" : "루비"}
+                      </span>
+                      <span>•</span>
+                      <span>{ITEM_TYPE_LABELS[item.itemType as ItemType]}</span>
+                      {item.stock !== null && (
+                        <>
+                          <span>•</span>
+                          <span>재고: {item.stock}</span>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <Switch
+                    checked={item.enabled}
+                    onCheckedChange={() => handleToggleEnabled(item)}
+                  />
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => handleEdit(item)}
+                  >
+                    <Icon icon="solar:pen-linear" className="h-4 w-4 text-white/50" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => handleDelete(item.id)}
+                  >
+                    <Icon icon="solar:trash-bin-2-linear" className="h-4 w-4 text-red-400" />
+                  </Button>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="p-12 text-center">
+            <Icon
+              icon="solar:bag-smile-linear"
+              className="h-12 w-12 text-white/20 mx-auto mb-4"
+            />
+            <p className="text-white/50">등록된 아이템이 없습니다</p>
+            <p className="text-white/30 text-sm mt-1">
+              위의 &quot;아이템 추가&quot; 버튼을 눌러 새 아이템을 추가하세요
+            </p>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}

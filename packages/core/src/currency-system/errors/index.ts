@@ -17,4 +17,11 @@ export type CurrencyError =
   | { type: 'MESSAGE_TOO_SHORT'; minLength: number; actualLength: number }
   | { type: 'SELF_TRANSFER' }
   | { type: 'USER_NOT_FOUND'; userId: string }
-  | { type: 'ALREADY_CLAIMED'; nextClaimAt: Date };
+  | { type: 'ALREADY_CLAIMED'; nextClaimAt: Date }
+  // 상점 관련 에러
+  | { type: 'ITEM_NOT_FOUND' }
+  | { type: 'ITEM_DISABLED' }
+  | { type: 'OUT_OF_STOCK' }
+  | { type: 'PURCHASE_LIMIT_EXCEEDED'; maxPerUser: number; currentCount: number }
+  | { type: 'ITEM_NOT_OWNED' }
+  | { type: 'ITEM_EXPIRED' };

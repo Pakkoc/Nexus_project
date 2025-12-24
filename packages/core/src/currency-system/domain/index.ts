@@ -5,3 +5,6 @@ export * from './currency-transaction';
 export * from './channel-category';
 export * from './category-multiplier';
 export * from './daily-reward';
+export * from './shop-item';
+export * from './user-item';
+export * from './purchase-history';
