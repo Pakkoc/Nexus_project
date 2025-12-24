@@ -151,7 +151,9 @@ type Result<T, E> =
 - [ ] `hooks/queries/` - React Query 훅
 
 ### 5. 데이터베이스
-- [ ] `sql/schema/` - 테이블 스키마
+- [ ] 현재 DB 스키마 파악 (`sql/schema/` 폴더 확인)
+- [ ] 구현하고자 하는 기능에 필요한 테이블 설계
+- [ ] `sql/schema/` - 테이블 스키마 파일 생성
 
 ## MySQL
 
