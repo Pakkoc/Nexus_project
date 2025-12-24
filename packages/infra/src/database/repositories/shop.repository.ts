@@ -5,6 +5,8 @@ import type {
   ItemType,
   UserItem,
   PurchaseHistory,
+  ColorOption,
+  CreateColorOption,
   RepositoryError,
 } from '@topia/core';
 import { Result } from '@topia/core';
@@ -48,6 +50,15 @@ interface PurchaseHistoryRow extends RowDataPacket {
   fee: string;
   currency_type: 'topy' | 'ruby';
   purchased_at: Date;
+}
+
+interface ColorOptionRow extends RowDataPacket {
+  id: number;
+  item_id: number;
+  color: string;
+  name: string;
+  role_id: string;
+  created_at: Date;
 }
 
 // ========== Mappers ==========
@@ -94,6 +105,17 @@ function toPurchaseHistory(row: PurchaseHistoryRow): PurchaseHistory {
     fee: BigInt(row.fee),
     currencyType: row.currency_type,
     purchasedAt: row.purchased_at,
+  };
+}
+
+function toColorOption(row: ColorOptionRow): ColorOption {
+  return {
+    id: row.id,
+    itemId: row.item_id,
+    color: row.color,
+    name: row.name,
+    roleId: row.role_id,
+    createdAt: row.created_at,
   };
 }
 
@@ -474,6 +496,93 @@ export class ShopRepository implements ShopRepositoryPort {
 
       const count = rows[0]?.count ?? 0;
       return Result.ok(count);
+    } catch (error) {
+      return Result.err({
+        type: 'QUERY_ERROR',
+        message: error instanceof Error ? error.message : 'Unknown error',
+      });
+    }
+  }
+
+  // ========== Color Options ==========
+
+  async findColorOptions(itemId: number): Promise<Result<ColorOption[], RepositoryError>> {
+    try {
+      const [rows] = await this.pool.execute<ColorOptionRow[]>(
+        'SELECT * FROM shop_color_options WHERE item_id = ? ORDER BY id ASC',
+        [itemId]
+      );
+      return Result.ok(rows.map(toColorOption));
+    } catch (error) {
+      return Result.err({
+        type: 'QUERY_ERROR',
+        message: error instanceof Error ? error.message : 'Unknown error',
+      });
+    }
+  }
+
+  async findColorOptionById(optionId: number): Promise<Result<ColorOption | null, RepositoryError>> {
+    try {
+      const [rows] = await this.pool.execute<ColorOptionRow[]>(
+        'SELECT * FROM shop_color_options WHERE id = ?',
+        [optionId]
+      );
+
+      const firstRow = rows[0];
+      if (!firstRow) {
+        return Result.ok(null);
+      }
+
+      return Result.ok(toColorOption(firstRow));
+    } catch (error) {
+      return Result.err({
+        type: 'QUERY_ERROR',
+        message: error instanceof Error ? error.message : 'Unknown error',
+      });
+    }
+  }
+
+  async saveColorOption(option: CreateColorOption): Promise<Result<ColorOption, RepositoryError>> {
+    try {
+      const [result] = await this.pool.execute<ResultSetHeader>(
+        `INSERT INTO shop_color_options (item_id, color, name, role_id)
+         VALUES (?, ?, ?, ?)`,
+        [option.itemId, option.color, option.name, option.roleId]
+      );
+
+      const optionResult = await this.findColorOptionById(result.insertId);
+      if (!optionResult.success || !optionResult.data) {
+        return Result.err({
+          type: 'QUERY_ERROR',
+          message: 'Failed to retrieve created color option',
+        });
+      }
+
+      return Result.ok(optionResult.data);
+    } catch (error) {
+      return Result.err({
+        type: 'QUERY_ERROR',
+        message: error instanceof Error ? error.message : 'Unknown error',
+      });
+    }
+  }
+
+  async deleteColorOption(optionId: number): Promise<Result<void, RepositoryError>> {
+    try {
+      await this.pool.execute('DELETE FROM shop_color_options WHERE id = ?', [optionId]);
+      return Result.ok(undefined);
+    } catch (error) {
+      return Result.err({
+        type: 'QUERY_ERROR',
+        message: error instanceof Error ? error.message : 'Unknown error',
+      });
+    }
+  }
+
+  async deleteColorOptionsByItemId(itemId: number): Promise<Result<void, RepositoryError>> {
+    try {
+      await this.pool.execute('DELETE FROM shop_color_options WHERE item_id = ?', [itemId]);
+      return Result.ok(undefined);
     } catch (error) {
       return Result.err({
         type: 'QUERY_ERROR',

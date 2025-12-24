@@ -6,6 +6,7 @@ import type { CurrencyTransactionRepositoryPort } from '../port/currency-transac
 import type { ShopItem, ItemType } from '../domain/shop-item';
 import type { UserItem } from '../domain/user-item';
 import type { PurchaseHistory } from '../domain/purchase-history';
+import type { ColorOption, CreateColorOption } from '../domain/color-option';
 import type { CurrencyError } from '../errors';
 import { Result } from '../../shared/types/result';
 import { createTransaction } from '../domain/currency-transaction';
@@ -355,5 +356,52 @@ export class ShopService {
       return Result.err({ type: 'REPOSITORY_ERROR', cause: result.error });
     }
     return Result.ok(result.data);
+  }
+
+  // ========== Color Options ==========
+
+  /**
+   * 색상 옵션 목록 조회
+   */
+  async getColorOptions(itemId: number): Promise<Result<ColorOption[], CurrencyError>> {
+    const result = await this.shopRepo.findColorOptions(itemId);
+    if (!result.success) {
+      return Result.err({ type: 'REPOSITORY_ERROR', cause: result.error });
+    }
+    return Result.ok(result.data);
+  }
+
+  /**
+   * 색상 옵션 추가
+   */
+  async addColorOption(
+    itemId: number,
+    color: string,
+    name: string,
+    roleId: string
+  ): Promise<Result<ColorOption, CurrencyError>> {
+    const option: CreateColorOption = {
+      itemId,
+      color: color.toUpperCase(),
+      name,
+      roleId,
+    };
+
+    const result = await this.shopRepo.saveColorOption(option);
+    if (!result.success) {
+      return Result.err({ type: 'REPOSITORY_ERROR', cause: result.error });
+    }
+    return Result.ok(result.data);
+  }
+
+  /**
+   * 색상 옵션 삭제
+   */
+  async deleteColorOption(optionId: number): Promise<Result<void, CurrencyError>> {
+    const result = await this.shopRepo.deleteColorOption(optionId);
+    if (!result.success) {
+      return Result.err({ type: 'REPOSITORY_ERROR', cause: result.error });
+    }
+    return Result.ok(undefined);
   }
 }

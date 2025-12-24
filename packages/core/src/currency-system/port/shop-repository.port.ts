@@ -2,6 +2,7 @@ import type { Result } from '../../shared/types/result';
 import type { ShopItem, ItemType } from '../domain/shop-item';
 import type { UserItem } from '../domain/user-item';
 import type { PurchaseHistory } from '../domain/purchase-history';
+import type { ColorOption, CreateColorOption } from '../domain/color-option';
 import type { RepositoryError } from '../errors';
 
 export interface ShopRepositoryPort {
@@ -120,4 +121,31 @@ export interface ShopRepositoryPort {
     userId: string,
     itemId: number
   ): Promise<Result<number, RepositoryError>>;
+
+  // ========== Color Options ==========
+
+  /**
+   * 색상 옵션 목록 조회
+   */
+  findColorOptions(itemId: number): Promise<Result<ColorOption[], RepositoryError>>;
+
+  /**
+   * 색상 옵션 단일 조회
+   */
+  findColorOptionById(optionId: number): Promise<Result<ColorOption | null, RepositoryError>>;
+
+  /**
+   * 색상 옵션 저장
+   */
+  saveColorOption(option: CreateColorOption): Promise<Result<ColorOption, RepositoryError>>;
+
+  /**
+   * 색상 옵션 삭제
+   */
+  deleteColorOption(optionId: number): Promise<Result<void, RepositoryError>>;
+
+  /**
+   * 아이템의 모든 색상 옵션 삭제
+   */
+  deleteColorOptionsByItemId(itemId: number): Promise<Result<void, RepositoryError>>;
 }

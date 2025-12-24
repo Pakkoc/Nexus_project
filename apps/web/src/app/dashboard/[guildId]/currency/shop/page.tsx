@@ -11,6 +11,10 @@ import {
   useUpdateShopItem,
   useDeleteShopItem,
   useRoles,
+  useColorOptions,
+  useCreateColorOption,
+  useDeleteColorOption,
+  type ColorOption,
 } from "@/hooks/queries";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -71,12 +75,19 @@ export default function ShopPage() {
 
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<ShopItem | null>(null);
+  const [colorManageItem, setColorManageItem] = useState<ShopItem | null>(null);
+  const [newColorName, setNewColorName] = useState("");
+  const [newColorHex, setNewColorHex] = useState("#FF0000");
+  const [newColorRoleId, setNewColorRoleId] = useState("");
 
   const { data: items, isLoading } = useShopItems(guildId);
   const { data: roles } = useRoles(guildId);
+  const { data: colorOptions } = useColorOptions(guildId, colorManageItem?.id ?? null);
   const createItem = useCreateShopItem(guildId);
   const updateItem = useUpdateShopItem(guildId);
   const deleteItem = useDeleteShopItem(guildId);
+  const createColorOption = useCreateColorOption(guildId, colorManageItem?.id ?? 0);
+  const deleteColorOption = useDeleteColorOption(guildId, colorManageItem?.id ?? 0);
 
   const form = useForm<ShopItemFormValues>({
     resolver: zodResolver(shopItemFormSchema),
@@ -165,6 +176,48 @@ export default function ShopPage() {
       toast({
         title: "오류 발생",
         description: "상태 변경 중 오류가 발생했습니다.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleAddColorOption = async () => {
+    if (!newColorName || !newColorHex || !newColorRoleId) {
+      toast({
+        title: "입력 오류",
+        description: "모든 필드를 입력해주세요.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      await createColorOption.mutateAsync({
+        color: newColorHex.toUpperCase(),
+        name: newColorName,
+        roleId: newColorRoleId,
+      });
+      setNewColorName("");
+      setNewColorHex("#FF0000");
+      setNewColorRoleId("");
+      toast({ title: "색상 추가 완료" });
+    } catch {
+      toast({
+        title: "오류 발생",
+        description: "색상 추가 중 오류가 발생했습니다.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleDeleteColorOption = async (colorId: number) => {
+    try {
+      await deleteColorOption.mutateAsync(colorId);
+      toast({ title: "색상 삭제 완료" });
+    } catch {
+      toast({
+        title: "오류 발생",
+        description: "색상 삭제 중 오류가 발생했습니다.",
         variant: "destructive",
       });
     }
@@ -446,6 +499,134 @@ export default function ShopPage() {
         </DialogContent>
       </Dialog>
 
+      {/* Color Options Dialog */}
+      <Dialog open={!!colorManageItem} onOpenChange={(open: boolean) => !open && setColorManageItem(null)}>
+        <DialogContent className="bg-zinc-900 border-white/10 max-w-2xl">
+          <DialogHeader>
+            <DialogTitle className="text-white">
+              색상 관리 - {colorManageItem?.name}
+            </DialogTitle>
+          </DialogHeader>
+
+          <div className="space-y-6">
+            {/* 색상 추가 폼 */}
+            <div className="space-y-4 p-4 bg-white/5 rounded-xl">
+              <h4 className="text-sm font-medium text-white/70">새 색상 추가</h4>
+              <div className="grid grid-cols-3 gap-3">
+                <div>
+                  <label className="text-xs text-white/50 mb-1 block">색상 이름</label>
+                  <Input
+                    placeholder="빨강"
+                    value={newColorName}
+                    onChange={(e) => setNewColorName(e.target.value)}
+                    className="bg-white/5 border-white/10 text-white"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs text-white/50 mb-1 block">색상 코드</label>
+                  <div className="flex gap-2">
+                    <input
+                      type="color"
+                      value={newColorHex}
+                      onChange={(e) => setNewColorHex(e.target.value)}
+                      className="w-10 h-10 rounded cursor-pointer"
+                    />
+                    <Input
+                      placeholder="#FF0000"
+                      value={newColorHex}
+                      onChange={(e) => setNewColorHex(e.target.value)}
+                      className="bg-white/5 border-white/10 text-white flex-1"
+                    />
+                  </div>
+                </div>
+                <div>
+                  <label className="text-xs text-white/50 mb-1 block">역할</label>
+                  <Select onValueChange={setNewColorRoleId} value={newColorRoleId}>
+                    <SelectTrigger className="bg-white/5 border-white/10 text-white">
+                      <SelectValue placeholder="역할 선택" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {roles?.map((role) => (
+                        <SelectItem key={role.id} value={role.id}>
+                          <div className="flex items-center gap-2">
+                            <div
+                              className="w-3 h-3 rounded-full"
+                              style={{ backgroundColor: `#${role.color.toString(16).padStart(6, "0")}` }}
+                            />
+                            {role.name}
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <Button
+                onClick={handleAddColorOption}
+                disabled={createColorOption.isPending}
+                className="bg-gradient-to-r from-amber-600 to-orange-600"
+              >
+                <Icon icon="solar:add-circle-linear" className="mr-2 h-4 w-4" />
+                색상 추가
+              </Button>
+            </div>
+
+            {/* 색상 목록 */}
+            <div className="space-y-2">
+              <h4 className="text-sm font-medium text-white/70">등록된 색상</h4>
+              {colorOptions && colorOptions.length > 0 ? (
+                <div className="space-y-2">
+                  {colorOptions.map((option) => {
+                    const role = roles?.find(r => r.id === option.roleId);
+                    return (
+                      <div
+                        key={option.id}
+                        className="flex items-center justify-between p-3 bg-white/5 rounded-lg"
+                      >
+                        <div className="flex items-center gap-3">
+                          <div
+                            className="w-8 h-8 rounded-lg border border-white/10"
+                            style={{ backgroundColor: option.color }}
+                          />
+                          <div>
+                            <span className="text-white font-medium">{option.name}</span>
+                            <span className="text-white/40 ml-2">{option.color}</span>
+                          </div>
+                          <div className="text-white/50">→</div>
+                          <div className="flex items-center gap-2">
+                            {role && (
+                              <>
+                                <div
+                                  className="w-3 h-3 rounded-full"
+                                  style={{ backgroundColor: `#${role.color.toString(16).padStart(6, "0")}` }}
+                                />
+                                <span className="text-white/70">@{role.name}</span>
+                              </>
+                            )}
+                          </div>
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handleDeleteColorOption(option.id)}
+                          disabled={deleteColorOption.isPending}
+                        >
+                          <Icon icon="solar:trash-bin-2-linear" className="h-4 w-4 text-red-400" />
+                        </Button>
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className="py-8 text-center text-white/40">
+                  등록된 색상이 없습니다
+                </div>
+              )}
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       {/* Items List */}
       <div className="bg-white/5 backdrop-blur-sm rounded-2xl border border-white/10 overflow-hidden">
         <div className="p-6 border-b border-white/10">
@@ -517,6 +698,17 @@ export default function ShopPage() {
                 </div>
 
                 <div className="flex items-center gap-2">
+                  {item.itemType === "color" && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setColorManageItem(item)}
+                      className="text-white/50 hover:text-white"
+                    >
+                      <Icon icon="solar:palette-linear" className="h-4 w-4 mr-1" />
+                      색상 관리
+                    </Button>
+                  )}
                   <Switch
                     checked={item.enabled}
                     onCheckedChange={() => handleToggleEnabled(item)}

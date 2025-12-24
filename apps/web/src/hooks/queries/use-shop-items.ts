@@ -78,3 +78,76 @@ export function useDeleteShopItem(guildId: string) {
     },
   });
 }
+
+// ========== Color Options ==========
+
+export interface ColorOption {
+  id: number;
+  itemId: number;
+  color: string;
+  name: string;
+  roleId: string;
+  createdAt: string;
+}
+
+export interface CreateColorOption {
+  color: string;
+  name: string;
+  roleId: string;
+}
+
+// Fetch color options
+export function useColorOptions(guildId: string, itemId: number | null) {
+  return useQuery<ColorOption[]>({
+    queryKey: ["color-options", guildId, itemId],
+    queryFn: async () => {
+      const res = await fetch(`/api/guilds/${guildId}/shop/items/${itemId}/colors`);
+      if (!res.ok) throw new Error("Failed to fetch color options");
+      return res.json();
+    },
+    enabled: !!itemId,
+  });
+}
+
+// Create color option
+export function useCreateColorOption(guildId: string, itemId: number) {
+  const queryClient = useQueryClient();
+
+  return useMutation<ColorOption, Error, CreateColorOption>({
+    mutationFn: async (data) => {
+      const res = await fetch(`/api/guilds/${guildId}/shop/items/${itemId}/colors`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      });
+      if (!res.ok) {
+        const error = await res.json();
+        throw new Error(error.error || "Failed to create color option");
+      }
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["color-options", guildId, itemId] });
+    },
+  });
+}
+
+// Delete color option
+export function useDeleteColorOption(guildId: string, itemId: number) {
+  const queryClient = useQueryClient();
+
+  return useMutation<void, Error, number>({
+    mutationFn: async (colorId) => {
+      const res = await fetch(`/api/guilds/${guildId}/shop/items/${itemId}/colors/${colorId}`, {
+        method: "DELETE",
+      });
+      if (!res.ok) {
+        const error = await res.json();
+        throw new Error(error.error || "Failed to delete color option");
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["color-options", guildId, itemId] });
+    },
+  });
+}

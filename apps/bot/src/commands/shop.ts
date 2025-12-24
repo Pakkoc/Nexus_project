@@ -8,7 +8,7 @@ import {
   ComponentType,
 } from 'discord.js';
 import type { Command } from './types';
-import type { ShopItem, ItemType } from '@topia/core';
+import type { ShopItem, ItemType, ColorOption } from '@topia/core';
 
 /** 아이템 타입 라벨 */
 const ITEM_TYPE_LABELS: Record<ItemType, string> = {
@@ -197,6 +197,82 @@ export const shopCommand: Command = {
         const currencyName = selectedItem.currencyType === 'topy' ? topyName : rubyName;
         const typeLabel = ITEM_TYPE_LABELS[selectedItem.itemType] || selectedItem.itemType;
 
+        // 색상변경권일 경우 색상 선택 드롭다운 표시
+        let selectedColorOption: ColorOption | null = null;
+
+        if (selectedItem.itemType === 'color') {
+          const colorOptionsResult = await container.shopService.getColorOptions(itemId);
+          if (!colorOptionsResult.success || colorOptionsResult.data.length === 0) {
+            await selectInteraction.reply({
+              content: '등록된 색상이 없습니다. 관리자에게 문의하세요.',
+              ephemeral: true,
+            });
+            return;
+          }
+
+          const colorOptions = colorOptionsResult.data;
+
+          const colorSelectMenu = new StringSelectMenuBuilder()
+            .setCustomId(`shop_color_select_${itemId}_${userId}`)
+            .setPlaceholder('원하는 색상을 선택하세요')
+            .addOptions(
+              colorOptions.map((opt) => ({
+                label: opt.name,
+                description: opt.color,
+                value: opt.id.toString(),
+                emoji: '🎨',
+              }))
+            );
+
+          const colorSelectRow = new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(colorSelectMenu);
+
+          const colorEmbed = new EmbedBuilder()
+            .setColor(0x5865F2)
+            .setTitle('🎨 색상 선택')
+            .setDescription(`**${selectedItem.name}** 구매를 위해 원하는 색상을 선택하세요.`)
+            .addFields({
+              name: '등록된 색상',
+              value: colorOptions.map((opt) => `${opt.name} (${opt.color})`).join('\n'),
+            });
+
+          await selectInteraction.reply({
+            embeds: [colorEmbed],
+            components: [colorSelectRow],
+            ephemeral: true,
+          });
+
+          // 색상 선택 대기
+          try {
+            const colorSelectInteraction = await selectInteraction.channel?.awaitMessageComponent({
+              componentType: ComponentType.StringSelect,
+              filter: (i) => i.user.id === userId && i.customId === `shop_color_select_${itemId}_${userId}`,
+              time: 30000,
+            });
+
+            if (!colorSelectInteraction) return;
+
+            const selectedColorId = parseInt(colorSelectInteraction.values[0] ?? '', 10);
+            selectedColorOption = colorOptions.find((opt) => opt.id === selectedColorId) ?? null;
+
+            if (!selectedColorOption) {
+              await colorSelectInteraction.update({
+                embeds: [new EmbedBuilder().setColor(0xFF0000).setTitle('❌ 오류').setDescription('색상을 찾을 수 없습니다.')],
+                components: [],
+              });
+              return;
+            }
+
+            // 색상 선택 완료 후 구매 확인으로 진행
+            await colorSelectInteraction.deferUpdate();
+          } catch {
+            await selectInteraction.editReply({
+              embeds: [new EmbedBuilder().setColor(0x808080).setTitle('⏰ 시간 초과').setDescription('색상 선택 시간이 초과되었습니다.')],
+              components: [],
+            });
+            return;
+          }
+        }
+
         // 수수료 계산 (1.2%)
         const feePercent = 1.2;
         const fee = (selectedItem.price * BigInt(Math.round(feePercent * 10))) / BigInt(1000);
@@ -206,13 +282,17 @@ export const shopCommand: Command = {
         const confirmEmbed = new EmbedBuilder()
           .setColor(0xFFA500)
           .setTitle('🛒 구매 확인')
-          .setDescription(`**${selectedItem.name}**을(를) 구매하시겠습니까?`)
+          .setDescription(`**${selectedItem.name}**${selectedColorOption ? ` - ${selectedColorOption.name}` : ''}을(를) 구매하시겠습니까?`)
           .addFields(
             { name: '타입', value: typeLabel, inline: true },
             { name: '가격', value: `${selectedItem.price.toLocaleString()} ${currencyName}`, inline: true },
             { name: '수수료 (1.2%)', value: `${fee.toLocaleString()} ${currencyName}`, inline: true },
             { name: '총 비용', value: `**${totalCost.toLocaleString()}** ${currencyName}`, inline: false }
           );
+
+        if (selectedColorOption) {
+          confirmEmbed.addFields({ name: '선택한 색상', value: `${selectedColorOption.name} (${selectedColorOption.color})`, inline: false });
+        }
 
         if (selectedItem.description) {
           confirmEmbed.addFields({ name: '설명', value: selectedItem.description });
@@ -231,11 +311,19 @@ export const shopCommand: Command = {
             .setEmoji('❌')
         );
 
-        await selectInteraction.reply({
-          embeds: [confirmEmbed],
-          components: [confirmRow],
-          ephemeral: true,
-        });
+        // 색상변경권이면 이미 reply 했으므로 editReply 사용
+        if (selectedItem.itemType === 'color') {
+          await selectInteraction.editReply({
+            embeds: [confirmEmbed],
+            components: [confirmRow],
+          });
+        } else {
+          await selectInteraction.reply({
+            embeds: [confirmEmbed],
+            components: [confirmRow],
+            ephemeral: true,
+          });
+        }
 
         // 구매 확인 버튼 이벤트 처리
         try {
@@ -312,11 +400,19 @@ export const shopCommand: Command = {
           // 역할 아이템인 경우 역할 부여
           let roleGranted = false;
           let roleError = '';
+          let grantedRoleId: string | null = null;
+
           if (item.itemType === 'role' && item.roleId) {
+            grantedRoleId = item.roleId;
+          } else if (item.itemType === 'color' && selectedColorOption) {
+            grantedRoleId = selectedColorOption.roleId;
+          }
+
+          if (grantedRoleId) {
             try {
               const member = await interaction.guild?.members.fetch(userId);
               if (member) {
-                const role = await interaction.guild?.roles.fetch(item.roleId);
+                const role = await interaction.guild?.roles.fetch(grantedRoleId);
                 if (role) {
                   await member.roles.add(role);
                   roleGranted = true;
@@ -330,10 +426,14 @@ export const shopCommand: Command = {
             }
           }
 
+          const successDescription = selectedColorOption
+            ? `**${item.name}** - **${selectedColorOption.name}**을(를) 구매했습니다!`
+            : `**${item.name}**을(를) 구매했습니다!`;
+
           const successEmbed = new EmbedBuilder()
-            .setColor(0x00FF00)
+            .setColor(selectedColorOption ? parseInt(selectedColorOption.color.replace('#', ''), 16) : 0x00FF00)
             .setTitle('✅ 구매 완료!')
-            .setDescription(`**${item.name}**을(를) 구매했습니다!`)
+            .setDescription(successDescription)
             .addFields(
               { name: '💰 지불 금액', value: `${price.toLocaleString()} ${currencyName}`, inline: true },
               { name: '📋 수수료', value: `${actualFee.toLocaleString()} ${currencyName}`, inline: true },
@@ -342,11 +442,11 @@ export const shopCommand: Command = {
             .setTimestamp();
 
           // 역할 부여 결과 표시
-          if (item.itemType === 'role' && item.roleId) {
+          if (grantedRoleId) {
             if (roleGranted) {
               successEmbed.addFields({
-                name: '🎭 역할 부여',
-                value: `<@&${item.roleId}> 역할이 부여되었습니다!`,
+                name: item.itemType === 'color' ? '🎨 색상 적용' : '🎭 역할 부여',
+                value: `<@&${grantedRoleId}> 역할이 부여되었습니다!`,
                 inline: false,
               });
             } else if (roleError) {
