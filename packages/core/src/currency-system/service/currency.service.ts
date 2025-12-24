@@ -717,11 +717,11 @@ export class CurrencyService {
 
     const existingReward = rewardResult.data;
 
-    // 2. 쿨다운 확인
+    // 2. 오늘 이미 출석했는지 확인
     if (existingReward) {
       const claimCheck = canClaimReward(existingReward.lastClaimedAt, now);
       if (!claimCheck.canClaim) {
-        const nextClaimAt = getNextClaimTime(existingReward.lastClaimedAt);
+        const nextClaimAt = getNextClaimTime(now);
         return Result.err({ type: 'ALREADY_CLAIMED', nextClaimAt });
       }
     }
@@ -825,7 +825,7 @@ export class CurrencyService {
     }
 
     const claimCheck = canClaimReward(existingReward.lastClaimedAt, now);
-    const nextClaimAt = claimCheck.canClaim ? null : getNextClaimTime(existingReward.lastClaimedAt);
+    const nextClaimAt = claimCheck.canClaim ? null : getNextClaimTime(now);
 
     return Result.ok({
       canClaim: claimCheck.canClaim,
