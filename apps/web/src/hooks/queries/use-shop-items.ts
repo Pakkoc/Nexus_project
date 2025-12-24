@@ -87,6 +87,7 @@ export interface ColorOption {
   color: string;
   name: string;
   roleId: string;
+  price: number;
   createdAt: string;
 }
 
@@ -94,6 +95,7 @@ export interface CreateColorOption {
   color: string;
   name: string;
   roleId: string;
+  price: number;
 }
 
 // Fetch color options

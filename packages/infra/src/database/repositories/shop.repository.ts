@@ -58,6 +58,7 @@ interface ColorOptionRow extends RowDataPacket {
   color: string;
   name: string;
   role_id: string;
+  price: string;
   created_at: Date;
 }
 
@@ -115,6 +116,7 @@ function toColorOption(row: ColorOptionRow): ColorOption {
     color: row.color,
     name: row.name,
     roleId: row.role_id,
+    price: BigInt(row.price),
     createdAt: row.created_at,
   };
 }
@@ -545,9 +547,9 @@ export class ShopRepository implements ShopRepositoryPort {
   async saveColorOption(option: CreateColorOption): Promise<Result<ColorOption, RepositoryError>> {
     try {
       const [result] = await this.pool.execute<ResultSetHeader>(
-        `INSERT INTO shop_color_options (item_id, color, name, role_id)
-         VALUES (?, ?, ?, ?)`,
-        [option.itemId, option.color, option.name, option.roleId]
+        `INSERT INTO shop_color_options (item_id, color, name, role_id, price)
+         VALUES (?, ?, ?, ?, ?)`,
+        [option.itemId, option.color, option.name, option.roleId, option.price.toString()]
       );
 
       const optionResult = await this.findColorOptionById(result.insertId);

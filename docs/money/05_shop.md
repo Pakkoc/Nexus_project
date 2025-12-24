@@ -8,12 +8,14 @@
 
 ## 현재 상태
 
-- [ ] DB 테이블: `shop_items`, `user_items`
-- [ ] Domain: `ShopItem`, `UserItem`
-- [ ] Repository: `ShopRepository`
-- [ ] Service: 상점 메서드
-- [ ] Bot: `/상점` 명령어
-- [ ] Web: 상점 관리 페이지
+- [x] DB 테이블: `shop_items`, `user_items`, `purchase_history`, `shop_color_options`
+- [x] Domain: `ShopItem`, `UserItem`, `ColorOption`
+- [x] Repository: `ShopRepository`
+- [x] Service: 상점 메서드
+- [x] Bot: `/상점` 명령어
+- [x] Web: 상점 관리 페이지
+- [ ] Bot: 색상변경권 인벤토리 저장 방식
+- [ ] Bot: `/내정보` 색상 적용 기능
 
 ## 수치/규칙
 
@@ -44,6 +46,72 @@
 | 일반 유저     | **1.2%** |
 | 디토뱅크 실버 | **1.2%** |
 | 디토뱅크 골드 | **면제** |
+
+---
+
+## 색상변경권 시스템
+
+### 개요
+
+색상변경권은 다른 아이템과 다르게 **색상별로 개별 구매**하는 방식입니다.
+
+### 구매 흐름
+
+```
+/상점 → 색상변경권 선택 → 색상 선택 창
+├─ 빨강: 1,000 토피
+├─ 파랑: 1,500 토피
+├─ 골드: 5,000 토피  (색상별 가격 다름)
+└─ 구매 → 인벤토리에 저장 (역할 즉시 부여 X)
+```
+
+### 색상 적용 흐름 (추후 개발)
+
+```
+/내정보 → 드롭다운 → 닉네임 색상 변경
+├─ 보유한 색상 목록 표시
+├─ 원하는 색상 선택
+└─ 해당 색상 역할 부여
+```
+
+### 데이터베이스
+
+```sql
+-- sql/24_shop_color_options.sql
+CREATE TABLE shop_color_options (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    item_id INT NOT NULL,                    -- shop_items.id 참조
+    color VARCHAR(7) NOT NULL,               -- HEX 색상 (#FF0000)
+    name VARCHAR(50) NOT NULL,               -- 색상 이름 (빨강)
+    role_id VARCHAR(20) NOT NULL,            -- Discord 역할 ID
+    price BIGINT NOT NULL DEFAULT 0,         -- 색상별 가격 (0이면 아이템 기본 가격 사용)
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (item_id) REFERENCES shop_items(id) ON DELETE CASCADE,
+    UNIQUE KEY unique_item_color (item_id, color),
+    INDEX idx_item_id (item_id)
+);
+```
+
+### 인벤토리 저장 방식
+
+색상 구매 시 `user_items` 테이블에 저장:
+
+```
+item_type: "color_#FF0000"  (색상 코드 포함)
+quantity: 1
+```
+
+### 웹 관리 (관리자)
+
+1. 상점 > 아이템 추가 > 타입: 색상권
+2. 아이템 목록에서 "색상 관리" 버튼 클릭
+3. 색상-역할 매핑 추가:
+   - 색상 이름: 빨강
+   - 색상 코드: #FF0000
+   - 역할: @빨강
+   - 가격: 1000 (색상별 개별 가격)
+
+---
 
 ## 구현 계획
 
@@ -136,6 +204,17 @@ export interface UserItem {
   quantity: number;
   expiresAt: Date | null;
 }
+
+// packages/core/src/currency-system/domain/color-option.ts
+export interface ColorOption {
+  id: number;
+  itemId: number;
+  color: string;      // #FF0000
+  name: string;       // 빨강
+  roleId: string;     // Discord 역할 ID
+  price: bigint;      // 색상별 가격
+  createdAt: Date;
+}
 ```
 
 ### 3. Core 서비스
@@ -151,28 +230,39 @@ async purchaseItem(
   itemId: number
 ): Promise<Result<PurchaseResult, CurrencyError>>
 
+// 색상변경권 구매 (색상 선택)
+async purchaseColorItem(
+  guildId: string,
+  userId: string,
+  itemId: number,
+  colorOptionId: number
+): Promise<Result<PurchaseResult, CurrencyError>>
+
 // 유저 보유 아이템
 async getUserItems(guildId: string, userId: string): Promise<Result<UserItem[], CurrencyError>>
 
-// 아이템 사용
-async useItem(
+// 색상 적용 (역할 부여)
+async applyColor(
   guildId: string,
   userId: string,
-  itemType: string
-): Promise<Result<UseItemResult, CurrencyError>>
+  colorCode: string
+): Promise<Result<void, CurrencyError>>
 ```
 
 ### 4. Web API
 
-| 라우트                                  | 메서드 | 설명                 |
-| --------------------------------------- | ------ | -------------------- |
-| `/api/guilds/[guildId]/shop/items`      | GET    | 상점 아이템 목록     |
-| `/api/guilds/[guildId]/shop/items`      | POST   | 아이템 추가 (관리자) |
-| `/api/guilds/[guildId]/shop/items/[id]` | PUT    | 아이템 수정          |
-| `/api/guilds/[guildId]/shop/items/[id]` | DELETE | 아이템 삭제          |
+| 라우트                                           | 메서드 | 설명             |
+| ------------------------------------------------ | ------ | ---------------- |
+| `/api/guilds/[guildId]/shop/items`               | GET    | 상점 아이템 목록 |
+| `/api/guilds/[guildId]/shop/items`               | POST   | 아이템 추가      |
+| `/api/guilds/[guildId]/shop/items/[id]`          | PUT    | 아이템 수정      |
+| `/api/guilds/[guildId]/shop/items/[id]`          | DELETE | 아이템 삭제      |
+| `/api/guilds/[guildId]/shop/items/[id]/colors`   | GET    | 색상 옵션 목록   |
+| `/api/guilds/[guildId]/shop/items/[id]/colors`   | POST   | 색상 옵션 추가   |
+| `/api/guilds/[guildId]/shop/items/[id]/colors/[colorId]` | DELETE | 색상 옵션 삭제 |
 
 ### 5. Web 페이지
 
 - 경로: `/dashboard/[guildId]/currency/shop`
 - 아이템 목록 관리 (CRUD)
-- 재고, 가격, 활성화 상태 관리
+- 색상변경권 아이템 > 색상 관리 버튼 > 색상-역할-가격 매핑

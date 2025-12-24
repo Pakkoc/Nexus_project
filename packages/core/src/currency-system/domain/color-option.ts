@@ -8,6 +8,7 @@ export interface ColorOption {
   color: string;        // HEX 색상 (#FF0000)
   name: string;         // 색상 이름 (빨강)
   roleId: string;       // Discord 역할 ID
+  price: bigint;        // 색상별 가격 (0이면 아이템 기본 가격)
   createdAt: Date;
 }
 
@@ -23,12 +24,14 @@ export function createColorOption(
   itemId: number,
   color: string,
   name: string,
-  roleId: string
+  roleId: string,
+  price: bigint = BigInt(0)
 ): CreateColorOption {
   return {
     itemId,
     color: color.toUpperCase(),
     name,
     roleId,
+    price,
   };
 }

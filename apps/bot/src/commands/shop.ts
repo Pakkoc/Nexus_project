@@ -232,7 +232,10 @@ export const shopCommand: Command = {
             .setDescription(`**${selectedItem.name}** 구매를 위해 원하는 색상을 선택하세요.`)
             .addFields({
               name: '등록된 색상',
-              value: colorOptions.map((opt) => `${opt.name} (${opt.color})`).join('\n'),
+              value: colorOptions.map((opt) => {
+                const optPrice = Number(opt.price) > 0 ? opt.price : selectedItem.price;
+                return `${opt.name} (${opt.color}) - **${optPrice.toLocaleString()}** ${currencyName}`;
+              }).join('\n'),
             });
 
           await selectInteraction.reply({
@@ -273,19 +276,24 @@ export const shopCommand: Command = {
           }
         }
 
+        // 가격 결정 (색상별 가격, 0이면 아이템 기본 가격)
+        const itemPrice = selectedColorOption && Number(selectedColorOption.price) > 0
+          ? selectedColorOption.price
+          : selectedItem.price;
+
         // 수수료 계산 (1.2%)
         const feePercent = 1.2;
-        const fee = (selectedItem.price * BigInt(Math.round(feePercent * 10))) / BigInt(1000);
-        const totalCost = selectedItem.price + fee;
+        const fee = (itemPrice * BigInt(Math.round(feePercent * 10))) / BigInt(1000);
+        const totalCost = itemPrice + fee;
 
         // 구매 확인 Embed
         const confirmEmbed = new EmbedBuilder()
-          .setColor(0xFFA500)
+          .setColor(selectedColorOption ? parseInt(selectedColorOption.color.replace('#', ''), 16) : 0xFFA500)
           .setTitle('🛒 구매 확인')
           .setDescription(`**${selectedItem.name}**${selectedColorOption ? ` - ${selectedColorOption.name}` : ''}을(를) 구매하시겠습니까?`)
           .addFields(
             { name: '타입', value: typeLabel, inline: true },
-            { name: '가격', value: `${selectedItem.price.toLocaleString()} ${currencyName}`, inline: true },
+            { name: '가격', value: `${itemPrice.toLocaleString()} ${currencyName}`, inline: true },
             { name: '수수료 (1.2%)', value: `${fee.toLocaleString()} ${currencyName}`, inline: true },
             { name: '총 비용', value: `**${totalCost.toLocaleString()}** ${currencyName}`, inline: false }
           );
@@ -354,11 +362,22 @@ export const shopCommand: Command = {
           // 구매 처리
           await buttonInteraction.deferUpdate();
 
-          const purchaseResult = await container.shopService.purchaseItem(
-            guildId,
-            userId,
-            itemId
-          );
+          // 색상 아이템과 일반 아이템 분기 처리
+          let purchaseResult;
+          if (selectedItem.itemType === 'color' && selectedColorOption) {
+            purchaseResult = await container.shopService.purchaseColorItem(
+              guildId,
+              userId,
+              itemId,
+              selectedColorOption.id
+            );
+          } else {
+            purchaseResult = await container.shopService.purchaseItem(
+              guildId,
+              userId,
+              itemId
+            );
+          }
 
           if (!purchaseResult.success) {
             let errorMessage = '구매 처리 중 오류가 발생했습니다.';
@@ -397,15 +416,14 @@ export const shopCommand: Command = {
 
           const { item, price, fee: actualFee, newBalance } = purchaseResult.data;
 
-          // 역할 아이템인 경우 역할 부여
+          // 역할 아이템인 경우에만 역할 부여 (색상은 인벤토리에 저장만)
           let roleGranted = false;
           let roleError = '';
           let grantedRoleId: string | null = null;
 
+          // 색상 아이템은 역할 부여하지 않음 (추후 /내정보에서 적용)
           if (item.itemType === 'role' && item.roleId) {
             grantedRoleId = item.roleId;
-          } else if (item.itemType === 'color' && selectedColorOption) {
-            grantedRoleId = selectedColorOption.roleId;
           }
 
           if (grantedRoleId) {
@@ -445,7 +463,7 @@ export const shopCommand: Command = {
           if (grantedRoleId) {
             if (roleGranted) {
               successEmbed.addFields({
-                name: item.itemType === 'color' ? '🎨 색상 적용' : '🎭 역할 부여',
+                name: '🎭 역할 부여',
                 value: `<@&${grantedRoleId}> 역할이 부여되었습니다!`,
                 inline: false,
               });
@@ -456,6 +474,15 @@ export const shopCommand: Command = {
                 inline: false,
               });
             }
+          }
+
+          // 색상 아이템은 인벤토리 저장 안내
+          if (item.itemType === 'color' && selectedColorOption) {
+            successEmbed.addFields({
+              name: '🎨 색상 저장',
+              value: `**${selectedColorOption.name}** 색상이 인벤토리에 저장되었습니다.\n\`/내정보\` 명령어에서 닉네임 색상을 변경할 수 있습니다.`,
+              inline: false,
+            });
           }
 
           await buttonInteraction.editReply({

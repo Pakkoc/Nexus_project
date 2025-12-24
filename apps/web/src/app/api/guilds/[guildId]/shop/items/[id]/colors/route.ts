@@ -8,6 +8,7 @@ const createColorOptionSchema = z.object({
   color: z.string().regex(/^#[0-9A-Fa-f]{6}$/, "올바른 HEX 색상을 입력하세요"),
   name: z.string().min(1, "이름을 입력하세요").max(50),
   roleId: z.string().min(1, "역할을 선택하세요"),
+  price: z.coerce.number().min(0, "가격은 0 이상이어야 합니다").default(0),
 });
 
 // GET: 색상 옵션 목록 조회
@@ -37,7 +38,13 @@ export async function GET(
     );
   }
 
-  return NextResponse.json(result.data);
+  // bigint를 number로 변환 (JSON 직렬화를 위해)
+  const data = result.data.map((opt) => ({
+    ...opt,
+    price: Number(opt.price),
+  }));
+
+  return NextResponse.json(data);
 }
 
 // POST: 색상 옵션 추가
@@ -67,14 +74,15 @@ export async function POST(
     );
   }
 
-  const { color, name, roleId } = validation.data;
+  const { color, name, roleId, price } = validation.data;
 
   const container = createContainer();
   const result = await container.shopService.addColorOption(
     itemId,
     color,
     name,
-    roleId
+    roleId,
+    BigInt(price)
   );
 
   if (!result.success) {

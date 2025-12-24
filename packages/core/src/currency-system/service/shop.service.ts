@@ -295,6 +295,187 @@ export class ShopService {
   }
 
   /**
+   * 색상 아이템 구매 (인벤토리에 저장, 역할 부여 X)
+   */
+  async purchaseColorItem(
+    guildId: string,
+    userId: string,
+    itemId: number,
+    colorOptionId: number
+  ): Promise<Result<PurchaseResult & { colorOption: ColorOption }, CurrencyError>> {
+    const now = this.clock.now();
+
+    // 1. 아이템 조회
+    const itemResult = await this.shopRepo.findItemById(itemId);
+    if (!itemResult.success) {
+      return Result.err({ type: 'REPOSITORY_ERROR', cause: itemResult.error });
+    }
+    if (!itemResult.data) {
+      return Result.err({ type: 'ITEM_NOT_FOUND' });
+    }
+
+    const item = itemResult.data;
+
+    // 2. 아이템이 색상변경권인지 확인
+    if (item.itemType !== 'color') {
+      return Result.err({ type: 'ITEM_NOT_FOUND' });
+    }
+
+    // 3. 색상 옵션 조회
+    const colorOptionResult = await this.shopRepo.findColorOptionById(colorOptionId);
+    if (!colorOptionResult.success) {
+      return Result.err({ type: 'REPOSITORY_ERROR', cause: colorOptionResult.error });
+    }
+    if (!colorOptionResult.data || colorOptionResult.data.itemId !== itemId) {
+      return Result.err({ type: 'ITEM_NOT_FOUND' });
+    }
+
+    const colorOption = colorOptionResult.data;
+
+    // 4. 활성화 확인
+    if (!item.enabled) {
+      return Result.err({ type: 'ITEM_DISABLED' });
+    }
+
+    // 5. 재고 확인
+    if (item.stock !== null && item.stock <= 0) {
+      return Result.err({ type: 'OUT_OF_STOCK' });
+    }
+
+    // 6. 가격 결정 (색상별 가격, 0이면 아이템 기본 가격)
+    const price = colorOption.price > BigInt(0) ? colorOption.price : item.price;
+
+    // 7. 수수료 계산 (1.2%)
+    const feePercent = BigInt(12);
+    const fee = (price * feePercent) / BigInt(1000);
+    const totalCost = price + fee;
+
+    // 8. 잔액 차감
+    let newBalance: bigint;
+
+    if (item.currencyType === 'topy') {
+      const walletResult = await this.topyWalletRepo.findByUser(guildId, userId);
+      if (!walletResult.success) {
+        return Result.err({ type: 'REPOSITORY_ERROR', cause: walletResult.error });
+      }
+
+      if (!walletResult.data) {
+        await this.topyWalletRepo.save(createTopyWallet(guildId, userId, this.clock.now()));
+      }
+
+      const balance = walletResult.data?.balance ?? BigInt(0);
+      if (balance < totalCost) {
+        return Result.err({
+          type: 'INSUFFICIENT_BALANCE',
+          required: totalCost,
+          available: balance,
+        });
+      }
+
+      const subtractResult = await this.topyWalletRepo.updateBalance(
+        guildId,
+        userId,
+        totalCost,
+        'subtract'
+      );
+      if (!subtractResult.success) {
+        return Result.err({ type: 'REPOSITORY_ERROR', cause: subtractResult.error });
+      }
+      newBalance = subtractResult.data.balance;
+    } else {
+      const walletResult = await this.rubyWalletRepo.findByUser(guildId, userId);
+      if (!walletResult.success) {
+        return Result.err({ type: 'REPOSITORY_ERROR', cause: walletResult.error });
+      }
+
+      if (!walletResult.data || walletResult.data.balance < totalCost) {
+        return Result.err({
+          type: 'INSUFFICIENT_BALANCE',
+          required: totalCost,
+          available: walletResult.data?.balance ?? BigInt(0),
+        });
+      }
+
+      const subtractResult = await this.rubyWalletRepo.updateBalance(
+        guildId,
+        userId,
+        totalCost,
+        'subtract'
+      );
+      if (!subtractResult.success) {
+        return Result.err({ type: 'REPOSITORY_ERROR', cause: subtractResult.error });
+      }
+      newBalance = subtractResult.data.balance;
+    }
+
+    // 9. 재고 감소
+    if (item.stock !== null) {
+      await this.shopRepo.decreaseStock(itemId);
+    }
+
+    // 10. 유저 아이템 지급 (색상 코드 포함)
+    const colorItemType = `color_${colorOption.color}`;
+    const expiresAt = item.durationDays
+      ? new Date(now.getTime() + item.durationDays * 24 * 60 * 60 * 1000)
+      : null;
+
+    await this.shopRepo.increaseUserItemQuantity(
+      guildId,
+      userId,
+      colorItemType,
+      1,
+      expiresAt
+    );
+
+    // 11. 구매 내역 저장
+    await this.shopRepo.savePurchaseHistory({
+      guildId,
+      userId,
+      itemId,
+      itemName: `${item.name} - ${colorOption.name}`,
+      price,
+      fee,
+      currencyType: item.currencyType,
+      purchasedAt: now,
+    });
+
+    // 12. 거래 기록 저장
+    await this.transactionRepo.save(
+      createTransaction(
+        guildId,
+        userId,
+        item.currencyType,
+        'shop_purchase',
+        price,
+        newBalance + fee,
+        { description: `상점 구매: ${item.name} - ${colorOption.name}` }
+      )
+    );
+
+    if (fee > BigInt(0)) {
+      await this.transactionRepo.save(
+        createTransaction(
+          guildId,
+          userId,
+          item.currencyType,
+          'fee',
+          fee,
+          newBalance,
+          { description: '구매 수수료' }
+        )
+      );
+    }
+
+    return Result.ok({
+      item,
+      price,
+      fee,
+      newBalance,
+      colorOption,
+    });
+  }
+
+  /**
    * 유저 보유 아이템 목록 조회
    */
   async getUserItems(
@@ -378,13 +559,15 @@ export class ShopService {
     itemId: number,
     color: string,
     name: string,
-    roleId: string
+    roleId: string,
+    price: bigint = BigInt(0)
   ): Promise<Result<ColorOption, CurrencyError>> {
     const option: CreateColorOption = {
       itemId,
       color: color.toUpperCase(),
       name,
       roleId,
+      price,
     };
 
     const result = await this.shopRepo.saveColorOption(option);

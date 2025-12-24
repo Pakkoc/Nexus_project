@@ -79,6 +79,7 @@ export default function ShopPage() {
   const [newColorName, setNewColorName] = useState("");
   const [newColorHex, setNewColorHex] = useState("#FF0000");
   const [newColorRoleId, setNewColorRoleId] = useState("");
+  const [newColorPrice, setNewColorPrice] = useState(0);
 
   const { data: items, isLoading } = useShopItems(guildId);
   const { data: roles } = useRoles(guildId);
@@ -196,10 +197,12 @@ export default function ShopPage() {
         color: newColorHex.toUpperCase(),
         name: newColorName,
         roleId: newColorRoleId,
+        price: newColorPrice,
       });
       setNewColorName("");
       setNewColorHex("#FF0000");
       setNewColorRoleId("");
+      setNewColorPrice(0);
       toast({ title: "색상 추가 완료" });
     } catch {
       toast({
@@ -512,7 +515,7 @@ export default function ShopPage() {
             {/* 색상 추가 폼 */}
             <div className="space-y-4 p-4 bg-white/5 rounded-xl">
               <h4 className="text-sm font-medium text-white/70">새 색상 추가</h4>
-              <div className="grid grid-cols-3 gap-3">
+              <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="text-xs text-white/50 mb-1 block">색상 이름</label>
                   <Input
@@ -560,6 +563,16 @@ export default function ShopPage() {
                     </SelectContent>
                   </Select>
                 </div>
+                <div>
+                  <label className="text-xs text-white/50 mb-1 block">가격</label>
+                  <Input
+                    type="number"
+                    placeholder="1000"
+                    value={newColorPrice || ""}
+                    onChange={(e) => setNewColorPrice(Number(e.target.value))}
+                    className="bg-white/5 border-white/10 text-white"
+                  />
+                </div>
               </div>
               <Button
                 onClick={handleAddColorOption}
@@ -592,6 +605,9 @@ export default function ShopPage() {
                             <span className="text-white font-medium">{option.name}</span>
                             <span className="text-white/40 ml-2">{option.color}</span>
                           </div>
+                          <span className="text-amber-400 font-medium">
+                            {option.price.toLocaleString()} {colorManageItem?.currencyType === "ruby" ? "루비" : "토피"}
+                          </span>
                           <div className="text-white/50">→</div>
                           <div className="flex items-center gap-2">
                             {role && (

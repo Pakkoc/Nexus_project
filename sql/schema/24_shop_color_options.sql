@@ -6,6 +6,7 @@ CREATE TABLE IF NOT EXISTS shop_color_options (
   color VARCHAR(7) NOT NULL,               -- HEX 색상 (#FF0000)
   name VARCHAR(50) NOT NULL,               -- 색상 이름 (빨강)
   role_id VARCHAR(20) NOT NULL,            -- Discord 역할 ID
+  price BIGINT NOT NULL DEFAULT 0,         -- 색상별 가격 (0이면 아이템 기본 가격 사용)
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 
   FOREIGN KEY (item_id) REFERENCES shop_items(id) ON DELETE CASCADE,
