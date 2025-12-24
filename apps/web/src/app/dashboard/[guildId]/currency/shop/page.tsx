@@ -4,6 +4,7 @@ import { useParams } from "next/navigation";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useQueryClient } from "@tanstack/react-query";
 import { z } from "zod";
 import {
   useShopItems,
@@ -12,8 +13,6 @@ import {
   useDeleteShopItem,
   useRoles,
   useColorOptions,
-  useCreateColorOption,
-  useDeleteColorOption,
   type ColorOption,
 } from "@/hooks/queries";
 import { Button } from "@/components/ui/button";
@@ -72,6 +71,7 @@ export default function ShopPage() {
   const params = useParams();
   const guildId = params["guildId"] as string;
   const { toast } = useToast();
+  const queryClient = useQueryClient();
 
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<ShopItem | null>(null);
@@ -101,8 +101,6 @@ export default function ShopPage() {
   const createItem = useCreateShopItem(guildId);
   const updateItem = useUpdateShopItem(guildId);
   const deleteItem = useDeleteShopItem(guildId);
-  const createColorOption = useCreateColorOption(guildId, colorManageItem?.id ?? 0);
-  const deleteColorOption = useDeleteColorOption(guildId, colorManageItem?.id ?? 0);
 
   const form = useForm<ShopItemFormValues>({
     resolver: zodResolver(shopItemFormSchema),
@@ -258,6 +256,8 @@ export default function ShopPage() {
   };
 
   const handleAddColorOption = async () => {
+    if (!colorManageItem) return;
+
     if (!newColorName || !newColorHex || !newColorRoleId) {
       toast({
         title: "입력 오류",
@@ -268,12 +268,25 @@ export default function ShopPage() {
     }
 
     try {
-      await createColorOption.mutateAsync({
-        color: newColorHex.toUpperCase(),
-        name: newColorName,
-        roleId: newColorRoleId,
-        price: newColorPrice,
+      const res = await fetch(`/api/guilds/${guildId}/shop/items/${colorManageItem.id}/colors`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          color: newColorHex.toUpperCase(),
+          name: newColorName,
+          roleId: newColorRoleId,
+          price: newColorPrice,
+        }),
       });
+
+      if (!res.ok) {
+        const error = await res.json();
+        throw new Error(error.error || "Failed to create color option");
+      }
+
+      // Refresh color options
+      queryClient.invalidateQueries({ queryKey: ["color-options", guildId, colorManageItem.id] });
+
       setNewColorName("");
       setNewColorHex("#FF0000");
       setNewColorRoleId("");
@@ -289,8 +302,19 @@ export default function ShopPage() {
   };
 
   const handleDeleteColorOption = async (colorId: number) => {
+    if (!colorManageItem) return;
+
     try {
-      await deleteColorOption.mutateAsync(colorId);
+      const res = await fetch(`/api/guilds/${guildId}/shop/items/${colorManageItem.id}/colors/${colorId}`, {
+        method: "DELETE",
+      });
+
+      if (!res.ok) {
+        const error = await res.json();
+        throw new Error(error.error || "Failed to delete color option");
+      }
+
+      queryClient.invalidateQueries({ queryKey: ["color-options", guildId, colorManageItem.id] });
       toast({ title: "색상 삭제 완료" });
     } catch {
       toast({
