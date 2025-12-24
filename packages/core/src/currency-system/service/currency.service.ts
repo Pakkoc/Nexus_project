@@ -6,6 +6,7 @@ import type { CurrencyTransactionRepositoryPort } from '../port/currency-transac
 import type { TopyWallet } from '../domain/topy-wallet';
 import type { RubyWallet } from '../domain/ruby-wallet';
 import type { CurrencySettings } from '../domain/currency-settings';
+import type { CurrencyTransaction, CurrencyType, TransactionType } from '../domain/currency-transaction';
 import type { CurrencyError } from '../errors';
 import { Result } from '../../shared/types/result';
 import { createTopyWallet, needsDailyReset, applyDailyReset } from '../domain/topy-wallet';
@@ -458,5 +459,43 @@ export class CurrencyService {
       topy: topyResult.data,
       ruby: rubyResult.data,
     });
+  }
+
+  /**
+   * 거래 내역 조회 (길드 전체)
+   */
+  async getTransactions(
+    guildId: string,
+    options?: {
+      userId?: string;
+      currencyType?: CurrencyType;
+      transactionType?: TransactionType;
+      limit?: number;
+      offset?: number;
+    }
+  ): Promise<Result<CurrencyTransaction[], CurrencyError>> {
+    if (options?.userId) {
+      const result = await this.transactionRepo.findByUser(guildId, options.userId, {
+        currencyType: options.currencyType,
+        transactionType: options.transactionType,
+        limit: options.limit ?? 20,
+        offset: options.offset ?? 0,
+      });
+      if (!result.success) {
+        return Result.err({ type: 'REPOSITORY_ERROR', cause: result.error });
+      }
+      return Result.ok(result.data);
+    }
+
+    const result = await this.transactionRepo.findByGuild(guildId, {
+      currencyType: options?.currencyType,
+      transactionType: options?.transactionType,
+      limit: options?.limit ?? 20,
+      offset: options?.offset ?? 0,
+    });
+    if (!result.success) {
+      return Result.err({ type: 'REPOSITORY_ERROR', cause: result.error });
+    }
+    return Result.ok(result.data);
   }
 }

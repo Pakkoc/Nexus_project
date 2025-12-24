@@ -11,9 +11,9 @@
 - [x] DB 테이블: `currency_transactions`
 - [x] Domain: `CurrencyTransaction`
 - [x] Repository: `CurrencyTransactionRepository`
-- [ ] Service: 거래 내역 조회 메서드
-- [ ] Web API: 거래 내역 조회
-- [ ] Web 페이지: 거래 내역 목록
+- [x] Service: 거래 내역 조회 메서드
+- [x] Web API: 거래 내역 조회
+- [x] Web 페이지: 거래 내역 목록
 
 ## 구현 계획
 

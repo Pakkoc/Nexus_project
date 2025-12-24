@@ -14,3 +14,4 @@ export * from "./use-currency-hot-times";
 export * from "./use-currency-exclusions";
 export * from "./use-currency-multipliers";
 export * from "./use-currency-wallets";
+export * from "./use-currency-transactions";
