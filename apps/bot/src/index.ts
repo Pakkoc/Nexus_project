@@ -1,6 +1,19 @@
 import 'dotenv/config';
 import express from 'express';
-import { Client, GatewayIntentBits, Events, VoiceState, REST, Routes, Collection } from 'discord.js';
+import {
+  Client,
+  GatewayIntentBits,
+  Events,
+  VoiceState,
+  REST,
+  Routes,
+  Collection,
+  EmbedBuilder,
+  ActionRowBuilder,
+  ButtonBuilder,
+  ButtonStyle,
+  ChannelType,
+} from 'discord.js';
 import { createPool, createRedisClient, createContainer, getPool, type Container } from '@topia/infra';
 import { createXpHandler } from './handlers/xp.handler';
 import { createCurrencyHandler } from './handlers/currency.handler';
@@ -543,6 +556,81 @@ async function main() {
     }
 
     return res.json({ success: true });
+  });
+
+  // 장터 패널 생성 엔드포인트
+  app.post('/api/market/panel', async (req, res) => {
+    const { guildId, channelId } = req.body;
+
+    if (!guildId || !channelId) {
+      return res.status(400).json({ error: 'guildId and channelId are required' });
+    }
+
+    try {
+      const guild = await client.guilds.fetch(guildId);
+      const channel = await guild.channels.fetch(channelId);
+
+      if (!channel) {
+        return res.status(404).json({ error: 'Channel not found' });
+      }
+
+      // 텍스트 채널인지 확인
+      if (channel.type !== ChannelType.GuildText && channel.type !== ChannelType.GuildAnnouncement) {
+        return res.status(400).json({ error: 'Channel must be a text channel' });
+      }
+
+      // 화폐 설정 조회
+      const settingsResult = await container.currencyService.getSettings(guildId);
+      const topyName = (settingsResult.success && settingsResult.data?.topyName) || '토피';
+      const rubyName = (settingsResult.success && settingsResult.data?.rubyName) || '루비';
+
+      // 패널 Embed 생성
+      const embed = new EmbedBuilder()
+        .setColor(0x5865F2)
+        .setTitle('🛒 토피아 장터')
+        .setDescription(
+          '재능과 서비스를 자유롭게 거래하세요!\n\n' +
+          '아래 버튼을 클릭하여 장터를 이용할 수 있습니다.'
+        )
+        .addFields(
+          { name: `💰 ${topyName} 수수료`, value: '5%', inline: true },
+          { name: `💎 ${rubyName} 수수료`, value: '3%', inline: true },
+          { name: '⏰ 등록 유효기간', value: '30일', inline: true }
+        )
+        .setFooter({ text: '거래 시 발생하는 분쟁은 관리자에게 문의하세요.' })
+        .setTimestamp();
+
+      // 버튼 생성
+      const buttonRow = new ActionRowBuilder<ButtonBuilder>().addComponents(
+        new ButtonBuilder()
+          .setCustomId('market_panel_list')
+          .setLabel('목록보기')
+          .setStyle(ButtonStyle.Primary)
+          .setEmoji('📋'),
+        new ButtonBuilder()
+          .setCustomId('market_panel_register')
+          .setLabel('등록하기')
+          .setStyle(ButtonStyle.Success)
+          .setEmoji('📝'),
+        new ButtonBuilder()
+          .setCustomId('market_panel_my')
+          .setLabel('내상품')
+          .setStyle(ButtonStyle.Secondary)
+          .setEmoji('📦')
+      );
+
+      // 채널에 패널 메시지 전송
+      const message = await channel.send({
+        embeds: [embed],
+        components: [buttonRow],
+      });
+
+      console.log(`[MARKET] Panel created in channel ${channel.name} (${channelId}) in guild ${guildId}`);
+      return res.json({ success: true, messageId: message.id });
+    } catch (error) {
+      console.error('[MARKET] Failed to create panel:', error);
+      return res.status(500).json({ error: 'Failed to create market panel' });
+    }
   });
 
   const BOT_API_PORT = parseInt(process.env['BOT_API_PORT'] || '3001');

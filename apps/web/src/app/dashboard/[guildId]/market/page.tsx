@@ -6,6 +6,8 @@ import {
   useMarketListings,
   useCancelMarketListing,
   useCurrencySettings,
+  useTextChannels,
+  useCreateMarketPanel,
   MarketCategory,
   MarketStatus,
   CATEGORY_LABELS,
@@ -57,6 +59,7 @@ export default function MarketPage() {
   const [mounted, setMounted] = useState(false);
   const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
   const [cancelTarget, setCancelTarget] = useState<{ id: string; title: string } | null>(null);
+  const [selectedChannelId, setSelectedChannelId] = useState<string>("");
 
   useEffect(() => {
     setMounted(true);
@@ -79,7 +82,9 @@ export default function MarketPage() {
   });
 
   const { data: settings } = useCurrencySettings(guildId);
+  const { data: channels } = useTextChannels(guildId);
   const cancelMutation = useCancelMarketListing(guildId);
+  const createPanelMutation = useCreateMarketPanel(guildId);
   const { toast } = useToast();
 
   const topyName = settings?.topyName ?? "토피";
@@ -120,6 +125,21 @@ export default function MarketPage() {
     }
   };
 
+  const handleCreatePanel = async () => {
+    if (!selectedChannelId) {
+      toast({ title: "채널을 선택해주세요.", variant: "destructive" });
+      return;
+    }
+
+    try {
+      await createPanelMutation.mutateAsync(selectedChannelId);
+      toast({ title: "장터 패널이 설치되었습니다!" });
+      setSelectedChannelId("");
+    } catch {
+      toast({ title: "패널 설치에 실패했습니다.", variant: "destructive" });
+    }
+  };
+
   const totalPages = data ? Math.ceil(data.total / 20) : 0;
 
   return (
@@ -129,6 +149,63 @@ export default function MarketPage() {
         <h1 className="text-2xl md:text-3xl font-bold text-white">장터 관리</h1>
         <p className="text-white/50 mt-1">
           서버의 장터 상품을 관리합니다 (수수료: {topyName} {FEE_RATES.topy}%, {rubyName} {FEE_RATES.ruby}%)
+        </p>
+      </div>
+
+      {/* Panel Setup */}
+      <div className="bg-white/5 backdrop-blur-sm rounded-2xl border border-white/10 p-6">
+        <div className="flex items-center gap-3 mb-4">
+          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center">
+            <Icon icon="solar:widget-add-bold" className="h-5 w-5 text-white" />
+          </div>
+          <div>
+            <h3 className="font-semibold text-white">장터 패널 설치</h3>
+            <p className="text-white/50 text-sm">Discord 채널에 장터 패널을 설치합니다</p>
+          </div>
+        </div>
+
+        <div className="flex flex-col sm:flex-row gap-4">
+          {mounted ? (
+            <Select
+              value={selectedChannelId}
+              onValueChange={setSelectedChannelId}
+            >
+              <SelectTrigger className="bg-white/5 border-white/10 text-white sm:w-64">
+                <SelectValue placeholder="채널 선택..." />
+              </SelectTrigger>
+              <SelectContent>
+                {channels?.map((channel) => (
+                  <SelectItem key={channel.id} value={channel.id}>
+                    # {channel.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          ) : (
+            <div className="h-10 w-64 bg-white/5 border border-white/10 rounded-lg animate-pulse" />
+          )}
+
+          <Button
+            onClick={handleCreatePanel}
+            disabled={!selectedChannelId || createPanelMutation.isPending}
+            className="bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 text-white"
+          >
+            {createPanelMutation.isPending ? (
+              <>
+                <div className="h-4 w-4 mr-2 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                설치 중...
+              </>
+            ) : (
+              <>
+                <Icon icon="solar:add-circle-bold" className="h-4 w-4 mr-2" />
+                패널 설치
+              </>
+            )}
+          </Button>
+        </div>
+
+        <p className="text-white/40 text-xs mt-3">
+          선택한 채널에 장터 패널 메시지가 생성됩니다. 메시지를 고정하면 유저들이 버튼을 클릭하여 장터를 이용할 수 있습니다.
         </p>
       </div>
 
@@ -274,7 +351,7 @@ export default function MarketPage() {
           <p className="text-sm text-white/30">
             {hasFilters
               ? "필터 조건에 맞는 상품이 없습니다."
-              : "유저들이 /장터 명령어로 상품을 등록하면 여기에 표시됩니다."}
+              : "유저들이 장터 패널에서 상품을 등록하면 여기에 표시됩니다."}
           </p>
         </div>
       )}
@@ -447,10 +524,10 @@ export default function MarketPage() {
           <Badge className="bg-blue-600">안내</Badge>
           <div>
             <p className="text-blue-100">
-              장터는 유저들이 Discord에서 /장터 명령어로 등록한 상품 목록입니다.
+              장터 패널을 설치하면 유저들이 버튼 클릭만으로 상품을 등록하고 거래할 수 있습니다.
             </p>
             <p className="mt-1 text-sm text-blue-200/70">
-              관리자는 여기서 상품을 취소(삭제)할 수 있습니다. 구매는 Discord에서만 가능합니다.
+              관리자는 여기서 상품을 취소(삭제)할 수 있습니다. 패널 메시지를 고정해두면 편리합니다.
             </p>
           </div>
         </div>

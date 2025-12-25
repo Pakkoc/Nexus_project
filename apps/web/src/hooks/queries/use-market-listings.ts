@@ -153,3 +153,15 @@ export function useCancelMarketListing(guildId: string) {
     },
   });
 }
+
+export function useCreateMarketPanel(guildId: string) {
+  return useMutation({
+    mutationFn: async (channelId: string) => {
+      const response = await apiClient.post<{ success: boolean; messageId: string }>(
+        `/api/guilds/${guildId}/market/panel`,
+        { channelId }
+      );
+      return response.data;
+    },
+  });
+}
