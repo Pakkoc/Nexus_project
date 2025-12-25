@@ -155,6 +155,8 @@ export function useCancelMarketListing(guildId: string) {
 }
 
 export function useCreateMarketPanel(guildId: string) {
+  const queryClient = useQueryClient();
+
   return useMutation({
     mutationFn: async (channelId: string) => {
       const response = await apiClient.post<{ success: boolean; messageId: string }>(
@@ -162,6 +164,56 @@ export function useCreateMarketPanel(guildId: string) {
         { channelId }
       );
       return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["market-settings", guildId] });
+    },
+  });
+}
+
+// ========== Market Settings ==========
+
+export interface MarketSettingsResponse {
+  guildId: string;
+  channelId: string | null;
+  messageId: string | null;
+  topyFeePercent: number;
+  rubyFeePercent: number;
+  createdAt: string | null;
+  updatedAt: string | null;
+}
+
+export interface UpdateMarketSettingsData {
+  topyFeePercent?: number;
+  rubyFeePercent?: number;
+}
+
+export function useMarketSettings(guildId: string) {
+  return useQuery({
+    queryKey: ["market-settings", guildId],
+    queryFn: async () => {
+      const response = await apiClient.get<MarketSettingsResponse>(
+        `/api/guilds/${guildId}/market/settings`
+      );
+      return response.data;
+    },
+    enabled: !!guildId,
+  });
+}
+
+export function useUpdateMarketSettings(guildId: string) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (data: UpdateMarketSettingsData) => {
+      const response = await apiClient.put<MarketSettingsResponse>(
+        `/api/guilds/${guildId}/market/settings`,
+        data
+      );
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["market-settings", guildId] });
     },
   });
 }

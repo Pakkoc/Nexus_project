@@ -579,10 +579,35 @@ async function main() {
         return res.status(400).json({ error: 'Channel must be a text channel' });
       }
 
+      // 기존 설정 조회
+      const marketSettingsResult = await container.marketSettingsService.getSettings(guildId);
+      const marketSettings = marketSettingsResult.success ? marketSettingsResult.data : null;
+
+      // 기존 패널 메시지 삭제 (채널 변경 시)
+      if (marketSettings?.channelId && marketSettings?.messageId) {
+        try {
+          const oldChannel = await guild.channels.fetch(marketSettings.channelId);
+          if (oldChannel && 'messages' in oldChannel) {
+            const oldMessage = await oldChannel.messages.fetch(marketSettings.messageId);
+            if (oldMessage) {
+              await oldMessage.delete();
+              console.log(`[MARKET] Deleted old panel message in channel ${marketSettings.channelId}`);
+            }
+          }
+        } catch (err) {
+          // 기존 메시지 삭제 실패는 무시 (이미 삭제됐을 수 있음)
+          console.log(`[MARKET] Could not delete old panel message: ${err}`);
+        }
+      }
+
       // 화폐 설정 조회
-      const settingsResult = await container.currencyService.getSettings(guildId);
-      const topyName = (settingsResult.success && settingsResult.data?.topyName) || '토피';
-      const rubyName = (settingsResult.success && settingsResult.data?.rubyName) || '루비';
+      const currencySettingsResult = await container.currencyService.getSettings(guildId);
+      const topyName = (currencySettingsResult.success && currencySettingsResult.data?.topyName) || '토피';
+      const rubyName = (currencySettingsResult.success && currencySettingsResult.data?.rubyName) || '루비';
+
+      // 수수료율 (설정에서 가져오기)
+      const topyFeePercent = marketSettings?.topyFeePercent ?? 5;
+      const rubyFeePercent = marketSettings?.rubyFeePercent ?? 3;
 
       // 패널 Embed 생성
       const embed = new EmbedBuilder()
@@ -593,8 +618,8 @@ async function main() {
           '아래 버튼을 클릭하여 장터를 이용할 수 있습니다.'
         )
         .addFields(
-          { name: `💰 ${topyName} 수수료`, value: '5%', inline: true },
-          { name: `💎 ${rubyName} 수수료`, value: '3%', inline: true },
+          { name: `💰 ${topyName} 수수료`, value: `${topyFeePercent}%`, inline: true },
+          { name: `💎 ${rubyName} 수수료`, value: `${rubyFeePercent}%`, inline: true },
           { name: '⏰ 등록 유효기간', value: '30일', inline: true }
         )
         .setFooter({ text: '거래 시 발생하는 분쟁은 관리자에게 문의하세요.' })
@@ -624,6 +649,9 @@ async function main() {
         embeds: [embed],
         components: [buttonRow],
       });
+
+      // 설정에 채널/메시지 ID 저장
+      await container.marketSettingsService.updatePanel(guildId, channelId, message.id);
 
       console.log(`[MARKET] Panel created in channel ${channel.name} (${channelId}) in guild ${guildId}`);
       return res.json({ success: true, messageId: message.id });

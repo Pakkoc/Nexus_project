@@ -6,3 +6,5 @@ export * from './currency-settings.repository';
 export * from './currency-transaction.repository';
 export * from './daily-reward.repository';
 export * from './shop.repository';
+export * from './market.repository';
+export * from './market-settings.repository';

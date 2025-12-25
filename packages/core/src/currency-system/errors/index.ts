@@ -24,4 +24,12 @@ export type CurrencyError =
   | { type: 'OUT_OF_STOCK' }
   | { type: 'PURCHASE_LIMIT_EXCEEDED'; maxPerUser: number; currentCount: number }
   | { type: 'ITEM_NOT_OWNED' }
-  | { type: 'ITEM_EXPIRED' };
+  | { type: 'ITEM_EXPIRED' }
+  // 장터 관련 에러
+  | { type: 'LISTING_NOT_FOUND' }
+  | { type: 'LISTING_NOT_ACTIVE' }
+  | { type: 'LISTING_EXPIRED' }
+  | { type: 'CANNOT_BUY_OWN_LISTING' }
+  | { type: 'NOT_LISTING_OWNER' }
+  | { type: 'INVALID_PRICE'; minPrice: bigint }
+  | { type: 'MAX_LISTINGS_REACHED'; maxListings: number };
