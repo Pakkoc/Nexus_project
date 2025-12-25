@@ -3,20 +3,29 @@ import type { ShopRepositoryPort } from '../port/shop-repository.port';
 import type { TopyWalletRepositoryPort } from '../port/topy-wallet-repository.port';
 import type { RubyWalletRepositoryPort } from '../port/ruby-wallet-repository.port';
 import type { CurrencyTransactionRepositoryPort } from '../port/currency-transaction-repository.port';
+import type { BankSubscriptionRepositoryPort } from '../port/bank-subscription-repository.port';
 import type { ShopItem, ItemType } from '../domain/shop-item';
 import type { UserItem } from '../domain/user-item';
 import type { PurchaseHistory } from '../domain/purchase-history';
 import type { ColorOption, CreateColorOption } from '../domain/color-option';
+import type { BankTier, BankSubscription } from '../domain/bank-subscription';
 import type { CurrencyError } from '../errors';
 import { Result } from '../../shared/types/result';
 import { createTransaction } from '../domain/currency-transaction';
 import { createTopyWallet } from '../domain/topy-wallet';
+import { createBankSubscription, SUBSCRIPTION_DURATION_DAYS } from '../domain/bank-subscription';
 
 export interface PurchaseResult {
   item: ShopItem;
   price: bigint;
   fee: bigint;
   newBalance: bigint;
+  bankSubscription?: {
+    action: 'created' | 'extended' | 'queued';
+    tier: BankTier;
+    startsAt: Date;
+    expiresAt: Date;
+  };
 }
 
 export interface UseItemResult {
@@ -30,7 +39,8 @@ export class ShopService {
     private readonly topyWalletRepo: TopyWalletRepositoryPort,
     private readonly rubyWalletRepo: RubyWalletRepositoryPort,
     private readonly transactionRepo: CurrencyTransactionRepositoryPort,
-    private readonly clock: ClockPort
+    private readonly clock: ClockPort,
+    private readonly bankSubscriptionRepo?: BankSubscriptionRepositoryPort
   ) {}
 
   /**
@@ -170,9 +180,23 @@ export class ShopService {
       }
     }
 
-    // 5. 수수료 계산 (TODO: 디토뱅크 등급에 따라 면제)
-    const feePercent = 1.2; // 기본 1.2%
-    const fee = (item.price * BigInt(Math.round(feePercent * 10))) / BigInt(1000);
+    // 5. 수수료 계산 (뱅크 구독에 따라 면제)
+    let feePercent = 1.2; // 기본 1.2%
+
+    if (this.bankSubscriptionRepo) {
+      const subscriptionResult = await this.bankSubscriptionRepo.findActiveByUser(guildId, userId, now);
+      if (subscriptionResult.success && subscriptionResult.data) {
+        const tier = subscriptionResult.data.tier;
+        if (tier === 'gold') {
+          feePercent = 0; // 골드: 수수료 면제
+        }
+        // 실버: 1.2% 유지
+      }
+    }
+
+    const fee = feePercent > 0
+      ? (item.price * BigInt(Math.round(feePercent * 10))) / BigInt(1000)
+      : BigInt(0);
     const totalCost = item.price + fee;
 
     // 6. 잔액 확인 및 차감
@@ -234,18 +258,31 @@ export class ShopService {
       await this.shopRepo.decreaseStock(itemId);
     }
 
-    // 8. 유저 아이템 지급
-    const expiresAt = item.durationDays
-      ? new Date(now.getTime() + item.durationDays * 24 * 60 * 60 * 1000)
-      : null;
+    // 8. 아이템 타입별 처리
+    let bankSubscriptionResult: PurchaseResult['bankSubscription'] | undefined;
 
-    await this.shopRepo.increaseUserItemQuantity(
-      guildId,
-      userId,
-      item.itemType,
-      1,
-      expiresAt
-    );
+    if (item.itemType === 'bank_silver' || item.itemType === 'bank_gold') {
+      // 뱅크 구독 아이템: 구독 활성화
+      if (!this.bankSubscriptionRepo) {
+        return Result.err({ type: 'BANK_SERVICE_NOT_AVAILABLE' });
+      }
+
+      const tier: BankTier = item.itemType === 'bank_silver' ? 'silver' : 'gold';
+      bankSubscriptionResult = await this.activateBankSubscription(guildId, userId, tier, now);
+    } else {
+      // 일반 아이템: 유저 아이템 지급
+      const expiresAt = item.durationDays
+        ? new Date(now.getTime() + item.durationDays * 24 * 60 * 60 * 1000)
+        : null;
+
+      await this.shopRepo.increaseUserItemQuantity(
+        guildId,
+        userId,
+        item.itemType,
+        1,
+        expiresAt
+      );
+    }
 
     // 9. 구매 내역 저장
     await this.shopRepo.savePurchaseHistory({
@@ -291,7 +328,95 @@ export class ShopService {
       price: item.price,
       fee,
       newBalance,
+      bankSubscription: bankSubscriptionResult,
     });
+  }
+
+  /**
+   * 뱅크 구독 활성화 (내부 메서드)
+   */
+  private async activateBankSubscription(
+    guildId: string,
+    userId: string,
+    tier: BankTier,
+    now: Date
+  ): Promise<PurchaseResult['bankSubscription']> {
+    if (!this.bankSubscriptionRepo) {
+      throw new Error('BankSubscriptionRepository not provided');
+    }
+
+    // 1. 유저의 모든 구독 조회
+    const allSubscriptionsResult = await this.bankSubscriptionRepo.findAllByUser(guildId, userId);
+    const subscriptions = allSubscriptionsResult.success ? allSubscriptionsResult.data : [];
+
+    // 현재 활성 구독 찾기
+    const activeSubscription = subscriptions.find(
+      (s) => s.startsAt <= now && s.expiresAt > now
+    );
+
+    // 미래 예약된 구독 중 같은 티어 찾기
+    const sameTierFuture = subscriptions.find(
+      (s) => s.tier === tier && s.startsAt > now
+    );
+
+    // 2. 같은 티어가 이미 있는 경우 (활성 또는 예약) → 연장
+    if (activeSubscription?.tier === tier) {
+      const newExpiresAt = new Date(
+        activeSubscription.expiresAt.getTime() + SUBSCRIPTION_DURATION_DAYS * 24 * 60 * 60 * 1000
+      );
+
+      await this.bankSubscriptionRepo.extendExpiration(activeSubscription.id, newExpiresAt);
+
+      return {
+        action: 'extended',
+        tier,
+        startsAt: activeSubscription.startsAt,
+        expiresAt: newExpiresAt,
+      };
+    }
+
+    if (sameTierFuture) {
+      const newExpiresAt = new Date(
+        sameTierFuture.expiresAt.getTime() + SUBSCRIPTION_DURATION_DAYS * 24 * 60 * 60 * 1000
+      );
+
+      await this.bankSubscriptionRepo.extendExpiration(sameTierFuture.id, newExpiresAt);
+
+      return {
+        action: 'extended',
+        tier,
+        startsAt: sameTierFuture.startsAt,
+        expiresAt: newExpiresAt,
+      };
+    }
+
+    // 3. 다른 티어가 활성화 중인 경우 → 현재 만료 후 시작 (queue)
+    if (activeSubscription && activeSubscription.tier !== tier) {
+      const startsAt = activeSubscription.expiresAt;
+      const newSubscription = createBankSubscription(guildId, userId, tier, startsAt);
+
+      const saveResult = await this.bankSubscriptionRepo.save(newSubscription);
+      const saved = saveResult.success ? saveResult.data : null;
+
+      return {
+        action: 'queued',
+        tier,
+        startsAt: saved?.startsAt ?? startsAt,
+        expiresAt: saved?.expiresAt ?? new Date(startsAt.getTime() + SUBSCRIPTION_DURATION_DAYS * 24 * 60 * 60 * 1000),
+      };
+    }
+
+    // 4. 구독이 없는 경우 → 즉시 시작
+    const newSubscription = createBankSubscription(guildId, userId, tier, now);
+    const saveResult = await this.bankSubscriptionRepo.save(newSubscription);
+    const saved = saveResult.success ? saveResult.data : null;
+
+    return {
+      action: 'created',
+      tier,
+      startsAt: saved?.startsAt ?? now,
+      expiresAt: saved?.expiresAt ?? new Date(now.getTime() + SUBSCRIPTION_DURATION_DAYS * 24 * 60 * 60 * 1000),
+    };
   }
 
   /**
@@ -345,9 +470,23 @@ export class ShopService {
     // 6. 가격 결정 (색상별 가격, 0이면 아이템 기본 가격)
     const price = colorOption.price > BigInt(0) ? colorOption.price : item.price;
 
-    // 7. 수수료 계산 (1.2%)
-    const feePercent = BigInt(12);
-    const fee = (price * feePercent) / BigInt(1000);
+    // 7. 수수료 계산 (뱅크 구독에 따라 면제)
+    let colorFeePercent = 1.2; // 기본 1.2%
+
+    if (this.bankSubscriptionRepo) {
+      const subscriptionResult = await this.bankSubscriptionRepo.findActiveByUser(guildId, userId, now);
+      if (subscriptionResult.success && subscriptionResult.data) {
+        const tier = subscriptionResult.data.tier;
+        if (tier === 'gold') {
+          colorFeePercent = 0; // 골드: 수수료 면제
+        }
+        // 실버: 1.2% 유지
+      }
+    }
+
+    const fee = colorFeePercent > 0
+      ? (price * BigInt(Math.round(colorFeePercent * 10))) / BigInt(1000)
+      : BigInt(0);
     const totalCost = price + fee;
 
     // 8. 잔액 차감

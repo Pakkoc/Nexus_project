@@ -8,3 +8,4 @@ export * from './daily-reward.repository';
 export * from './shop.repository';
 export * from './market.repository';
 export * from './market-settings.repository';
+export * from './bank-subscription.repository';

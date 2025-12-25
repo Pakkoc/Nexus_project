@@ -1,4 +1,4 @@
-import type { XpService, CurrencyService, ShopService, MarketService, MarketSettingsService } from '@topia/core';
+import type { XpService, CurrencyService, ShopService, MarketService, MarketSettingsService, BankService } from '@topia/core';
 
 export interface Container {
   xpService: XpService;
@@ -6,4 +6,5 @@ export interface Container {
   shopService: ShopService;
   marketService: MarketService;
   marketSettingsService: MarketSettingsService;
+  bankService: BankService;
 }

@@ -8,6 +8,8 @@ export type ItemType =
   | 'random_box'     // 랜덤박스
   | 'warning_remove' // 경고 차감
   | 'tax_exempt'     // 세금 면제권
+  | 'bank_silver'    // 디토뱅크 실버 구독권
+  | 'bank_gold'      // 디토뱅크 골드 구독권
   | 'custom';        // 커스텀
 
 /**

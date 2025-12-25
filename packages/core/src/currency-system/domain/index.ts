@@ -11,3 +11,4 @@ export * from './purchase-history';
 export * from './color-option';
 export * from './market-listing';
 export * from './market-settings';
+export * from './bank-subscription';

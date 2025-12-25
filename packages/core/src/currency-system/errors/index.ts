@@ -32,4 +32,6 @@ export type CurrencyError =
   | { type: 'CANNOT_BUY_OWN_LISTING' }
   | { type: 'NOT_LISTING_OWNER' }
   | { type: 'INVALID_PRICE'; minPrice: bigint }
-  | { type: 'MAX_LISTINGS_REACHED'; maxListings: number };
+  | { type: 'MAX_LISTINGS_REACHED'; maxListings: number }
+  // 뱅크 관련 에러
+  | { type: 'BANK_SERVICE_NOT_AVAILABLE' };
