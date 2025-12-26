@@ -27,8 +27,8 @@ export const transferCommand: Command = {
         .setDescription('송금할 화폐 종류')
         .setRequired(true)
         .addChoices(
-          { name: '유상 화폐', value: 'topy' },
-          { name: '무상 화폐', value: 'ruby' }
+          { name: '토피', value: 'topy' },
+          { name: '루비', value: 'ruby' }
         )
     ),
 
