@@ -9,11 +9,11 @@
 
 ## 현재 상태
 
-- [ ] DB 테이블: `bank_subscriptions`
-- [ ] Domain: `BankSubscription`
-- [ ] Repository: `BankRepository`
-- [ ] Service: 뱅크 메서드
-- [ ] 상점 연동: 실버/골드 구독권
+- [x] DB 테이블: `bank_subscriptions`
+- [x] Domain: `BankSubscription`
+- [x] Repository: `BankSubscriptionRepository`
+- [x] Service: `bank.service.ts`
+- [x] 상점 연동: `bank_silver`, `bank_gold` 아이템 타입
 
 ## 수치/규칙
 
