@@ -17,10 +17,23 @@ interface ShopItemV2Row extends RowDataPacket {
   max_per_user: number | null;
   enabled: number;
   created_at: Date;
+  // Joined role ticket fields
+  ticket_id?: number | null;
+  ticket_consume_quantity?: number | null;
+  ticket_remove_previous_role?: number | null;
 }
 
-function rowToShopItemV2(row: ShopItemV2Row) {
-  return {
+interface RoleOptionRow extends RowDataPacket {
+  id: number;
+  ticket_id: number;
+  role_id: string;
+  name: string;
+  description: string | null;
+  display_order: number;
+}
+
+function rowToShopItemV2(row: ShopItemV2Row, roleOptions?: RoleOptionRow[]) {
+  const item: Record<string, unknown> = {
     id: row.id,
     guildId: row.guild_id,
     name: row.name,
@@ -33,6 +46,24 @@ function rowToShopItemV2(row: ShopItemV2Row) {
     enabled: row.enabled === 1,
     createdAt: row.created_at.toISOString(),
   };
+
+  // Include role ticket info if exists
+  if (row.ticket_id) {
+    item.roleTicket = {
+      id: row.ticket_id,
+      consumeQuantity: row.ticket_consume_quantity ?? 1,
+      removePreviousRole: row.ticket_remove_previous_role === 1,
+      roleOptions: (roleOptions ?? []).map((opt) => ({
+        id: opt.id,
+        roleId: opt.role_id,
+        name: opt.name,
+        description: opt.description,
+        displayOrder: opt.display_order,
+      })),
+    };
+  }
+
+  return item;
 }
 
 export async function GET(
@@ -48,12 +79,51 @@ export async function GET(
 
   try {
     const pool = db();
+
+    // Fetch shop items with role ticket info
     const [rows] = await pool.query<ShopItemV2Row[]>(
-      "SELECT * FROM shop_items_v2 WHERE guild_id = ? ORDER BY id ASC",
+      `SELECT si.*,
+              rt.id as ticket_id,
+              rt.consume_quantity as ticket_consume_quantity,
+              rt.remove_previous_role as ticket_remove_previous_role
+       FROM shop_items_v2 si
+       LEFT JOIN role_tickets rt ON si.id = rt.shop_item_id
+       WHERE si.guild_id = ?
+       ORDER BY si.id ASC`,
       [guildId]
     );
 
-    return NextResponse.json(rows.map(rowToShopItemV2));
+    // Get all ticket IDs that have role tickets
+    const ticketIds = rows
+      .filter((r) => r.ticket_id)
+      .map((r) => r.ticket_id as number);
+
+    // Fetch role options for all tickets at once
+    let roleOptionsMap: Map<number, RoleOptionRow[]> = new Map();
+    if (ticketIds.length > 0) {
+      const [roleOptions] = await pool.query<RoleOptionRow[]>(
+        `SELECT * FROM ticket_role_options
+         WHERE ticket_id IN (${ticketIds.map(() => "?").join(",")})
+         ORDER BY display_order ASC`,
+        ticketIds
+      );
+
+      // Group by ticket_id
+      for (const opt of roleOptions) {
+        const existing = roleOptionsMap.get(opt.ticket_id) || [];
+        existing.push(opt);
+        roleOptionsMap.set(opt.ticket_id, existing);
+      }
+    }
+
+    return NextResponse.json(
+      rows.map((row) =>
+        rowToShopItemV2(
+          row,
+          row.ticket_id ? roleOptionsMap.get(row.ticket_id) : undefined
+        )
+      )
+    );
   } catch (error) {
     console.error("Error fetching shop items v2:", error);
     return NextResponse.json(
@@ -79,36 +149,93 @@ export async function POST(
     const validatedData = createShopItemV2Schema.parse(body);
 
     const pool = db();
-    const [result] = await pool.execute<ResultSetHeader>(
-      `INSERT INTO shop_items_v2
-       (guild_id, name, description, price, currency_type, duration_days, stock, max_per_user, enabled)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      [
-        guildId,
-        validatedData.name,
-        validatedData.description ?? null,
-        validatedData.price,
-        validatedData.currencyType,
-        validatedData.durationDays ?? 0,
-        validatedData.stock ?? null,
-        validatedData.maxPerUser ?? null,
-        validatedData.enabled !== false ? 1 : 0,
-      ]
-    );
+    const connection = await pool.getConnection();
 
-    const [rows] = await pool.query<ShopItemV2Row[]>(
-      "SELECT * FROM shop_items_v2 WHERE id = ?",
-      [result.insertId]
-    );
+    try {
+      await connection.beginTransaction();
 
-    if (rows.length === 0) {
-      return NextResponse.json(
-        { error: "Failed to create item" },
-        { status: 500 }
+      // 1. Create shop item
+      const [shopItemResult] = await connection.execute<ResultSetHeader>(
+        `INSERT INTO shop_items_v2
+         (guild_id, name, description, price, currency_type, duration_days, stock, max_per_user, enabled)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [
+          guildId,
+          validatedData.name,
+          validatedData.description ?? null,
+          validatedData.price,
+          validatedData.currencyType,
+          validatedData.durationDays ?? 0,
+          validatedData.stock ?? null,
+          validatedData.maxPerUser ?? null,
+          validatedData.enabled !== false ? 1 : 0,
+        ]
       );
-    }
 
-    return NextResponse.json(rowToShopItemV2(rows[0]!), { status: 201 });
+      const shopItemId = shopItemResult.insertId;
+
+      // 2. If roleTicket is provided, create role_tickets and ticket_role_options
+      if (validatedData.roleTicket) {
+        const { consumeQuantity, removePreviousRole, roleOptions } = validatedData.roleTicket;
+
+        // Create role ticket (name = shop item name)
+        const [ticketResult] = await connection.execute<ResultSetHeader>(
+          `INSERT INTO role_tickets
+           (guild_id, name, description, shop_item_id, consume_quantity, remove_previous_role, enabled)
+           VALUES (?, ?, ?, ?, ?, ?, ?)`,
+          [
+            guildId,
+            validatedData.name, // Use shop item name
+            validatedData.description ?? null,
+            shopItemId,
+            consumeQuantity,
+            removePreviousRole ? 1 : 0,
+            validatedData.enabled !== false ? 1 : 0,
+          ]
+        );
+
+        const ticketId = ticketResult.insertId;
+
+        // Create role options
+        for (let i = 0; i < roleOptions.length; i++) {
+          const option = roleOptions[i]!;
+          await connection.execute(
+            `INSERT INTO ticket_role_options
+             (ticket_id, role_id, name, description, display_order)
+             VALUES (?, ?, ?, ?, ?)`,
+            [
+              ticketId,
+              option.roleId,
+              option.name,
+              option.description ?? null,
+              i,
+            ]
+          );
+        }
+      }
+
+      await connection.commit();
+
+      // Fetch the created item
+      const [rows] = await pool.query<ShopItemV2Row[]>(
+        "SELECT * FROM shop_items_v2 WHERE id = ?",
+        [shopItemId]
+      );
+
+      if (rows.length === 0) {
+        return NextResponse.json(
+          { error: "Failed to create item" },
+          { status: 500 }
+        );
+      }
+
+      return NextResponse.json(rowToShopItemV2(rows[0]!), { status: 201 });
+    } catch (error) {
+      await connection.rollback();
+      throw error;
+    } finally {
+      connection.release();
+    }
   } catch (error) {
     if (error instanceof Error && error.name === "ZodError") {
       return NextResponse.json(

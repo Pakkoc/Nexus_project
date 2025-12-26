@@ -85,64 +85,181 @@ export async function PATCH(
     const validatedData = updateShopItemV2Schema.parse(body);
 
     const pool = db();
+    const connection = await pool.getConnection();
 
-    // Build update query dynamically
-    const updates: string[] = [];
-    const values: unknown[] = [];
+    try {
+      await connection.beginTransaction();
 
-    if (validatedData.name !== undefined) {
-      updates.push("name = ?");
-      values.push(validatedData.name);
-    }
-    if (validatedData.description !== undefined) {
-      updates.push("description = ?");
-      values.push(validatedData.description);
-    }
-    if (validatedData.price !== undefined) {
-      updates.push("price = ?");
-      values.push(validatedData.price);
-    }
-    if (validatedData.currencyType !== undefined) {
-      updates.push("currency_type = ?");
-      values.push(validatedData.currencyType);
-    }
-    if (validatedData.durationDays !== undefined) {
-      updates.push("duration_days = ?");
-      values.push(validatedData.durationDays);
-    }
-    if (validatedData.stock !== undefined) {
-      updates.push("stock = ?");
-      values.push(validatedData.stock);
-    }
-    if (validatedData.maxPerUser !== undefined) {
-      updates.push("max_per_user = ?");
-      values.push(validatedData.maxPerUser);
-    }
-    if (validatedData.enabled !== undefined) {
-      updates.push("enabled = ?");
-      values.push(validatedData.enabled ? 1 : 0);
-    }
+      // Check if item exists
+      const [existingRows] = await connection.query<ShopItemV2Row[]>(
+        "SELECT * FROM shop_items_v2 WHERE id = ? AND guild_id = ?",
+        [itemId, guildId]
+      );
 
-    if (updates.length === 0) {
-      return NextResponse.json({ error: "No updates provided" }, { status: 400 });
+      if (existingRows.length === 0) {
+        await connection.rollback();
+        return NextResponse.json({ error: "Item not found" }, { status: 404 });
+      }
+
+      // Build update query dynamically
+      const updates: string[] = [];
+      const values: unknown[] = [];
+
+      if (validatedData.name !== undefined) {
+        updates.push("name = ?");
+        values.push(validatedData.name);
+      }
+      if (validatedData.description !== undefined) {
+        updates.push("description = ?");
+        values.push(validatedData.description);
+      }
+      if (validatedData.price !== undefined) {
+        updates.push("price = ?");
+        values.push(validatedData.price);
+      }
+      if (validatedData.currencyType !== undefined) {
+        updates.push("currency_type = ?");
+        values.push(validatedData.currencyType);
+      }
+      if (validatedData.durationDays !== undefined) {
+        updates.push("duration_days = ?");
+        values.push(validatedData.durationDays);
+      }
+      if (validatedData.stock !== undefined) {
+        updates.push("stock = ?");
+        values.push(validatedData.stock);
+      }
+      if (validatedData.maxPerUser !== undefined) {
+        updates.push("max_per_user = ?");
+        values.push(validatedData.maxPerUser);
+      }
+      if (validatedData.enabled !== undefined) {
+        updates.push("enabled = ?");
+        values.push(validatedData.enabled ? 1 : 0);
+      }
+
+      // Update shop item if there are changes
+      if (updates.length > 0) {
+        values.push(itemId, guildId);
+        await connection.execute(
+          `UPDATE shop_items_v2 SET ${updates.join(", ")} WHERE id = ? AND guild_id = ?`,
+          values
+        );
+      }
+
+      // Handle role ticket update
+      if (validatedData.roleTicket !== undefined) {
+        // Check if role ticket exists
+        const [existingTickets] = await connection.query<RowDataPacket[]>(
+          "SELECT id FROM role_tickets WHERE shop_item_id = ?",
+          [itemId]
+        );
+
+        if (validatedData.roleTicket === null) {
+          // Remove role ticket
+          if (existingTickets.length > 0) {
+            const ticketId = existingTickets[0]!.id;
+            await connection.execute(
+              "DELETE FROM ticket_role_options WHERE ticket_id = ?",
+              [ticketId]
+            );
+            await connection.execute(
+              "DELETE FROM role_tickets WHERE id = ?",
+              [ticketId]
+            );
+          }
+        } else {
+          // Get shop item name for role ticket
+          const [itemRows] = await connection.query<ShopItemV2Row[]>(
+            "SELECT name, description, enabled FROM shop_items_v2 WHERE id = ?",
+            [itemId]
+          );
+          const shopItem = itemRows[0]!;
+
+          const { consumeQuantity, removePreviousRole, roleOptions } = validatedData.roleTicket;
+
+          if (existingTickets.length > 0) {
+            // Update existing role ticket
+            const ticketId = existingTickets[0]!.id;
+            await connection.execute(
+              `UPDATE role_tickets
+               SET name = ?, description = ?, consume_quantity = ?, remove_previous_role = ?, enabled = ?
+               WHERE id = ?`,
+              [
+                shopItem.name,
+                shopItem.description,
+                consumeQuantity,
+                removePreviousRole ? 1 : 0,
+                shopItem.enabled,
+                ticketId,
+              ]
+            );
+
+            // Replace role options (delete all, then insert new)
+            await connection.execute(
+              "DELETE FROM ticket_role_options WHERE ticket_id = ?",
+              [ticketId]
+            );
+
+            for (let i = 0; i < roleOptions.length; i++) {
+              const option = roleOptions[i]!;
+              await connection.execute(
+                `INSERT INTO ticket_role_options
+                 (ticket_id, role_id, name, description, display_order)
+                 VALUES (?, ?, ?, ?, ?)`,
+                [ticketId, option.roleId, option.name, option.description ?? null, i]
+              );
+            }
+          } else {
+            // Create new role ticket
+            const [ticketResult] = await connection.execute<ResultSetHeader>(
+              `INSERT INTO role_tickets
+               (guild_id, name, description, shop_item_id, consume_quantity, remove_previous_role, enabled)
+               VALUES (?, ?, ?, ?, ?, ?, ?)`,
+              [
+                guildId,
+                shopItem.name,
+                shopItem.description,
+                itemId,
+                consumeQuantity,
+                removePreviousRole ? 1 : 0,
+                shopItem.enabled,
+              ]
+            );
+
+            const ticketId = ticketResult.insertId;
+
+            for (let i = 0; i < roleOptions.length; i++) {
+              const option = roleOptions[i]!;
+              await connection.execute(
+                `INSERT INTO ticket_role_options
+                 (ticket_id, role_id, name, description, display_order)
+                 VALUES (?, ?, ?, ?, ?)`,
+                [ticketId, option.roleId, option.name, option.description ?? null, i]
+              );
+            }
+          }
+        }
+      }
+
+      await connection.commit();
+
+      const [rows] = await pool.query<ShopItemV2Row[]>(
+        "SELECT * FROM shop_items_v2 WHERE id = ?",
+        [itemId]
+      );
+
+      if (rows.length === 0) {
+        return NextResponse.json({ error: "Item not found" }, { status: 404 });
+      }
+
+      return NextResponse.json(rowToShopItemV2(rows[0]!));
+    } catch (error) {
+      await connection.rollback();
+      throw error;
+    } finally {
+      connection.release();
     }
-
-    values.push(itemId, guildId);
-    await pool.execute(
-      `UPDATE shop_items_v2 SET ${updates.join(", ")} WHERE id = ? AND guild_id = ?`,
-      values
-    );
-
-    const [rows] = await pool.query<ShopItemV2Row[]>(
-      "SELECT * FROM shop_items_v2 WHERE id = ?",
-      [itemId]
-    );
-
-    if (rows.length === 0) {
-      return NextResponse.json({ error: "Item not found" }, { status: 404 });
-    }
-
-    return NextResponse.json(rowToShopItemV2(rows[0]!));
   } catch (error) {
     if (error instanceof Error && error.name === "ZodError") {
       return NextResponse.json(

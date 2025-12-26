@@ -2,6 +2,27 @@ import { z } from "zod";
 
 // ========== Shop Item V2 ==========
 
+// Role option response schema
+export const roleOptionResponseSchema = z.object({
+  id: z.number(),
+  roleId: z.string(),
+  name: z.string(),
+  description: z.string().nullable(),
+  displayOrder: z.number(),
+});
+
+export type RoleOptionResponse = z.infer<typeof roleOptionResponseSchema>;
+
+// Role ticket response schema (included in shop item)
+export const roleTicketResponseSchema = z.object({
+  id: z.number(),
+  consumeQuantity: z.number(),
+  removePreviousRole: z.boolean(),
+  roleOptions: z.array(roleOptionResponseSchema),
+});
+
+export type RoleTicketResponse = z.infer<typeof roleTicketResponseSchema>;
+
 export const shopItemV2Schema = z.object({
   id: z.number(),
   guildId: z.string(),
@@ -14,9 +35,29 @@ export const shopItemV2Schema = z.object({
   maxPerUser: z.number().nullable(),
   enabled: z.boolean(),
   createdAt: z.string(),
+  // Optional role ticket info
+  roleTicket: roleTicketResponseSchema.optional(),
 });
 
 export type ShopItemV2 = z.infer<typeof shopItemV2Schema>;
+
+// Role option for inline creation
+export const inlineRoleOptionSchema = z.object({
+  name: z.string().min(1).max(100),
+  roleId: z.string(),
+  description: z.string().max(500).optional(),
+});
+
+export type InlineRoleOption = z.infer<typeof inlineRoleOptionSchema>;
+
+// Inline role ticket for unified creation
+export const inlineRoleTicketSchema = z.object({
+  consumeQuantity: z.number().min(0),
+  removePreviousRole: z.boolean(),
+  roleOptions: z.array(inlineRoleOptionSchema),
+});
+
+export type InlineRoleTicket = z.infer<typeof inlineRoleTicketSchema>;
 
 export const createShopItemV2Schema = z.object({
   name: z.string().min(1).max(100),
@@ -27,6 +68,8 @@ export const createShopItemV2Schema = z.object({
   stock: z.number().min(0).optional(),
   maxPerUser: z.number().min(1).optional(),
   enabled: z.boolean().optional(),
+  // Optional role ticket for unified creation
+  roleTicket: inlineRoleTicketSchema.optional(),
 });
 
 export type CreateShopItemV2 = z.infer<typeof createShopItemV2Schema>;
@@ -40,6 +83,8 @@ export const updateShopItemV2Schema = z.object({
   stock: z.number().nullable().optional(),
   maxPerUser: z.number().nullable().optional(),
   enabled: z.boolean().optional(),
+  // Optional: update or create role ticket, null = remove role ticket
+  roleTicket: inlineRoleTicketSchema.nullable().optional(),
 });
 
 export type UpdateShopItemV2 = z.infer<typeof updateShopItemV2Schema>;
