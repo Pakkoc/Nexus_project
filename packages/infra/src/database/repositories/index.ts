@@ -10,8 +10,7 @@ export * from './market.repository';
 export * from './market-settings.repository';
 export * from './bank-subscription.repository';
 
-// V2 역할선택권 시스템
-export * from './shop-v2.repository';
+// 역할선택권 시스템
 export * from './role-ticket.repository';
 
 // 화폐 관리자
