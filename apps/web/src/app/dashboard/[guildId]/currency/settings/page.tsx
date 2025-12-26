@@ -73,7 +73,8 @@ export default function CurrencySettingsPage() {
   const { data: managers = [], isLoading: managersLoading } = useCurrencyManagers(guildId);
   const addManager = useAddCurrencyManager(guildId);
   const removeManager = useRemoveCurrencyManager(guildId);
-  const { data: members = [] } = useMembers(guildId);
+  const { data: membersData } = useMembers(guildId, { limit: 100 });
+  const members = membersData?.members ?? [];
   const [selectedUserId, setSelectedUserId] = useState<string>("");
 
   const form = useForm<CurrencySettingsFormValues>({
@@ -706,14 +707,14 @@ export default function CurrencySettingsPage() {
               </SelectTrigger>
               <SelectContent className="bg-slate-900 border-white/10">
                 {members
-                  .filter((m) => !managers.some((mgr) => mgr.userId === m.id))
+                  .filter((m) => !managers.some((mgr) => mgr.userId === m.userId))
                   .map((m) => (
                     <SelectItem
-                      key={m.id}
-                      value={m.id}
+                      key={m.userId}
+                      value={m.userId}
                       className="text-white focus:bg-white/10"
                     >
-                      {m.name}
+                      {m.displayName}
                     </SelectItem>
                   ))}
               </SelectContent>
@@ -755,7 +756,7 @@ export default function CurrencySettingsPage() {
           ) : managers.length > 0 ? (
             <div className="space-y-2">
               {managers.map((manager) => {
-                const member = members.find((m) => m.id === manager.userId);
+                const member = members.find((m) => m.userId === manager.userId);
                 return (
                   <div
                     key={manager.id}
@@ -766,7 +767,7 @@ export default function CurrencySettingsPage() {
                         <Icon icon="solar:user-linear" className="h-4 w-4 text-violet-400" />
                       </div>
                       <div>
-                        <p className="font-medium text-white">{member?.name ?? "알 수 없음"}</p>
+                        <p className="font-medium text-white">{member?.displayName ?? "알 수 없음"}</p>
                         <p className="text-xs text-white/40">ID: {manager.userId}</p>
                       </div>
                     </div>
