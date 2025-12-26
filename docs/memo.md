@@ -1,0 +1,1 @@
+- @app_commands.autocomplete 데코레이터 방식
