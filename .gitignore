@@ -63,3 +63,6 @@ image.png
 # Database
 *.sql
 mysql_backup.cnf
+
+# Legacy code
+previous_code/
