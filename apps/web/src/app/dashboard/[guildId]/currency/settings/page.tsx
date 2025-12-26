@@ -11,7 +11,7 @@ import {
   useCurrencyManagers,
   useAddCurrencyManager,
   useRemoveCurrencyManager,
-  useGuildMembers,
+  useMembers,
 } from "@/hooks/queries";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -73,7 +73,7 @@ export default function CurrencySettingsPage() {
   const { data: managers = [], isLoading: managersLoading } = useCurrencyManagers(guildId);
   const addManager = useAddCurrencyManager(guildId);
   const removeManager = useRemoveCurrencyManager(guildId);
-  const { data: members = [] } = useGuildMembers(guildId);
+  const { data: members = [] } = useMembers(guildId);
   const [selectedUserId, setSelectedUserId] = useState<string>("");
 
   const form = useForm<CurrencySettingsFormValues>({
