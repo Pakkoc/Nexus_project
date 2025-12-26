@@ -26,10 +26,7 @@ export const grantCommand: Command = {
         .setName('화폐')
         .setDescription('지급할 화폐 종류')
         .setRequired(true)
-        .addChoices(
-          { name: '토피', value: 'topy' },
-          { name: '루비', value: 'ruby' }
-        )
+        .setAutocomplete(true)
     )
     .addStringOption(option =>
       option
@@ -37,6 +34,25 @@ export const grantCommand: Command = {
         .setDescription('지급 사유 (선택)')
         .setRequired(false)
     ),
+
+  async autocomplete(interaction, container) {
+    const guildId = interaction.guildId;
+    if (!guildId) return;
+
+    const focusedOption = interaction.options.getFocused(true);
+
+    if (focusedOption.name === '화폐') {
+      // 서버의 화폐 설정 조회
+      const settingsResult = await container.currencyService.getSettings(guildId);
+      const topyName = settingsResult.success && settingsResult.data?.topyName || '토피';
+      const rubyName = settingsResult.success && settingsResult.data?.rubyName || '루비';
+
+      await interaction.respond([
+        { name: topyName, value: 'topy' },
+        { name: rubyName, value: 'ruby' },
+      ]);
+    }
+  },
 
   async execute(interaction, container) {
     const guildId = interaction.guildId;

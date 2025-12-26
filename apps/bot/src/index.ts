@@ -332,6 +332,19 @@ async function main() {
 
   // Interaction handler (commands, buttons, modals)
   client.on(Events.InteractionCreate, async (interaction) => {
+    // Autocomplete handler
+    if (interaction.isAutocomplete()) {
+      const command = commandCollection.get(interaction.commandName);
+      if (!command?.autocomplete) return;
+
+      try {
+        await command.autocomplete(interaction, container);
+      } catch (error) {
+        console.error(`[AUTOCOMPLETE] Error for ${interaction.commandName}:`, error);
+      }
+      return;
+    }
+
     // Slash command handler
     if (interaction.isChatInputCommand()) {
       const command = commandCollection.get(interaction.commandName);
