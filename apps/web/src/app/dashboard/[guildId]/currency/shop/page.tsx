@@ -12,6 +12,8 @@ import {
   useDeleteShopItemV2,
   useCurrencySettings,
   useRoles,
+  useTextChannels,
+  useCreateShopPanel,
 } from "@/hooks/queries";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -84,12 +86,17 @@ export default function ShopV2Page() {
   const [newRoleId, setNewRoleId] = useState("");
   const [newRoleDescription, setNewRoleDescription] = useState("");
 
+  // Panel settings
+  const [selectedChannelId, setSelectedChannelId] = useState("");
+
   const { data: settings } = useCurrencySettings(guildId);
   const { data: items, isLoading } = useShopItemsV2(guildId);
   const { data: roles } = useRoles(guildId);
+  const { data: channels } = useTextChannels(guildId);
   const createItem = useCreateShopItemV2(guildId);
   const updateItem = useUpdateShopItemV2(guildId);
   const deleteItem = useDeleteShopItemV2(guildId);
+  const createPanelMutation = useCreateShopPanel(guildId);
 
   const topyName = settings?.topyName ?? "토피";
   const rubyName = settings?.rubyName ?? "루비";
@@ -282,6 +289,20 @@ export default function ShopV2Page() {
         description: "상태 변경 중 오류가 발생했습니다.",
         variant: "destructive",
       });
+    }
+  };
+
+  const handleCreatePanel = async () => {
+    if (!selectedChannelId) {
+      toast({ title: "채널을 선택해주세요.", variant: "destructive" });
+      return;
+    }
+
+    try {
+      await createPanelMutation.mutateAsync(selectedChannelId);
+      toast({ title: "상점 패널이 설치되었습니다!" });
+    } catch {
+      toast({ title: "패널 설치에 실패했습니다.", variant: "destructive" });
     }
   };
 
@@ -740,6 +761,58 @@ export default function ShopV2Page() {
           {formContent}
         </DialogContent>
       </Dialog>
+
+      {/* Panel Setup */}
+      <div className="bg-white/5 backdrop-blur-sm rounded-2xl border border-white/10 p-6">
+        <div className="flex items-center gap-3 mb-6">
+          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500 to-orange-500 flex items-center justify-center">
+            <Icon icon="solar:widget-add-bold" className="h-5 w-5 text-white" />
+          </div>
+          <div>
+            <h3 className="font-semibold text-white">상점 패널 설치</h3>
+            <p className="text-white/50 text-sm">디스코드 채널에 상점 패널을 설치합니다</p>
+          </div>
+        </div>
+
+        <div className="flex flex-col sm:flex-row gap-3">
+          <Select
+            value={selectedChannelId}
+            onValueChange={setSelectedChannelId}
+          >
+            <SelectTrigger className="bg-white/5 border-white/10 text-white sm:w-64">
+              <SelectValue placeholder="채널 선택..." />
+            </SelectTrigger>
+            <SelectContent>
+              {channels?.map((channel) => (
+                <SelectItem key={channel.id} value={channel.id}>
+                  # {channel.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          <Button
+            onClick={handleCreatePanel}
+            disabled={!selectedChannelId || createPanelMutation.isPending}
+            className="bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white"
+          >
+            {createPanelMutation.isPending ? (
+              <>
+                <div className="h-4 w-4 mr-2 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                설치 중...
+              </>
+            ) : (
+              <>
+                <Icon icon="solar:add-circle-bold" className="h-4 w-4 mr-2" />
+                패널 설치
+              </>
+            )}
+          </Button>
+        </div>
+        <p className="text-white/40 text-xs mt-2">
+          선택한 채널에 상점 패널 메시지가 생성됩니다. 유저가 버튼을 눌러 상점을 이용할 수 있습니다.
+        </p>
+      </div>
 
       {/* Info Card */}
       <div className="bg-gradient-to-r from-amber-500/10 to-orange-500/10 rounded-2xl border border-amber-500/20 p-6">
