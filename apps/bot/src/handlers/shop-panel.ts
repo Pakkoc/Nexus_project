@@ -128,6 +128,9 @@ export async function handleShopPanelButton(
       await interaction.editReply({
         content: '상점 정보를 불러오는 중 오류가 발생했습니다.',
       });
+      setTimeout(async () => {
+        try { await interaction.deleteReply(); } catch { /* 이미 삭제됨 */ }
+      }, 5000);
       return;
     }
 
@@ -147,6 +150,14 @@ export async function handleShopPanelButton(
         .setTimestamp();
 
       await interaction.editReply({ embeds: [embed] });
+      // 5초 후 자동 삭제
+      setTimeout(async () => {
+        try {
+          await interaction.deleteReply();
+        } catch {
+          // 이미 삭제됨
+        }
+      }, 5000);
       return;
     }
 
@@ -257,6 +268,9 @@ export async function handleShopPanelButton(
     await interaction.editReply({
       content: '상점 정보를 불러오는 중 오류가 발생했습니다.',
     });
+    setTimeout(async () => {
+      try { await interaction.deleteReply(); } catch { /* 이미 삭제됨 */ }
+    }, 5000);
   }
 }
 
