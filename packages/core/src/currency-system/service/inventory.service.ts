@@ -184,6 +184,9 @@ export class InventoryService {
     // 고정 역할이 있으면 함께 저장
     const fixedRoleId = ticket.fixedRoleId;
 
+    // 디버그 로그
+    console.log('[INVENTORY_SERVICE] ticket.fixedRoleId:', fixedRoleId);
+
     if (isPeriod) {
       const updateResult = await this.shopRepo.updateCurrentRole(
         userItem.id,

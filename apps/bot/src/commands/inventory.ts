@@ -417,16 +417,27 @@ export const inventoryCommand: Command = {
 
             const result = exchangeResult.data;
 
+            // 디버그 로그
+            console.log('[INVENTORY] Exchange result:', {
+              newRoleId: result.newRoleId,
+              fixedRoleId: result.fixedRoleId,
+              removedRoleIds: result.removedRoleIds,
+            });
+
             // Discord 역할 부여/제거
+            const actuallyRemovedRoleIds: string[] = [];
             try {
               const member = await interaction.guild?.members.fetch(userId);
               if (member) {
-                // 이전 역할 제거
+                // 이전 역할 제거 (실제로 가지고 있는 역할만)
                 for (const roleId of result.removedRoleIds) {
                   try {
-                    const role = await interaction.guild?.roles.fetch(roleId);
-                    if (role && member.roles.cache.has(roleId)) {
-                      await member.roles.remove(role);
+                    if (member.roles.cache.has(roleId)) {
+                      const role = await interaction.guild?.roles.fetch(roleId);
+                      if (role) {
+                        await member.roles.remove(role);
+                        actuallyRemovedRoleIds.push(roleId);
+                      }
                     }
                   } catch (err) {
                     console.error(`역할 제거 실패 (${roleId}):`, err);
@@ -473,10 +484,10 @@ export const inventoryCommand: Command = {
               });
             }
 
-            if (result.removedRoleIds.length > 0) {
+            if (actuallyRemovedRoleIds.length > 0) {
               successEmbed.addFields({
                 name: '🔁 제거된 역할',
-                value: result.removedRoleIds.map((id) => `<@&${id}>`).join(', '),
+                value: actuallyRemovedRoleIds.map((id) => `<@&${id}>`).join(', '),
                 inline: true,
               });
             }

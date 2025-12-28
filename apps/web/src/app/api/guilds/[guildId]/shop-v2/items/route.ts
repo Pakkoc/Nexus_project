@@ -186,6 +186,9 @@ export async function POST(
       if (validatedData.roleTicket) {
         const { consumeQuantity, removePreviousRole, fixedRoleId, effectDurationSeconds, roleOptions } = validatedData.roleTicket;
 
+        // 디버그 로그
+        console.log('[SHOP-V2 API] Creating role ticket with fixedRoleId:', fixedRoleId);
+
         // Create role ticket (name = shop item name)
         const [ticketResult] = await connection.execute<ResultSetHeader>(
           `INSERT INTO role_tickets
