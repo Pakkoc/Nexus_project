@@ -150,7 +150,7 @@ export default function ShopV2Page() {
       hasRoleTicket: false,
       consumeQuantity: 1,
       removePreviousRole: true,
-      fixedRoleId: "",
+      fixedRoleId: "__none__",
       effectDurationDays: 0,
     },
   });
@@ -214,7 +214,7 @@ export default function ShopV2Page() {
         ? {
             consumeQuantity: data.consumeQuantity ?? 1,
             removePreviousRole: data.removePreviousRole ?? true,
-            fixedRoleId: data.fixedRoleId || null,
+            fixedRoleId: data.fixedRoleId && data.fixedRoleId !== "__none__" ? data.fixedRoleId : null,
             effectDurationSeconds,
             roleOptions,
           }
@@ -296,7 +296,7 @@ export default function ShopV2Page() {
       hasRoleTicket: !!item.roleTicket,
       consumeQuantity: item.roleTicket?.consumeQuantity ?? 1,
       removePreviousRole: item.roleTicket?.removePreviousRole ?? true,
-      fixedRoleId: item.roleTicket?.fixedRoleId || "",
+      fixedRoleId: item.roleTicket?.fixedRoleId || "__none__",
       effectDurationDays,
     });
   };
@@ -556,7 +556,7 @@ export default function ShopV2Page() {
                         <Icon icon="solar:lock-bold" className="h-4 w-4 text-amber-400" />
                         고정 역할 (선택)
                       </FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value || ""}>
+                      <Select onValueChange={field.onChange} value={field.value || "__none__"}>
                         <FormControl>
                           <SelectTrigger className="bg-white/5 border-white/10 text-white">
                             <SelectValue placeholder="고정 역할 선택 (선택사항)">
@@ -575,7 +575,7 @@ export default function ShopV2Page() {
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          <SelectItem value="">없음</SelectItem>
+                          <SelectItem value="__none__">없음</SelectItem>
                           {roles?.map((role) => (
                             <SelectItem key={role.id} value={role.id}>
                               <div className="flex items-center gap-2">
