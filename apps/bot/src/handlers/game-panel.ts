@@ -517,8 +517,13 @@ export async function handleGameResult(
 
   const game = gameResult.data;
 
-  if (game.status !== 'open') {
-    await interaction.reply({ content: '❌ 이미 종료된 게임입니다.', ephemeral: true });
+  // closed 상태에서만 결과 입력 가능 (배팅 마감 후)
+  if (game.status !== 'closed') {
+    if (game.status === 'open') {
+      await interaction.reply({ content: '❌ 먼저 배팅을 마감해주세요.', ephemeral: true });
+    } else {
+      await interaction.reply({ content: '❌ 이미 종료된 게임입니다.', ephemeral: true });
+    }
     return;
   }
 
