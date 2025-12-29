@@ -30,7 +30,8 @@ interface Container {
 function createBetMessageEmbed(
   game: Game,
   topyName: string,
-  betCount: { teamA: number; teamB: number } = { teamA: 0, teamB: 0 }
+  betCount: { teamA: number; teamB: number } = { teamA: 0, teamB: 0 },
+  betLimits?: { minBet: bigint; maxBet: bigint }
 ): EmbedBuilder {
   const { teamAOdds, teamBOdds } = calculateTeamOdds(game);
   const totalPool = game.teamAPool + game.teamBPool;
@@ -71,8 +72,10 @@ function createBetMessageEmbed(
     inline: false,
   });
 
-  if (game.status === 'open') {
-    embed.setFooter({ text: '⚠️ 배팅은 1인 1회만 가능합니다' });
+  if (game.status === 'open' && betLimits) {
+    embed.setFooter({
+      text: `⚠️ 배팅은 1인 1회만 가능합니다 | 배팅 한도: ${betLimits.minBet.toLocaleString()} ~ ${betLimits.maxBet.toLocaleString()} ${topyName}`
+    });
   }
 
   return embed;
@@ -259,6 +262,12 @@ export async function handleGameCreateModal(
   const settingsResult = await container.currencyService.getSettings(guildId);
   const topyName = (settingsResult.success && settingsResult.data?.topyName) || '토피';
 
+  // 게임센터 설정 조회 (배팅 한도)
+  const gameSettingsResult = await container.gameService.getSettings(guildId);
+  const betLimits = gameSettingsResult.success
+    ? { minBet: gameSettingsResult.data.minBet, maxBet: gameSettingsResult.data.maxBet }
+    : { minBet: BigInt(100), maxBet: BigInt(1000000) };
+
   // 게임 생성
   const createResult = await container.gameService.createGame({
     guildId,
@@ -278,7 +287,7 @@ export async function handleGameCreateModal(
 
   // 채널에 배팅 메시지 전송
   const channel = interaction.channel as TextChannel;
-  const embed = createBetMessageEmbed(game, topyName);
+  const embed = createBetMessageEmbed(game, topyName, { teamA: 0, teamB: 0 }, betLimits);
   const buttons = createBetMessageButtons(game, true);
 
   const message = await channel.send({
@@ -395,6 +404,12 @@ export async function handleGameBetModal(
   const settingsResult = await container.currencyService.getSettings(guildId);
   const topyName = (settingsResult.success && settingsResult.data?.topyName) || '토피';
 
+  // 게임센터 설정 조회 (배팅 한도)
+  const gameSettingsResult = await container.gameService.getSettings(guildId);
+  const betLimits = gameSettingsResult.success
+    ? { minBet: gameSettingsResult.data.minBet, maxBet: gameSettingsResult.data.maxBet }
+    : { minBet: BigInt(100), maxBet: BigInt(1000000) };
+
   // 배팅 실행
   const betResult = await container.gameService.placeBet(guildId, gameId, userId, team, amount);
 
@@ -450,7 +465,7 @@ export async function handleGameBetModal(
         teamB: bets.filter(b => b.team === 'B').length,
       };
 
-      const embed = createBetMessageEmbed(game, topyName, betCount);
+      const embed = createBetMessageEmbed(game, topyName, betCount, betLimits);
       const buttons = createBetMessageButtons(game, true);
       await message.edit({ embeds: [embed], components: buttons });
     }
