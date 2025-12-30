@@ -20,6 +20,19 @@ interface Container {
   currencyService: CurrencyService;
 }
 
+// 10분 후 ephemeral 메시지 삭제
+const EPHEMERAL_DELETE_DELAY = 10 * 60 * 1000;
+
+function scheduleEphemeralDelete(interaction: ButtonInteraction | ModalSubmitInteraction | any) {
+  setTimeout(async () => {
+    try {
+      await interaction.deleteReply();
+    } catch {
+      // 이미 삭제됨
+    }
+  }, EPHEMERAL_DELETE_DELAY);
+}
+
 // ============================================================
 // 헬퍼 함수들
 // ============================================================
@@ -180,6 +193,7 @@ export async function handleGamePanelCreate(
   const guildId = interaction.guildId;
   if (!guildId) {
     await interaction.reply({ content: '서버에서만 사용할 수 있습니다.', ephemeral: true });
+    scheduleEphemeralDelete(interaction);
     return;
   }
 
@@ -193,6 +207,7 @@ export async function handleGamePanelCreate(
       content: '❌ 관리자만 배팅을 생성할 수 있습니다.',
       ephemeral: true,
     });
+    scheduleEphemeralDelete(interaction);
     return;
   }
 
@@ -249,6 +264,7 @@ export async function handleGameCreateModal(
 
   if (!guildId || !channelId) {
     await interaction.reply({ content: '서버에서만 사용할 수 있습니다.', ephemeral: true });
+    scheduleEphemeralDelete(interaction);
     return;
   }
 
@@ -280,6 +296,7 @@ export async function handleGameCreateModal(
 
   if (!createResult.success) {
     await interaction.editReply({ content: '❌ 배팅 생성에 실패했습니다.' });
+    scheduleEphemeralDelete(interaction);
     return;
   }
 
@@ -301,6 +318,7 @@ export async function handleGameCreateModal(
   await interaction.editReply({
     content: `✅ 배팅이 생성되었습니다!\n\n**${title}**\n${teamA} vs ${teamB}`,
   });
+  scheduleEphemeralDelete(interaction);
 }
 
 // ============================================================
@@ -321,6 +339,7 @@ export async function handleGameBet(
 
   if (!guildId) {
     await interaction.reply({ content: '서버에서만 사용할 수 있습니다.', ephemeral: true });
+    scheduleEphemeralDelete(interaction);
     return;
   }
 
@@ -328,6 +347,7 @@ export async function handleGameBet(
   const gameResult = await container.gameService.getGameById(gameId);
   if (!gameResult.success) {
     await interaction.reply({ content: '❌ 게임을 찾을 수 없습니다.', ephemeral: true });
+    scheduleEphemeralDelete(interaction);
     return;
   }
 
@@ -336,6 +356,7 @@ export async function handleGameBet(
   // 게임 상태 확인
   if (game.status !== 'open') {
     await interaction.reply({ content: '❌ 배팅이 마감되었습니다.', ephemeral: true });
+    scheduleEphemeralDelete(interaction);
     return;
   }
 
@@ -348,6 +369,7 @@ export async function handleGameBet(
       content: `❌ 이미 **${betTeamName}**에 ${existingBet.amount.toLocaleString()} 토피를 배팅하셨습니다.\n배팅은 1인 1회만 가능합니다.`,
       ephemeral: true,
     });
+    scheduleEphemeralDelete(interaction);
     return;
   }
 
@@ -387,6 +409,7 @@ export async function handleGameBetModal(
 
   if (!guildId) {
     await interaction.reply({ content: '서버에서만 사용할 수 있습니다.', ephemeral: true });
+    scheduleEphemeralDelete(interaction);
     return;
   }
 
@@ -397,6 +420,7 @@ export async function handleGameBetModal(
 
   if (amount <= BigInt(0)) {
     await interaction.editReply({ content: '❌ 유효한 금액을 입력해주세요.' });
+    scheduleEphemeralDelete(interaction);
     return;
   }
 
@@ -438,6 +462,7 @@ export async function handleGameBetModal(
     }
 
     await interaction.editReply({ content: `❌ ${errorMessage}` });
+    scheduleEphemeralDelete(interaction);
     return;
   }
 
@@ -445,6 +470,7 @@ export async function handleGameBetModal(
   const gameResult = await container.gameService.getGameById(gameId);
   if (!gameResult.success) {
     await interaction.editReply({ content: '✅ 배팅 완료! (게임 정보 업데이트 실패)' });
+    scheduleEphemeralDelete(interaction);
     return;
   }
 
@@ -479,6 +505,7 @@ export async function handleGameBetModal(
   await interaction.editReply({
     content: `✅ **${teamName}**에 **${amount.toLocaleString()} ${topyName}** 배팅 완료!\n\n현재 배당률: ${currentOdds.toFixed(2)}배`,
   });
+  scheduleEphemeralDelete(interaction);
 }
 
 /**
@@ -492,6 +519,7 @@ export async function handleGameResult(
   const guildId = interaction.guildId;
   if (!guildId) {
     await interaction.reply({ content: '서버에서만 사용할 수 있습니다.', ephemeral: true });
+    scheduleEphemeralDelete(interaction);
     return;
   }
 
@@ -505,6 +533,7 @@ export async function handleGameResult(
       content: '❌ 관리자만 결과를 입력할 수 있습니다.',
       ephemeral: true,
     });
+    scheduleEphemeralDelete(interaction);
     return;
   }
 
@@ -512,6 +541,7 @@ export async function handleGameResult(
   const gameResult = await container.gameService.getGameById(gameId);
   if (!gameResult.success) {
     await interaction.reply({ content: '❌ 게임을 찾을 수 없습니다.', ephemeral: true });
+    scheduleEphemeralDelete(interaction);
     return;
   }
 
@@ -524,6 +554,7 @@ export async function handleGameResult(
     } else {
       await interaction.reply({ content: '❌ 이미 종료된 게임입니다.', ephemeral: true });
     }
+    scheduleEphemeralDelete(interaction);
     return;
   }
 
@@ -553,6 +584,7 @@ export async function handleGameResult(
     components: [row],
     ephemeral: true,
   });
+  scheduleEphemeralDelete(interaction);
 }
 
 /**
@@ -568,6 +600,7 @@ export async function handleGameResultSelect(
 
   if (!guildId) {
     await interaction.reply({ content: '서버에서만 사용할 수 있습니다.', ephemeral: true });
+    scheduleEphemeralDelete(interaction);
     return;
   }
 
@@ -582,6 +615,7 @@ export async function handleGameResultSelect(
 
   if (!finishResult.success) {
     await interaction.editReply({ content: '❌ 정산에 실패했습니다.', components: [] });
+    scheduleEphemeralDelete(interaction);
     return;
   }
 
@@ -623,6 +657,7 @@ export async function handleGameResultSelect(
     content: `✅ **${winnerTeam}** 승리로 정산 완료!\n\n승리: ${winningBets.length}명\n패배: ${losingBets.length}명\n총 지급: ${totalPayout.toLocaleString()} ${topyName}`,
     components: [],
   });
+  scheduleEphemeralDelete(interaction);
 }
 
 /**
@@ -636,6 +671,7 @@ export async function handleGameCancel(
   const guildId = interaction.guildId;
   if (!guildId) {
     await interaction.reply({ content: '서버에서만 사용할 수 있습니다.', ephemeral: true });
+    scheduleEphemeralDelete(interaction);
     return;
   }
 
@@ -649,6 +685,7 @@ export async function handleGameCancel(
       content: '❌ 관리자만 게임을 취소할 수 있습니다.',
       ephemeral: true,
     });
+    scheduleEphemeralDelete(interaction);
     return;
   }
 
@@ -663,6 +700,7 @@ export async function handleGameCancel(
 
   if (!cancelResult.success) {
     await interaction.editReply({ content: '❌ 게임 취소에 실패했습니다.' });
+    scheduleEphemeralDelete(interaction);
     return;
   }
 
@@ -695,6 +733,7 @@ export async function handleGameCancel(
   await interaction.editReply({
     content: `✅ 경기가 취소되었습니다.\n\n환불: ${refundedBets.length}명\n총 환불액: ${totalRefund.toLocaleString()} ${topyName}`,
   });
+  scheduleEphemeralDelete(interaction);
 }
 
 /**
@@ -708,6 +747,7 @@ export async function handleGameClose(
   const guildId = interaction.guildId;
   if (!guildId) {
     await interaction.reply({ content: '서버에서만 사용할 수 있습니다.', ephemeral: true });
+    scheduleEphemeralDelete(interaction);
     return;
   }
 
@@ -721,6 +761,7 @@ export async function handleGameClose(
       content: '❌ 관리자만 배팅을 마감할 수 있습니다.',
       ephemeral: true,
     });
+    scheduleEphemeralDelete(interaction);
     return;
   }
 
@@ -741,6 +782,7 @@ export async function handleGameClose(
       errorMessage = '이미 마감되었거나 종료된 게임입니다.';
     }
     await interaction.editReply({ content: `❌ ${errorMessage}` });
+    scheduleEphemeralDelete(interaction);
     return;
   }
 
@@ -774,4 +816,5 @@ export async function handleGameClose(
   await interaction.editReply({
     content: `🔒 배팅이 마감되었습니다!\n\n참여자: ${totalBets}명\n총 배팅: ${totalPool.toLocaleString()} ${topyName}`,
   });
+  scheduleEphemeralDelete(interaction);
 }
