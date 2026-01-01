@@ -59,7 +59,7 @@ const shopItemFormSchema = z.object({
   name: z.string().min(1, "이름을 입력하세요").max(100),
   description: z.string().max(500).optional(),
   price: z.coerce.number().min(0, "가격은 0 이상이어야 합니다"),
-  currencyType: z.enum(["topy", "ruby"]),
+  currencyType: z.enum(["topy", "ruby", "both"]),
   durationDays: z.coerce.number().min(0).optional(),
   stock: z.coerce.number().min(0).optional(),
   maxPerUser: z.coerce.number().min(1).optional(),
@@ -419,6 +419,7 @@ export default function ShopV2Page() {
                   <SelectContent>
                     <SelectItem value="topy">{topyName}</SelectItem>
                     <SelectItem value="ruby">{rubyName}</SelectItem>
+                    <SelectItem value="both">둘 다</SelectItem>
                   </SelectContent>
                 </Select>
                 <FormMessage />
@@ -1019,14 +1020,18 @@ export default function ShopV2Page() {
                     className={`w-10 h-10 rounded-lg flex items-center justify-center ${
                       item.currencyType === "topy"
                         ? "bg-amber-500/20 text-amber-400"
-                        : "bg-pink-500/20 text-pink-400"
+                        : item.currencyType === "ruby"
+                        ? "bg-pink-500/20 text-pink-400"
+                        : "bg-purple-500/20 text-purple-400"
                     }`}
                   >
                     <Icon
                       icon={
                         item.currencyType === "topy"
                           ? "solar:coin-linear"
-                          : "solar:diamond-linear"
+                          : item.currencyType === "ruby"
+                          ? "solar:star-linear"
+                          : "solar:stars-linear"
                       }
                       className="h-5 w-5"
                     />
@@ -1066,7 +1071,7 @@ export default function ShopV2Page() {
                     <div className="flex items-center gap-3 text-sm text-white/50 mt-1">
                       <span>
                         {item.price.toLocaleString()}{" "}
-                        {item.currencyType === "topy" ? topyName : rubyName}
+                        {item.currencyType === "topy" ? topyName : item.currencyType === "ruby" ? rubyName : `${topyName}/${rubyName}`}
                       </span>
                       <span>•</span>
                       <span>

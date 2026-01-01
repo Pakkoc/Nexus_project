@@ -17,7 +17,7 @@ interface ShopItemRow extends RowDataPacket {
   name: string;
   description: string | null;
   price: string;
-  currency_type: 'topy' | 'ruby';
+  currency_type: 'topy' | 'ruby' | 'both';
   duration_days: number;
   stock: number | null;
   max_per_user: number | null;
@@ -117,9 +117,10 @@ export class ShopRepository implements ShopRepositoryPort {
     currencyType: 'topy' | 'ruby'
   ): Promise<Result<ShopItem[], RepositoryError>> {
     try {
+      // currencyType이 일치하거나 'both'인 아이템 조회
       const [rows] = await this.pool.execute<ShopItemRow[]>(
-        'SELECT * FROM shop_items_v2 WHERE guild_id = ? AND enabled = 1 AND currency_type = ? ORDER BY id ASC',
-        [guildId, currencyType]
+        'SELECT * FROM shop_items_v2 WHERE guild_id = ? AND enabled = 1 AND (currency_type = ? OR currency_type = ?) ORDER BY id ASC',
+        [guildId, currencyType, 'both']
       );
       return Result.ok(rows.map(toShopItem));
     } catch (error) {
