@@ -1,11 +1,12 @@
 "use client";
 
 import { usePathname } from "next/navigation";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { cn } from "@/lib/utils";
 import { NavigationLink } from "@/components/navigation-link";
 import { Icon } from "@iconify/react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { useCurrencySettings } from "@/hooks/queries";
 
 interface SidebarProps {
   guildId: string;
@@ -18,58 +19,71 @@ function getGuildIconUrl(guildId: string, icon: string | null | undefined) {
   return `https://cdn.discordapp.com/icons/${guildId}/${icon}.png`;
 }
 
-const navigation = [
-  {
-    name: "대시보드",
-    href: "",
-    icon: "solar:home-2-linear",
-    iconActive: "solar:home-2-bold",
-  },
-  {
-    name: "XP 시스템",
-    icon: "solar:bolt-linear",
-    iconActive: "solar:bolt-bold",
-    children: [
-      { name: "XP 설정", href: "/xp/settings", icon: "solar:settings-linear", iconActive: "solar:settings-bold" },
-      { name: "XP 규칙", href: "/xp/rules", icon: "solar:book-linear", iconActive: "solar:book-bold" },
-      { name: "레벨 보상", href: "/xp/rewards", icon: "solar:cup-star-linear", iconActive: "solar:cup-star-bold" },
-      { name: "알림 설정", href: "/xp/notifications", icon: "solar:bell-linear", iconActive: "solar:bell-bold" },
-      { name: "통계", href: "/xp/stats", icon: "solar:chart-2-linear", iconActive: "solar:chart-2-bold" },
-    ],
-  },
-  {
-    name: "화폐 시스템",
-    icon: "solar:wallet-linear",
-    iconActive: "solar:wallet-bold",
-    children: [
-      { name: "화폐 설정", href: "/currency/settings", icon: "solar:settings-linear", iconActive: "solar:settings-bold" },
-      { name: "화폐 규칙", href: "/currency/rules", icon: "solar:book-linear", iconActive: "solar:book-bold" },
-      { name: "상점", href: "/currency/shop", icon: "solar:shop-linear", iconActive: "solar:shop-bold" },
-      { name: "토피 상점 패널", href: "/shop-panel/topy", icon: "solar:tag-price-linear", iconActive: "solar:tag-price-bold" },
-      { name: "루비 상점 패널", href: "/shop-panel/ruby", icon: "solar:diamond-linear", iconActive: "solar:diamond-bold" },
-      { name: "장터", href: "/market", icon: "solar:bag-4-linear", iconActive: "solar:bag-4-bold" },
-      { name: "게임센터", href: "/currency/game", icon: "solar:gamepad-linear", iconActive: "solar:gamepad-bold" },
-      { name: "지갑 관리", href: "/currency/wallets", icon: "solar:card-linear", iconActive: "solar:card-bold" },
-      { name: "거래 기록", href: "/currency/transactions", icon: "solar:document-text-linear", iconActive: "solar:document-text-bold" },
-    ],
-  },
-  {
-    name: "멤버 관리",
-    href: "/members",
-    icon: "solar:users-group-rounded-linear",
-    iconActive: "solar:users-group-rounded-bold",
-  },
-  {
-    name: "설정",
-    href: "/settings",
-    icon: "solar:settings-linear",
-    iconActive: "solar:settings-bold",
-  },
-];
+function createNavigation(topyName: string, rubyName: string) {
+  return [
+    {
+      name: "대시보드",
+      href: "",
+      icon: "solar:home-2-linear",
+      iconActive: "solar:home-2-bold",
+    },
+    {
+      name: "XP 시스템",
+      icon: "solar:bolt-linear",
+      iconActive: "solar:bolt-bold",
+      children: [
+        { name: "XP 설정", href: "/xp/settings", icon: "solar:settings-linear", iconActive: "solar:settings-bold" },
+        { name: "XP 규칙", href: "/xp/rules", icon: "solar:book-linear", iconActive: "solar:book-bold" },
+        { name: "레벨 보상", href: "/xp/rewards", icon: "solar:cup-star-linear", iconActive: "solar:cup-star-bold" },
+        { name: "알림 설정", href: "/xp/notifications", icon: "solar:bell-linear", iconActive: "solar:bell-bold" },
+        { name: "통계", href: "/xp/stats", icon: "solar:chart-2-linear", iconActive: "solar:chart-2-bold" },
+      ],
+    },
+    {
+      name: "화폐 시스템",
+      icon: "solar:wallet-linear",
+      iconActive: "solar:wallet-bold",
+      children: [
+        { name: "화폐 설정", href: "/currency/settings", icon: "solar:settings-linear", iconActive: "solar:settings-bold" },
+        { name: "화폐 규칙", href: "/currency/rules", icon: "solar:book-linear", iconActive: "solar:book-bold" },
+        { name: "상점", href: "/currency/shop", icon: "solar:shop-linear", iconActive: "solar:shop-bold" },
+        { name: `${topyName} 상점 패널`, href: "/shop-panel/topy", icon: "solar:tag-price-linear", iconActive: "solar:tag-price-bold" },
+        { name: `${rubyName} 상점 패널`, href: "/shop-panel/ruby", icon: "solar:diamond-linear", iconActive: "solar:diamond-bold" },
+        { name: "장터", href: "/market", icon: "solar:bag-4-linear", iconActive: "solar:bag-4-bold" },
+        { name: "게임센터", href: "/currency/game", icon: "solar:gamepad-linear", iconActive: "solar:gamepad-bold" },
+        { name: "지갑 관리", href: "/currency/wallets", icon: "solar:card-linear", iconActive: "solar:card-bold" },
+        { name: "거래 기록", href: "/currency/transactions", icon: "solar:document-text-linear", iconActive: "solar:document-text-bold" },
+      ],
+    },
+    {
+      name: "멤버 관리",
+      href: "/members",
+      icon: "solar:users-group-rounded-linear",
+      iconActive: "solar:users-group-rounded-bold",
+    },
+    {
+      name: "설정",
+      href: "/settings",
+      icon: "solar:settings-linear",
+      iconActive: "solar:settings-bold",
+    },
+  ];
+}
 
 export function DashboardSidebar({ guildId, guildName, guildIcon }: SidebarProps) {
   const pathname = usePathname();
   const basePath = `/dashboard/${guildId}`;
+
+  // 화폐 설정 조회
+  const { data: currencySettings } = useCurrencySettings(guildId);
+  const topyName = currencySettings?.topyName ?? "토피";
+  const rubyName = currencySettings?.rubyName ?? "루비";
+
+  // 동적 네비게이션 생성
+  const navigation = useMemo(
+    () => createNavigation(topyName, rubyName),
+    [topyName, rubyName]
+  );
 
   // 토글 상태 관리 (카테고리 이름을 키로 사용)
   const [openCategories, setOpenCategories] = useState<Record<string, boolean>>({});
