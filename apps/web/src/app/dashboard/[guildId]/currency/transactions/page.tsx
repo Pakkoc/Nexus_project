@@ -26,10 +26,15 @@ const TRANSACTION_TYPE_LABELS: Record<TransactionType, string> = {
   transfer_in: "송금 받음",
   transfer_out: "송금 보냄",
   shop_purchase: "상점 구매",
+  market_buy: "장터 구매",
+  market_sell: "장터 판매",
   tax: "세금",
   fee: "수수료",
   admin_add: "관리자 추가",
   admin_remove: "관리자 차감",
+  game_bet: "게임 배팅",
+  game_win: "게임 당첨",
+  game_refund: "게임 환불",
 };
 
 const TRANSACTION_TYPE_ICONS: Record<TransactionType, string> = {
@@ -39,10 +44,15 @@ const TRANSACTION_TYPE_ICONS: Record<TransactionType, string> = {
   transfer_in: "solar:arrow-down-bold",
   transfer_out: "solar:arrow-up-bold",
   shop_purchase: "solar:bag-bold",
+  market_buy: "solar:cart-large-bold",
+  market_sell: "solar:tag-price-bold",
   tax: "solar:bill-bold",
   fee: "solar:hand-money-bold",
   admin_add: "solar:add-circle-bold",
   admin_remove: "solar:minus-circle-bold",
+  game_bet: "solar:gamepad-bold",
+  game_win: "solar:cup-star-bold",
+  game_refund: "solar:undo-left-bold",
 };
 
 const TRANSACTION_TYPE_COLORS: Record<TransactionType, string> = {
@@ -52,10 +62,15 @@ const TRANSACTION_TYPE_COLORS: Record<TransactionType, string> = {
   transfer_in: "text-blue-400",
   transfer_out: "text-orange-400",
   shop_purchase: "text-purple-400",
+  market_buy: "text-indigo-400",
+  market_sell: "text-teal-400",
   tax: "text-red-400",
   fee: "text-yellow-400",
   admin_add: "text-cyan-400",
   admin_remove: "text-red-400",
+  game_bet: "text-amber-400",
+  game_win: "text-emerald-400",
+  game_refund: "text-slate-400",
 };
 
 export default function TransactionsPage() {
@@ -94,7 +109,7 @@ export default function TransactionsPage() {
 
   const formatAmount = (amount: string, type: TransactionType) => {
     const value = BigInt(amount);
-    const isNegative = type === "transfer_out" || type === "shop_purchase" || type === "tax" || type === "fee" || type === "admin_remove";
+    const isNegative = type === "transfer_out" || type === "shop_purchase" || type === "market_buy" || type === "tax" || type === "fee" || type === "admin_remove" || type === "game_bet";
     return `${isNegative ? "-" : "+"}${value.toLocaleString()}`;
   };
 
@@ -246,10 +261,11 @@ export default function TransactionsPage() {
         <div className="bg-white/5 backdrop-blur-sm rounded-2xl border border-white/10 overflow-hidden">
           {/* Header */}
           <div className="hidden md:grid grid-cols-12 gap-4 p-4 border-b border-white/10 bg-white/5">
-            <div className="col-span-3 text-white/50 text-sm font-medium">유형</div>
-            <div className="col-span-3 text-white/50 text-sm font-medium">유저</div>
+            <div className="col-span-2 text-white/50 text-sm font-medium">유형</div>
+            <div className="col-span-2 text-white/50 text-sm font-medium">유저</div>
+            <div className="col-span-3 text-white/50 text-sm font-medium">사유</div>
             <div className="col-span-2 text-white/50 text-sm font-medium text-right">금액</div>
-            <div className="col-span-2 text-white/50 text-sm font-medium text-right">잔액</div>
+            <div className="col-span-1 text-white/50 text-sm font-medium text-right">잔액</div>
             <div className="col-span-2 text-white/50 text-sm font-medium text-right">일시</div>
           </div>
 
@@ -261,7 +277,7 @@ export default function TransactionsPage() {
                 className="grid grid-cols-1 md:grid-cols-12 gap-2 md:gap-4 p-4 hover:bg-white/5 transition-colors"
               >
                 {/* Type */}
-                <div className="col-span-3 flex items-center gap-2">
+                <div className="col-span-2 flex items-center gap-2">
                   <div className={`w-8 h-8 rounded-lg bg-white/10 flex items-center justify-center ${TRANSACTION_TYPE_COLORS[tx.transactionType]}`}>
                     <Icon icon={TRANSACTION_TYPE_ICONS[tx.transactionType]} className="h-4 w-4" />
                   </div>
@@ -279,7 +295,7 @@ export default function TransactionsPage() {
                 </div>
 
                 {/* User */}
-                <div className="col-span-3 flex items-center gap-2">
+                <div className="col-span-2 flex items-center gap-2">
                   <Avatar className="h-7 w-7">
                     <AvatarImage src={tx.avatar ?? undefined} />
                     <AvatarFallback className="bg-white/10 text-white/70 text-xs">
@@ -292,14 +308,23 @@ export default function TransactionsPage() {
                   </div>
                 </div>
 
+                {/* Description */}
+                <div className="col-span-3 flex items-center">
+                  <p className="text-white/70 text-sm truncate">
+                    {tx.description || "-"}
+                  </p>
+                </div>
+
                 {/* Amount */}
                 <div className="col-span-2 flex items-center justify-end">
                   <p className={`font-bold text-sm ${
                     tx.transactionType === "transfer_out" ||
                     tx.transactionType === "shop_purchase" ||
+                    tx.transactionType === "market_buy" ||
                     tx.transactionType === "tax" ||
                     tx.transactionType === "fee" ||
-                    tx.transactionType === "admin_remove"
+                    tx.transactionType === "admin_remove" ||
+                    tx.transactionType === "game_bet"
                       ? "text-red-400"
                       : "text-green-400"
                   }`}>
@@ -308,7 +333,7 @@ export default function TransactionsPage() {
                 </div>
 
                 {/* Balance */}
-                <div className="col-span-2 flex items-center justify-end">
+                <div className="col-span-1 flex items-center justify-end">
                   <p className="text-white/50 text-sm">
                     {formatBalance(tx.balanceAfter)}
                   </p>

@@ -10,10 +10,15 @@ export type TransactionType =
   | "transfer_in"
   | "transfer_out"
   | "shop_purchase"
+  | "market_buy"
+  | "market_sell"
   | "tax"
   | "fee"
   | "admin_add"
-  | "admin_remove";
+  | "admin_remove"
+  | "game_bet"
+  | "game_win"
+  | "game_refund";
 
 export interface CurrencyTransaction {
   id: string;
