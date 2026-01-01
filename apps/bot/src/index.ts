@@ -904,43 +904,89 @@ async function main() {
       const currencySettings = currencySettingsResult.data;
       const { shopChannelId, shopMessageId, topyName, rubyName } = currencySettings;
 
-      // 패널이 설치되어 있지 않으면 스킵
-      if (!shopChannelId || !shopMessageId) {
+      const guild = await client.guilds.fetch(guildId);
+      const results: { type: string; success: boolean; reason?: string }[] = [];
+
+      // 1. 기존 통합 패널 업데이트
+      if (shopChannelId && shopMessageId) {
+        try {
+          const channel = await guild.channels.fetch(shopChannelId);
+          if (channel && 'messages' in channel) {
+            const message = await channel.messages.fetch(shopMessageId);
+            const embed = new EmbedBuilder()
+              .setColor(0x5865F2)
+              .setTitle('🛒 상점')
+              .setDescription(
+                '아이템을 구매하여 다양한 혜택을 누려보세요!\n\n' +
+                `💰 **${topyName || '토피'}** 또는 💎 **${rubyName || '루비'}**로 아이템을 구매할 수 있습니다.\n` +
+                '구매한 아이템은 `/인벤토리` 명령어에서 확인할 수 있습니다.'
+              )
+              .setFooter({ text: '아래 버튼을 눌러 상점을 열어보세요!' })
+              .setTimestamp();
+            await message.edit({ embeds: [embed] });
+            results.push({ type: 'combined', success: true });
+          }
+        } catch {
+          results.push({ type: 'combined', success: false, reason: 'Message not found' });
+        }
+      }
+
+      // 2. 토피 패널 업데이트
+      const topyPanelResult = await container.shopPanelService.getSettings(guildId, 'topy');
+      if (topyPanelResult.success && topyPanelResult.data?.channelId && topyPanelResult.data?.messageId) {
+        try {
+          const channel = await guild.channels.fetch(topyPanelResult.data.channelId);
+          if (channel && 'messages' in channel) {
+            const message = await channel.messages.fetch(topyPanelResult.data.messageId);
+            const embed = new EmbedBuilder()
+              .setColor(0xFFD700)
+              .setTitle(`💰 ${topyName || '토피'} 상점`)
+              .setDescription(
+                `아이템을 구매하여 다양한 혜택을 누려보세요!\n\n` +
+                `💰 **${topyName || '토피'}**로 아이템을 구매할 수 있습니다.\n` +
+                '구매한 아이템은 `/인벤토리` 명령어에서 확인할 수 있습니다.'
+              )
+              .setFooter({ text: '아래 버튼을 눌러 상점을 열어보세요!' })
+              .setTimestamp();
+            await message.edit({ embeds: [embed] });
+            results.push({ type: 'topy', success: true });
+          }
+        } catch {
+          results.push({ type: 'topy', success: false, reason: 'Message not found' });
+        }
+      }
+
+      // 3. 루비 패널 업데이트
+      const rubyPanelResult = await container.shopPanelService.getSettings(guildId, 'ruby');
+      if (rubyPanelResult.success && rubyPanelResult.data?.channelId && rubyPanelResult.data?.messageId) {
+        try {
+          const channel = await guild.channels.fetch(rubyPanelResult.data.channelId);
+          if (channel && 'messages' in channel) {
+            const message = await channel.messages.fetch(rubyPanelResult.data.messageId);
+            const embed = new EmbedBuilder()
+              .setColor(0xE91E63)
+              .setTitle(`💎 ${rubyName || '루비'} 상점`)
+              .setDescription(
+                `아이템을 구매하여 다양한 혜택을 누려보세요!\n\n` +
+                `💎 **${rubyName || '루비'}**로 아이템을 구매할 수 있습니다.\n` +
+                '구매한 아이템은 `/인벤토리` 명령어에서 확인할 수 있습니다.'
+              )
+              .setFooter({ text: '아래 버튼을 눌러 상점을 열어보세요!' })
+              .setTimestamp();
+            await message.edit({ embeds: [embed] });
+            results.push({ type: 'ruby', success: true });
+          }
+        } catch {
+          results.push({ type: 'ruby', success: false, reason: 'Message not found' });
+        }
+      }
+
+      if (results.length === 0) {
         return res.json({ success: true, skipped: true, reason: 'No panel installed' });
       }
 
-      const guild = await client.guilds.fetch(guildId);
-      const channel = await guild.channels.fetch(shopChannelId);
-
-      if (!channel || !('messages' in channel)) {
-        return res.json({ success: true, skipped: true, reason: 'Channel not found' });
-      }
-
-      // 기존 메시지 가져오기
-      let message;
-      try {
-        message = await channel.messages.fetch(shopMessageId);
-      } catch {
-        return res.json({ success: true, skipped: true, reason: 'Message not found' });
-      }
-
-      // 패널 Embed 업데이트
-      const embed = new EmbedBuilder()
-        .setColor(0x5865F2)
-        .setTitle('🛒 상점')
-        .setDescription(
-          '아이템을 구매하여 다양한 혜택을 누려보세요!\n\n' +
-          `💰 **${topyName || '토피'}** 또는 💎 **${rubyName || '루비'}**로 아이템을 구매할 수 있습니다.\n` +
-          '구매한 아이템은 `/인벤토리` 명령어에서 확인할 수 있습니다.'
-        )
-        .setFooter({ text: '아래 버튼을 눌러 상점을 열어보세요!' })
-        .setTimestamp();
-
-      // 메시지 편집
-      await message.edit({ embeds: [embed] });
-
-      console.log(`[SHOP] Panel refreshed in guild ${guildId}`);
-      return res.json({ success: true });
+      console.log(`[SHOP] Panels refreshed in guild ${guildId}:`, results);
+      return res.json({ success: true, results });
     } catch (error) {
       console.error('[SHOP] Failed to refresh panel:', error);
       return res.status(500).json({ error: 'Failed to refresh shop panel' });
