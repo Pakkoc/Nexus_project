@@ -499,3 +499,93 @@ warningCount: 0, // TODO: 경고 시스템 구현 후 연동
 1. 프로필 카드 디자인 리뉴얼
 2. 각 시스템 데이터 연동
 3. 캔버스 렌더링 최적화
+
+## 디스코드 패널 규칙
+
+**디스코드에 설치되는 패널(Embed 메시지)은 관련 설정 변경 시 자동으로 업데이트되어야 합니다.**
+
+### 원칙
+
+1. **설정 변경 → 패널 메시지 자동 업데이트**
+2. 패널 생성 시 사용한 동적 데이터(화폐 이름, 역할 이름 등)가 변경되면 패널도 반영
+3. 웹 → DB → 봇 API → Discord 메시지 편집이 연쇄적으로 실행
+
+### 구현 패턴
+
+```
+웹에서 설정 변경 (예: 화폐 이름 변경)
+    ↓
+DB에 설정 저장
+    ↓
+봇 API 호출 (패널 새로고침)
+    ↓
+봇이 패널 설정 조회 (shop_panel_settings 등)
+    ↓
+설치된 모든 패널 메시지 편집 (message.edit)
+```
+
+### 웹 API에서 패널 업데이트 호출
+
+설정 저장 후 봇 API를 호출하여 패널을 업데이트합니다.
+
+```typescript
+// apps/web/src/app/api/guilds/[guildId]/currency/settings/route.ts
+
+// 화폐 이름 변경 시 상점 패널 업데이트
+if ('topyName' in validatedData || 'rubyName' in validatedData) {
+  try {
+    const botApiUrl = process.env["BOT_API_URL"] || "http://localhost:3001";
+    await fetch(`${botApiUrl}/api/shop/panel/refresh`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ guildId }),
+    });
+  } catch {
+    // 패널 업데이트 실패는 무시 (설정 저장은 성공했으므로)
+  }
+}
+```
+
+### 봇 API에서 패널 업데이트 처리
+
+봇에서 패널 설정을 조회하고 메시지를 편집합니다.
+
+```typescript
+// apps/bot/src/index.ts
+
+app.post('/api/shop/panel/refresh', async (req, res) => {
+  const { guildId } = req.body;
+
+  // 1. 최신 설정 조회
+  const settings = await container.currencyService.getSettings(guildId);
+  const { topyName, rubyName } = settings.data;
+
+  // 2. 설치된 패널 설정 조회
+  const topyPanel = await container.shopPanelService.getSettings(guildId, 'topy');
+  const rubyPanel = await container.shopPanelService.getSettings(guildId, 'ruby');
+
+  // 3. 각 패널 메시지 편집
+  if (topyPanel.data?.channelId && topyPanel.data?.messageId) {
+    const channel = await guild.channels.fetch(topyPanel.data.channelId);
+    const message = await channel.messages.fetch(topyPanel.data.messageId);
+    const embed = new EmbedBuilder()
+      .setTitle(`💰 ${topyName} 상점`)
+      .setDescription(`${topyName}로 아이템을 구매할 수 있습니다.`);
+    await message.edit({ embeds: [embed] });
+  }
+  // ... ruby 패널도 동일
+});
+```
+
+### 새 패널 추가 시 체크리스트
+
+- [ ] 패널 설정 테이블 생성 (`{feature}_panel_settings`)
+- [ ] 패널 생성 API 엔드포인트 (`/api/{feature}/panel`)
+- [ ] 패널 새로고침 API 엔드포인트 (`/api/{feature}/panel/refresh`)
+- [ ] 관련 설정 변경 시 패널 새로고침 호출
+- [ ] 분리 패널(토피/루비)도 모두 업데이트
+
+### 참고 구현
+
+- 상점 패널: `apps/bot/src/index.ts`의 `/api/shop/panel/refresh`
+- 화폐 설정: `apps/web/src/app/api/guilds/[guildId]/currency/settings/route.ts`
