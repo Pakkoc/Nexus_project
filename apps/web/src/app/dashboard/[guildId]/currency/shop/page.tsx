@@ -1150,24 +1150,19 @@ export default function ShopV2Page() {
               >
                 <div className="flex items-center gap-4">
                   <div
-                    className={`w-10 h-10 rounded-lg flex items-center justify-center ${
+                    className={`w-10 h-10 rounded-lg flex items-center justify-center text-xl ${
                       item.currencyType === "topy"
-                        ? "bg-amber-500/20 text-amber-400"
+                        ? "bg-amber-500/20"
                         : item.currencyType === "ruby"
-                        ? "bg-pink-500/20 text-pink-400"
-                        : "bg-purple-500/20 text-purple-400"
+                        ? "bg-pink-500/20"
+                        : "bg-purple-500/20"
                     }`}
                   >
-                    <Icon
-                      icon={
-                        item.currencyType === "topy"
-                          ? "solar:coin-linear"
-                          : item.currencyType === "ruby"
-                          ? "solar:star-linear"
-                          : "solar:stars-linear"
-                      }
-                      className="h-5 w-5"
-                    />
+                    {item.currencyType === "topy"
+                      ? "💰"
+                      : item.currencyType === "ruby"
+                      ? "💎"
+                      : "✨"}
                   </div>
                   <div>
                     <div className="flex items-center gap-2 flex-wrap">
