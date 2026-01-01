@@ -108,7 +108,8 @@ export default function TransactionsPage() {
   const rubyName = settings?.rubyName ?? "루비";
 
   const formatAmount = (amount: string, type: TransactionType) => {
-    const value = BigInt(amount);
+    let value = BigInt(amount);
+    if (value < 0) value = -value; // 절대값
     const isNegative = type === "transfer_out" || type === "shop_purchase" || type === "market_buy" || type === "tax" || type === "fee" || type === "admin_remove" || type === "game_bet";
     return `${isNegative ? "-" : "+"}${value.toLocaleString()}`;
   };
