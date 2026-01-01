@@ -10,8 +10,9 @@ interface ShopItemV2Row extends RowDataPacket {
   guild_id: string;
   name: string;
   description: string | null;
-  price: string;
-  currency_type: "topy" | "ruby";
+  topy_price: string | null;
+  ruby_price: string | null;
+  currency_type: "topy" | "ruby" | "both";
   duration_days: number;
   stock: number | null;
   max_per_user: number | null;
@@ -40,7 +41,8 @@ function rowToShopItemV2(row: ShopItemV2Row, roleOptions?: RoleOptionRow[]) {
     guildId: row.guild_id,
     name: row.name,
     description: row.description,
-    price: Number(row.price),
+    topyPrice: row.topy_price ? Number(row.topy_price) : null,
+    rubyPrice: row.ruby_price ? Number(row.ruby_price) : null,
     currencyType: row.currency_type,
     durationDays: row.duration_days,
     stock: row.stock,
@@ -165,13 +167,14 @@ export async function POST(
       // 1. Create shop item
       const [shopItemResult] = await connection.execute<ResultSetHeader>(
         `INSERT INTO shop_items_v2
-         (guild_id, name, description, price, currency_type, duration_days, stock, max_per_user, enabled)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+         (guild_id, name, description, topy_price, ruby_price, currency_type, duration_days, stock, max_per_user, enabled)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [
           guildId,
           validatedData.name,
           validatedData.description ?? null,
-          validatedData.price,
+          validatedData.topyPrice ?? null,
+          validatedData.rubyPrice ?? null,
           validatedData.currencyType,
           validatedData.durationDays ?? 0,
           validatedData.stock ?? null,

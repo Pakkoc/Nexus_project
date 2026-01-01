@@ -14,7 +14,8 @@ export interface ShopItem {
   guildId: string;
   name: string;
   description: string | null;
-  price: bigint;
+  topyPrice: bigint | null;  // 토피 가격 (topy 또는 both일 때 사용)
+  rubyPrice: bigint | null;  // 루비 가격 (ruby 또는 both일 때 사용)
   currencyType: ShopItemCurrencyType;
   durationDays: number; // 0=영구, 양수=기간제
   stock: number | null; // null=무제한
@@ -27,7 +28,8 @@ export interface CreateShopItemInput {
   guildId: string;
   name: string;
   description?: string | null;
-  price: bigint;
+  topyPrice?: bigint | null;
+  rubyPrice?: bigint | null;
   currencyType: ShopItemCurrencyType;
   durationDays?: number;
   stock?: number | null;
@@ -38,12 +40,23 @@ export interface CreateShopItemInput {
 export interface UpdateShopItemInput {
   name?: string;
   description?: string | null;
-  price?: bigint;
+  topyPrice?: bigint | null;
+  rubyPrice?: bigint | null;
   currencyType?: ShopItemCurrencyType;
   durationDays?: number;
   stock?: number | null;
   maxPerUser?: number | null;
   enabled?: boolean;
+}
+
+/**
+ * 아이템의 가격을 화폐 타입에 따라 반환
+ */
+export function getItemPrice(item: ShopItem, forCurrency: 'topy' | 'ruby'): bigint | null {
+  if (forCurrency === 'topy') {
+    return item.topyPrice;
+  }
+  return item.rubyPrice;
 }
 
 /**

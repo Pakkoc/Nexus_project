@@ -12,6 +12,7 @@ import {
   type StringSelectMenuInteraction,
 } from 'discord.js';
 import type { ShopItemV2, ShopService, CurrencyService } from '@topia/core';
+import { getItemPrice } from '@topia/core';
 
 const ITEMS_PER_PAGE = 5;
 
@@ -44,9 +45,11 @@ function createShopEmbed(
 
   if (pageItems.length > 0) {
     const fields = pageItems.map((item, idx) => {
-      const currencyName = item.currencyType === 'topy' ? topyName : rubyName;
+      const currencyForItem = item.currencyType === 'both' ? 'topy' : item.currencyType;
+      const currencyName = currencyForItem === 'topy' ? topyName : rubyName;
+      const price = getItemPrice(item, currencyForItem) ?? BigInt(0);
 
-      let info = `💰 **${item.price.toLocaleString()}** ${currencyName}`;
+      let info = `💰 **${price.toLocaleString()}** ${currencyName}`;
 
       if (item.durationDays > 0) {
         info += `\n⏰ ${item.durationDays}일 유효`;
@@ -89,12 +92,14 @@ function createSelectMenu(
   customId: string
 ): StringSelectMenuBuilder {
   const options = items.slice(0, 25).map((item) => {
-    const currencyName = item.currencyType === 'topy' ? topyName : rubyName;
+    const currencyForItem = item.currencyType === 'both' ? 'topy' : item.currencyType;
+    const currencyName = currencyForItem === 'topy' ? topyName : rubyName;
+    const price = getItemPrice(item, currencyForItem) ?? BigInt(0);
     const durationInfo = item.durationDays > 0 ? ` (${item.durationDays}일)` : ' (영구)';
 
     return {
       label: item.name,
-      description: `${item.price.toLocaleString()} ${currencyName}${durationInfo}`,
+      description: `${price.toLocaleString()} ${currencyName}${durationInfo}`,
       value: item.id.toString(),
       emoji: '🎫',
     };
@@ -291,16 +296,18 @@ function scheduleMessageDelete(interaction: StringSelectMenuInteraction, delay: 
 function createQuantitySelectEmbed(
   item: ShopItemV2,
   currencyName: string,
+  currencyType: 'topy' | 'ruby',
   currentQuantity: number
 ): EmbedBuilder {
-  const totalPrice = item.price * BigInt(currentQuantity);
+  const price = getItemPrice(item, currencyType) ?? BigInt(0);
+  const totalPrice = price * BigInt(currentQuantity);
 
   const embed = new EmbedBuilder()
     .setColor(0x5865F2)
     .setTitle('🔢 수량 선택')
     .setDescription(`**${item.name}**을(를) 몇 개 구매하시겠습니까?`)
     .addFields(
-      { name: '💰 개당 가격', value: `${item.price.toLocaleString()} ${currencyName}`, inline: true },
+      { name: '💰 개당 가격', value: `${price.toLocaleString()} ${currencyName}`, inline: true },
       { name: '📦 선택 수량', value: `${currentQuantity}개`, inline: true },
       { name: '💵 총 가격', value: `${totalPrice.toLocaleString()} ${currencyName}`, inline: true }
     );
@@ -408,7 +415,8 @@ async function handleItemSelection(
     return;
   }
 
-  const currencyName = selectedItem.currencyType === 'topy' ? topyName : rubyName;
+  const currencyType = selectedItem.currencyType === 'both' ? 'topy' : selectedItem.currencyType;
+  const currencyName = currencyType === 'topy' ? topyName : rubyName;
 
   // 현재 보유 수량 조회 (인당 제한 확인용)
   const userItemResult = await container.shopV2Service.getUserItem(guildId, userId, itemId);
@@ -433,7 +441,7 @@ async function handleItemSelection(
 
   // 수량 선택 화면 표시
   await interaction.update({
-    embeds: [createQuantitySelectEmbed(selectedItem, currencyName, currentQuantity)],
+    embeds: [createQuantitySelectEmbed(selectedItem, currencyName, currencyType, currentQuantity)],
     components: createQuantityButtons(itemId, userId, currentQuantity, maxQuantity),
   });
 
@@ -468,7 +476,7 @@ async function handleItemSelection(
         const qty = parseInt(customId.split('_')[2]!, 10);
         currentQuantity = Math.min(qty, maxQuantity);
         await componentInteraction.update({
-          embeds: [createQuantitySelectEmbed(selectedItem, currencyName, currentQuantity)],
+          embeds: [createQuantitySelectEmbed(selectedItem, currencyName, currencyType, currentQuantity)],
           components: createQuantityButtons(itemId, userId, currentQuantity, maxQuantity),
         });
         return;
@@ -509,7 +517,7 @@ async function handleItemSelection(
           currentQuantity = Math.min(inputQty, maxQuantity);
           await modalInteraction.deferUpdate();
           await interaction.editReply({
-            embeds: [createQuantitySelectEmbed(selectedItem, currencyName, currentQuantity)],
+            embeds: [createQuantitySelectEmbed(selectedItem, currencyName, currencyType, currentQuantity)],
             components: createQuantityButtons(itemId, userId, currentQuantity, maxQuantity),
           });
         } catch {

@@ -12,8 +12,8 @@ import type {
 } from '../domain/shop-item';
 import type { UserItemV2 } from '../domain/user-item-v2';
 import { Result } from '../../shared/types/result';
-import { isPeriodItem } from '../domain/shop-item';
-import { createTransaction } from '../domain/currency-transaction';
+import { isPeriodItem, getItemPrice } from '../domain/shop-item';
+import { createTransaction, type CurrencyType } from '../domain/currency-transaction';
 import { CURRENCY_DEFAULTS } from '@topia/shared';
 
 export interface PurchaseResult {
@@ -106,7 +106,8 @@ export class ShopService {
     guildId: string,
     userId: string,
     itemId: number,
-    quantity: number = 1
+    quantity: number = 1,
+    paymentCurrency?: CurrencyType
   ): Promise<Result<PurchaseResult, CurrencyError>> {
     const now = this.clock.now();
 
@@ -127,6 +128,9 @@ export class ShopService {
     if (!item.enabled) {
       return { success: false, error: { type: 'ITEM_DISABLED' } };
     }
+
+    // 결제 화폐 결정 (both인 경우 paymentCurrency 사용, 아니면 item의 currencyType 사용)
+    const currency: CurrencyType = paymentCurrency ?? (item.currencyType === 'both' ? 'topy' : item.currencyType);
 
     // 2. 재고 확인
     if (item.stock !== null && item.stock < quantity) {
@@ -155,11 +159,17 @@ export class ShopService {
     // 4. 수수료 계산
     const settingsResult = await this.currencySettingsRepo.findByGuild(guildId);
     const settings = settingsResult.success ? settingsResult.data : null;
-    const feePercent = item.currencyType === 'topy'
+    const feePercent = currency === 'topy'
       ? (settings?.shopFeeTopyPercent ?? CURRENCY_DEFAULTS.SHOP_FEE_TOPY_PERCENT)
       : (settings?.shopFeeRubyPercent ?? CURRENCY_DEFAULTS.SHOP_FEE_RUBY_PERCENT);
 
-    const itemCost = item.price * BigInt(quantity);
+    // 해당 화폐에 맞는 가격 조회
+    const price = getItemPrice(item, currency);
+    if (price === null) {
+      return { success: false, error: { type: 'ITEM_NOT_FOUND' } }; // 해당 화폐로 가격이 설정되지 않음
+    }
+
+    const itemCost = price * BigInt(quantity);
     // 수수료 = 가격 * 퍼센트 / 100 (소수점 버림)
     const fee = feePercent > 0
       ? (itemCost * BigInt(Math.round(feePercent * 10))) / BigInt(1000)
@@ -169,7 +179,7 @@ export class ShopService {
     // 5. 잔액 확인 및 차감
     let newBalance: bigint;
 
-    if (item.currencyType === 'topy') {
+    if (currency === 'topy') {
       const walletResult = await this.topyWalletRepo.findByUser(guildId, userId);
       if (!walletResult.success) {
         return { success: false, error: { type: 'REPOSITORY_ERROR', cause: walletResult.error } };
@@ -234,13 +244,13 @@ export class ShopService {
 
     // 8. 거래 기록
     await this.transactionRepo.save(
-      createTransaction(guildId, userId, item.currencyType, 'shop_purchase', -totalCost, newBalance)
+      createTransaction(guildId, userId, currency, 'shop_purchase', -totalCost, newBalance)
     );
 
     // 수수료가 있으면 별도 거래 기록
     if (fee > BigInt(0)) {
       await this.transactionRepo.save(
-        createTransaction(guildId, userId, item.currencyType, 'fee', -fee, newBalance)
+        createTransaction(guildId, userId, currency, 'fee', -fee, newBalance)
       );
     }
 

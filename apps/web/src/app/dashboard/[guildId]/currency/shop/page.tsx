@@ -58,7 +58,8 @@ interface PendingRoleOption {
 const shopItemFormSchema = z.object({
   name: z.string().min(1, "이름을 입력하세요").max(100),
   description: z.string().max(500).optional(),
-  price: z.coerce.number().min(0, "가격은 0 이상이어야 합니다"),
+  topyPrice: z.coerce.number().min(0, "가격은 0 이상이어야 합니다").optional(),
+  rubyPrice: z.coerce.number().min(0, "가격은 0 이상이어야 합니다").optional(),
   currencyType: z.enum(["topy", "ruby", "both"]),
   durationDays: z.coerce.number().min(0).optional(),
   stock: z.coerce.number().min(0).optional(),
@@ -141,7 +142,8 @@ export default function ShopV2Page() {
     defaultValues: {
       name: "",
       description: "",
-      price: 0,
+      topyPrice: 0,
+      rubyPrice: 0,
       currencyType: "topy",
       durationDays: 0,
       stock: undefined,
@@ -156,6 +158,7 @@ export default function ShopV2Page() {
   });
 
   const hasRoleTicket = form.watch("hasRoleTicket");
+  const currencyType = form.watch("currencyType");
 
   // Add pending role option
   const handleAddRoleOption = () => {
@@ -220,13 +223,18 @@ export default function ShopV2Page() {
           }
         : undefined;
 
+      // 화폐 타입에 따라 가격 설정
+      const topyPrice = data.currencyType === "ruby" ? null : data.topyPrice ?? 0;
+      const rubyPrice = data.currencyType === "topy" ? null : data.rubyPrice ?? 0;
+
       if (editingItem) {
         await updateItem.mutateAsync({
           id: editingItem.id,
           data: {
             name: data.name,
             description: data.description || null,
-            price: data.price,
+            topyPrice,
+            rubyPrice,
             currencyType: data.currencyType,
             durationDays: data.durationDays ?? 0,
             stock: data.stock || null,
@@ -241,7 +249,8 @@ export default function ShopV2Page() {
         await createItem.mutateAsync({
           name: data.name,
           description: data.description,
-          price: data.price,
+          topyPrice,
+          rubyPrice,
           currencyType: data.currencyType,
           durationDays: data.durationDays ?? 0,
           stock: data.stock,
@@ -287,7 +296,8 @@ export default function ShopV2Page() {
     form.reset({
       name: item.name,
       description: item.description || "",
-      price: item.price,
+      topyPrice: item.topyPrice ?? 0,
+      rubyPrice: item.rubyPrice ?? 0,
       currencyType: item.currencyType,
       durationDays: item.durationDays || 0,
       stock: item.stock || undefined,
@@ -384,48 +394,81 @@ export default function ShopV2Page() {
           )}
         />
 
-        <div className="grid grid-cols-2 gap-4">
-          <FormField
-            control={form.control}
-            name="price"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel className="text-white/70">가격</FormLabel>
+        <FormField
+          control={form.control}
+          name="currencyType"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel className="text-white/70">화폐 종류</FormLabel>
+              <Select onValueChange={field.onChange} value={field.value}>
                 <FormControl>
-                  <Input
-                    type="number"
-                    min={0}
-                    {...field}
-                    className="bg-white/5 border-white/10 text-white"
-                  />
+                  <SelectTrigger className="bg-white/5 border-white/10 text-white">
+                    <SelectValue />
+                  </SelectTrigger>
                 </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+                <SelectContent>
+                  <SelectItem value="topy">{topyName}</SelectItem>
+                  <SelectItem value="ruby">{rubyName}</SelectItem>
+                  <SelectItem value="both">둘 다</SelectItem>
+                </SelectContent>
+              </Select>
+              <FormDescription className="text-xs text-white/40">
+                &quot;둘 다&quot;를 선택하면 두 상점 패널 모두에 표시됩니다
+              </FormDescription>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
 
-          <FormField
-            control={form.control}
-            name="currencyType"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel className="text-white/70">화폐 종류</FormLabel>
-                <Select onValueChange={field.onChange} value={field.value}>
+        {/* 가격 필드 - 화폐 타입에 따라 조건부 표시 */}
+        <div className="grid grid-cols-2 gap-4">
+          {(currencyType === "topy" || currencyType === "both") && (
+            <FormField
+              control={form.control}
+              name="topyPrice"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="text-white/70 flex items-center gap-2">
+                    <Icon icon="solar:coin-linear" className="h-4 w-4 text-amber-400" />
+                    {topyName} 가격
+                  </FormLabel>
                   <FormControl>
-                    <SelectTrigger className="bg-white/5 border-white/10 text-white">
-                      <SelectValue />
-                    </SelectTrigger>
+                    <Input
+                      type="number"
+                      min={0}
+                      {...field}
+                      className="bg-white/5 border-white/10 text-white"
+                    />
                   </FormControl>
-                  <SelectContent>
-                    <SelectItem value="topy">{topyName}</SelectItem>
-                    <SelectItem value="ruby">{rubyName}</SelectItem>
-                    <SelectItem value="both">둘 다</SelectItem>
-                  </SelectContent>
-                </Select>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          )}
+
+          {(currencyType === "ruby" || currencyType === "both") && (
+            <FormField
+              control={form.control}
+              name="rubyPrice"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="text-white/70 flex items-center gap-2">
+                    <Icon icon="solar:star-linear" className="h-4 w-4 text-pink-400" />
+                    {rubyName} 가격
+                  </FormLabel>
+                  <FormControl>
+                    <Input
+                      type="number"
+                      min={0}
+                      {...field}
+                      className="bg-white/5 border-white/10 text-white"
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          )}
         </div>
 
         <FormField
@@ -1070,8 +1113,17 @@ export default function ShopV2Page() {
                     </div>
                     <div className="flex items-center gap-3 text-sm text-white/50 mt-1">
                       <span>
-                        {item.price.toLocaleString()}{" "}
-                        {item.currencyType === "topy" ? topyName : item.currencyType === "ruby" ? rubyName : `${topyName}/${rubyName}`}
+                        {item.currencyType === "topy" && item.topyPrice !== null && (
+                          <>{item.topyPrice.toLocaleString()} {topyName}</>
+                        )}
+                        {item.currencyType === "ruby" && item.rubyPrice !== null && (
+                          <>{item.rubyPrice.toLocaleString()} {rubyName}</>
+                        )}
+                        {item.currencyType === "both" && (
+                          <>
+                            {item.topyPrice?.toLocaleString() ?? 0} {topyName} / {item.rubyPrice?.toLocaleString() ?? 0} {rubyName}
+                          </>
+                        )}
                       </span>
                       <span>•</span>
                       <span>

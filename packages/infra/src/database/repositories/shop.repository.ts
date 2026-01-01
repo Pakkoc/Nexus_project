@@ -16,7 +16,8 @@ interface ShopItemRow extends RowDataPacket {
   guild_id: string;
   name: string;
   description: string | null;
-  price: string;
+  topy_price: string | null;
+  ruby_price: string | null;
   currency_type: 'topy' | 'ruby' | 'both';
   duration_days: number;
   stock: number | null;
@@ -48,7 +49,8 @@ function toShopItem(row: ShopItemRow): ShopItem {
     guildId: row.guild_id,
     name: row.name,
     description: row.description,
-    price: BigInt(row.price),
+    topyPrice: row.topy_price ? BigInt(row.topy_price) : null,
+    rubyPrice: row.ruby_price ? BigInt(row.ruby_price) : null,
     currencyType: row.currency_type,
     durationDays: row.duration_days,
     stock: row.stock,
@@ -156,13 +158,14 @@ export class ShopRepository implements ShopRepositoryPort {
     try {
       const [result] = await this.pool.execute<ResultSetHeader>(
         `INSERT INTO shop_items_v2
-         (guild_id, name, description, price, currency_type, duration_days, stock, max_per_user, enabled)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+         (guild_id, name, description, topy_price, ruby_price, currency_type, duration_days, stock, max_per_user, enabled)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [
           input.guildId,
           input.name,
           input.description ?? null,
-          input.price.toString(),
+          input.topyPrice?.toString() ?? null,
+          input.rubyPrice?.toString() ?? null,
           input.currencyType,
           input.durationDays ?? 0,
           input.stock ?? null,
@@ -201,9 +204,13 @@ export class ShopRepository implements ShopRepositoryPort {
         fields.push('description = ?');
         values.push(input.description);
       }
-      if (input.price !== undefined) {
-        fields.push('price = ?');
-        values.push(input.price.toString());
+      if (input.topyPrice !== undefined) {
+        fields.push('topy_price = ?');
+        values.push(input.topyPrice?.toString() ?? null);
+      }
+      if (input.rubyPrice !== undefined) {
+        fields.push('ruby_price = ?');
+        values.push(input.rubyPrice?.toString() ?? null);
       }
       if (input.currencyType !== undefined) {
         fields.push('currency_type = ?');

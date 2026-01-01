@@ -11,6 +11,7 @@ import {
   type StringSelectMenuInteraction,
 } from 'discord.js';
 import type { ShopItemV2, ShopService, CurrencyService, ShopPanelService } from '@topia/core';
+import { getItemPrice } from '@topia/core';
 
 const ITEMS_PER_PAGE = 5;
 const CURRENCY_TYPE = 'ruby' as const;
@@ -44,7 +45,8 @@ function createShopEmbed(
 
   if (pageItems.length > 0) {
     const fields = pageItems.map((item, idx) => {
-      let info = `💎 **${item.price.toLocaleString()}** ${rubyName}`;
+      const price = getItemPrice(item, CURRENCY_TYPE) ?? BigInt(0);
+      let info = `💎 **${price.toLocaleString()}** ${rubyName}`;
 
       if (item.durationDays > 0) {
         info += `\n⏰ ${item.durationDays}일 유효`;
@@ -86,11 +88,12 @@ function createSelectMenu(
   customId: string
 ): StringSelectMenuBuilder {
   const options = items.slice(0, 25).map((item) => {
+    const price = getItemPrice(item, CURRENCY_TYPE) ?? BigInt(0);
     const durationInfo = item.durationDays > 0 ? ` (${item.durationDays}일)` : ' (영구)';
 
     return {
       label: item.name,
-      description: `${item.price.toLocaleString()} ${rubyName}${durationInfo}`,
+      description: `${price.toLocaleString()} ${rubyName}${durationInfo}`,
       value: item.id.toString(),
       emoji: '🎫',
     };
@@ -284,14 +287,15 @@ function createQuantitySelectEmbed(
   rubyName: string,
   currentQuantity: number
 ): EmbedBuilder {
-  const totalPrice = item.price * BigInt(currentQuantity);
+  const price = getItemPrice(item, CURRENCY_TYPE) ?? BigInt(0);
+  const totalPrice = price * BigInt(currentQuantity);
 
   const embed = new EmbedBuilder()
     .setColor(0xE91E63)
     .setTitle('🔢 수량 선택')
     .setDescription(`**${item.name}**을(를) 몇 개 구매하시겠습니까?`)
     .addFields(
-      { name: '💎 개당 가격', value: `${item.price.toLocaleString()} ${rubyName}`, inline: true },
+      { name: '💎 개당 가격', value: `${price.toLocaleString()} ${rubyName}`, inline: true },
       { name: '📦 선택 수량', value: `${currentQuantity}개`, inline: true },
       { name: '💵 총 가격', value: `${totalPrice.toLocaleString()} ${rubyName}`, inline: true }
     );

@@ -10,8 +10,9 @@ interface ShopItemV2Row extends RowDataPacket {
   guild_id: string;
   name: string;
   description: string | null;
-  price: string;
-  currency_type: "topy" | "ruby";
+  topy_price: string | null;
+  ruby_price: string | null;
+  currency_type: "topy" | "ruby" | "both";
   duration_days: number;
   stock: number | null;
   max_per_user: number | null;
@@ -25,7 +26,8 @@ function rowToShopItemV2(row: ShopItemV2Row) {
     guildId: row.guild_id,
     name: row.name,
     description: row.description,
-    price: Number(row.price),
+    topyPrice: row.topy_price ? Number(row.topy_price) : null,
+    rubyPrice: row.ruby_price ? Number(row.ruby_price) : null,
     currencyType: row.currency_type,
     durationDays: row.duration_days,
     stock: row.stock,
@@ -113,9 +115,13 @@ export async function PATCH(
         updates.push("description = ?");
         values.push(validatedData.description);
       }
-      if (validatedData.price !== undefined) {
-        updates.push("price = ?");
-        values.push(validatedData.price);
+      if (validatedData.topyPrice !== undefined) {
+        updates.push("topy_price = ?");
+        values.push(validatedData.topyPrice);
+      }
+      if (validatedData.rubyPrice !== undefined) {
+        updates.push("ruby_price = ?");
+        values.push(validatedData.rubyPrice);
       }
       if (validatedData.currencyType !== undefined) {
         updates.push("currency_type = ?");
