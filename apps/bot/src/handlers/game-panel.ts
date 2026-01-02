@@ -958,7 +958,12 @@ export async function handleGameResult(
 }
 
 /**
- * 순위 선택 핸들러 (1등 또는 2등)
+ * 순위 선택 핸들러 (1등~4등)
+ * customId 형식:
+ * - game_result_rank_{gameId}_1_{userId} - 1등 선택
+ * - game_result_rank_{gameId}_2_{r1}_{userId} - 2등 선택
+ * - game_result_rank_{gameId}_3_{r1}_{r2}_{userId} - 3등 선택
+ * - game_result_rank_{gameId}_4_{r1}_{r2}_{r3}_{userId} - 4등 선택
  */
 export async function handleGameResultRank(
   interaction: StringSelectMenuInteraction,
@@ -970,29 +975,45 @@ export async function handleGameResultRank(
     return;
   }
 
-  // customId: game_result_rank_{gameId}_{currentRank}_{userId} 또는
-  // customId: game_result_rank_{gameId}_{currentRank}_{rank1Team}_{userId}
   const parts = interaction.customId.split('_');
   const gameId = BigInt(parts[3]!);
   const currentRank = parseInt(parts[4]!, 10);
   const selectedTeam = parseInt(interaction.values[0]!, 10);
   const userId = interaction.user.id;
 
-  // 1등 선택인 경우 → 2등 선택 UI 표시
-  if (currentRank === 1) {
-    // 게임 정보 조회
-    const gameResult = await container.gameService.getGameById(gameId);
-    if (!gameResult.success) {
-      await interaction.update({ content: '❌ 게임을 찾을 수 없습니다.', components: [] });
-      return;
-    }
+  // 게임 정보 조회
+  const gameResult = await container.gameService.getGameById(gameId);
+  if (!gameResult.success) {
+    await interaction.update({ content: '❌ 게임을 찾을 수 없습니다.', components: [] });
+    return;
+  }
 
-    const game = gameResult.data;
+  const game = gameResult.data;
+  const teamCount = game.teamCount;
 
-    // 2등 선택 메뉴 (1등으로 선택된 팀 제외)
+  // 이전 순위들 파싱
+  const previousRanks: number[] = [];
+  if (currentRank >= 2) previousRanks.push(parseInt(parts[5]!, 10)); // r1
+  if (currentRank >= 3) previousRanks.push(parseInt(parts[6]!, 10)); // r2
+  if (currentRank >= 4) previousRanks.push(parseInt(parts[7]!, 10)); // r3
+
+  // 현재까지 선택된 모든 순위
+  const allSelectedTeams = [...previousRanks, selectedTeam];
+
+  // 필요한 순위 수 결정 (팀 수에 따라)
+  // 2팀: 1,2등만 / 3팀: 1,2등만 / 4팀 이상: 1,2,3,4등
+  const requiredRanks = teamCount >= 4 ? Math.min(4, teamCount) : 2;
+
+  // 아직 더 선택해야 하는 경우
+  if (currentRank < requiredRanks) {
+    const nextRank = currentRank + 1;
+    const rankEmojis = ['🥇', '🥈', '🥉', '4️⃣'];
+    const rankNames = ['1등', '2등', '3등', '4등'];
+
+    // 다음 순위 선택 메뉴 (이미 선택된 팀 제외)
     const teamOptions = [];
-    for (let i = 1; i <= game.teamCount; i++) {
-      if (i === selectedTeam) continue; // 1등으로 선택된 팀 제외
+    for (let i = 1; i <= teamCount; i++) {
+      if (allSelectedTeams.includes(i)) continue;
       teamOptions.push({
         label: `${i}팀`,
         value: i.toString(),
@@ -1000,82 +1021,101 @@ export async function handleGameResultRank(
       });
     }
 
-    const rank2Select = new StringSelectMenuBuilder()
-      .setCustomId(`game_result_rank_${gameId}_2_${selectedTeam}_${userId}`)
-      .setPlaceholder('🥈 2등 팀을 선택하세요')
+    // customId에 이전 순위들 인코딩
+    const ranksEncoded = allSelectedTeams.join('_');
+    const nextSelect = new StringSelectMenuBuilder()
+      .setCustomId(`game_result_rank_${gameId}_${nextRank}_${ranksEncoded}_${userId}`)
+      .setPlaceholder(`${rankEmojis[nextRank - 1]} ${rankNames[nextRank - 1]} 팀을 선택하세요`)
       .addOptions(teamOptions);
 
-    const row = new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(rank2Select);
+    const row = new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(nextSelect);
+
+    // 현재까지 선택된 순위 표시
+    let statusText = '🏆 **순위를 선택하세요**\n\n';
+    for (let i = 0; i < allSelectedTeams.length; i++) {
+      const team = allSelectedTeams[i]!;
+      statusText += `${rankEmojis[i]} ${rankNames[i]}: ${getTeamEmoji(team)} **${team}팀**\n`;
+    }
+    statusText += `\n이제 ${rankNames[nextRank - 1]} 팀을 선택하세요.`;
 
     await interaction.update({
-      content: `🏆 **순위를 선택하세요**\n\n🥇 1등: ${getTeamEmoji(selectedTeam)} **${selectedTeam}팀**\n\n이제 2등 팀을 선택하세요.`,
+      content: statusText,
       components: [row],
     });
     return;
   }
 
-  // 2등 선택인 경우 → 바로 결과 처리
-  if (currentRank === 2) {
-    const rank1Team = parseInt(parts[5]!, 10); // 1등 팀 번호
-    const rank2Team = selectedTeam;
+  // 모든 순위 선택 완료 → 결과 처리
+  const rankEmojis = ['🥇', '🥈', '🥉', '4️⃣'];
+  const rankNames = ['1등', '2등', '3등', '4등'];
 
-    await interaction.update({
-      content: `⏳ 결과 처리 중...\n\n🥇 1등: ${getTeamEmoji(rank1Team)} **${rank1Team}팀**\n🥈 2등: ${getTeamEmoji(rank2Team)} **${rank2Team}팀**`,
-      components: [],
-    });
-
-    // 화폐 설정 조회
-    const currencySettingsResult = await container.currencyService.getSettings(guildId);
-    const topyName = (currencySettingsResult.success && currencySettingsResult.data?.topyName) || '토피';
-
-    // 결과 처리
-    const results = [
-      { teamNumber: rank1Team, rank: 1 },
-      { teamNumber: rank2Team, rank: 2 },
-    ];
-
-    const finishResult = await container.gameService.finishGame(guildId, gameId, results);
-
-    if (!finishResult.success) {
-      await interaction.editReply({ content: '❌ 결과 처리에 실패했습니다.' });
-      scheduleEphemeralDelete(interaction);
-      return;
-    }
-
-    const { game, rewards } = finishResult.data;
-
-    // 메시지 업데이트
-    try {
-      if (game.messageId) {
-        const channel = interaction.channel as TextChannel;
-        const message = await channel.messages.fetch(game.messageId);
-
-        const participantsResult = await container.gameService.getParticipants(gameId);
-        const participants = participantsResult.success ? participantsResult.data : [];
-
-        const embed = createGameEmbed(game, topyName, participants);
-        await message.edit({ embeds: [embed], components: [] });
-
-        // 10분 후 메시지 삭제
-        setTimeout(async () => {
-          try {
-            await message.delete();
-          } catch {
-            // 이미 삭제됨
-          }
-        }, EPHEMERAL_DELETE_DELAY);
-      }
-    } catch (err) {
-      console.error('[GAME] Failed to update game message:', err);
-    }
-
-    const totalRewarded = rewards.reduce((sum, r) => sum + r.reward, BigInt(0));
-
-    await interaction.editReply({
-      content: `✅ 결과가 처리되었습니다!\n\n🥇 1등: ${getTeamEmoji(rank1Team)} ${rank1Team}팀\n🥈 2등: ${getTeamEmoji(rank2Team)} ${rank2Team}팀\n\n총 보상: ${totalRewarded.toLocaleString()} ${topyName} (${rewards.length}명)`,
-    });
-    scheduleEphemeralDelete(interaction);
+  let statusText = '⏳ 결과 처리 중...\n\n';
+  for (let i = 0; i < allSelectedTeams.length; i++) {
+    const team = allSelectedTeams[i]!;
+    statusText += `${rankEmojis[i]} ${rankNames[i]}: ${getTeamEmoji(team)} **${team}팀**\n`;
   }
+
+  await interaction.update({
+    content: statusText,
+    components: [],
+  });
+
+  // 화폐 설정 조회
+  const currencySettingsResult = await container.currencyService.getSettings(guildId);
+  const topyName = (currencySettingsResult.success && currencySettingsResult.data?.topyName) || '토피';
+
+  // 결과 생성
+  const results = allSelectedTeams.map((team, index) => ({
+    teamNumber: team,
+    rank: index + 1,
+  }));
+
+  const finishResult = await container.gameService.finishGame(guildId, gameId, results);
+
+  if (!finishResult.success) {
+    await interaction.editReply({ content: '❌ 결과 처리에 실패했습니다.' });
+    scheduleEphemeralDelete(interaction);
+    return;
+  }
+
+  const { game: finishedGame, rewards } = finishResult.data;
+
+  // 메시지 업데이트
+  try {
+    if (finishedGame.messageId) {
+      const channel = interaction.channel as TextChannel;
+      const message = await channel.messages.fetch(finishedGame.messageId);
+
+      const participantsResult = await container.gameService.getParticipants(gameId);
+      const participants = participantsResult.success ? participantsResult.data : [];
+
+      const embed = createGameEmbed(finishedGame, topyName, participants);
+      await message.edit({ embeds: [embed], components: [] });
+
+      // 10분 후 메시지 삭제
+      setTimeout(async () => {
+        try {
+          await message.delete();
+        } catch {
+          // 이미 삭제됨
+        }
+      }, EPHEMERAL_DELETE_DELAY);
+    }
+  } catch (err) {
+    console.error('[GAME] Failed to update game message:', err);
+  }
+
+  const totalRewarded = rewards.reduce((sum, r) => sum + r.reward, BigInt(0));
+
+  let resultText = '✅ 결과가 처리되었습니다!\n\n';
+  for (let i = 0; i < allSelectedTeams.length; i++) {
+    const team = allSelectedTeams[i]!;
+    resultText += `${rankEmojis[i]} ${rankNames[i]}: ${getTeamEmoji(team)} ${team}팀\n`;
+  }
+  resultText += `\n총 보상: ${totalRewarded.toLocaleString()} ${topyName} (${rewards.length}명)`;
+
+  await interaction.editReply({ content: resultText });
+  scheduleEphemeralDelete(interaction);
 }
 
 // ============================================================

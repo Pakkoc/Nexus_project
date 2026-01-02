@@ -446,9 +446,10 @@ export default function GameCenterPage() {
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="2">2팀</SelectItem>
+              <SelectItem value="2">2팀 (일반 내전)</SelectItem>
+              <SelectItem value="4">4팀 (더블업/소규모)</SelectItem>
+              <SelectItem value="8">8팀 (개인전/롤체)</SelectItem>
               <SelectItem value="3">3팀</SelectItem>
-              <SelectItem value="4">4팀</SelectItem>
               <SelectItem value="5">5팀</SelectItem>
               <SelectItem value="6">6팀</SelectItem>
             </SelectContent>
