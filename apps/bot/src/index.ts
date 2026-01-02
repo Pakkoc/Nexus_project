@@ -555,24 +555,14 @@ async function main() {
           await handleGameResultRank(interaction, container);
           return;
         }
-      } catch (error) {
-        console.error(`[SELECT] Error handling ${customId}:`, error);
-      }
-      return;
-    }
 
-    // User select menu handler
-    if (interaction.isUserSelectMenu()) {
-      const customId = interaction.customId;
-
-      try {
-        // 게임 팀 유저 선택 (팀에 배정할 유저들)
+        // 게임 팀 유저 선택 (참가자 선택)
         if (customId.startsWith('game_team_users_')) {
           await handleGameTeamUsers(interaction, container);
           return;
         }
       } catch (error) {
-        console.error(`[USER_SELECT] Error handling ${customId}:`, error);
+        console.error(`[SELECT] Error handling ${customId}:`, error);
       }
       return;
     }

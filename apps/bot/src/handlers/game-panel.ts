@@ -953,28 +953,67 @@ export async function handleGameTeamSelect(
   // 선택된 팀 번호
   const teamNumber = parseInt(interaction.values[0]!, 10);
 
-  const userId = interaction.user.id;
+  const odminUserId = interaction.user.id;
 
-  // 유저 선택 메뉴
-  const userSelect = new UserSelectMenuBuilder()
-    .setCustomId(`game_team_users_${gameId}_${teamNumber}_${userId}`)
-    .setPlaceholder('팀원을 선택하세요')
+  // 참가자 목록 조회 (아직 팀 배정 안 된 사람만)
+  const participantsResult = await container.gameService.getParticipants(gameId);
+  if (!participantsResult.success) {
+    await interaction.update({ content: '❌ 참가자 목록을 불러올 수 없습니다.', components: [] });
+    return;
+  }
+
+  const unassignedParticipants = participantsResult.data.filter(p => p.teamNumber === null);
+
+  if (unassignedParticipants.length === 0) {
+    await interaction.update({ content: '✅ 모든 참가자가 이미 팀에 배정되었습니다.', components: [] });
+    return;
+  }
+
+  // 참가자 선택 메뉴 (StringSelectMenuBuilder로 참가자만 표시)
+  const participantOptions = unassignedParticipants.slice(0, 25).map(p => ({
+    label: `참가자`,
+    value: p.userId,
+    description: `<@${p.userId}>`,
+  }));
+
+  // Discord에서 유저 이름을 가져오기 위해 멤버 조회
+  try {
+    const guild = interaction.guild;
+    if (guild) {
+      for (const option of participantOptions) {
+        try {
+          const member = await guild.members.fetch(option.value);
+          option.label = member.displayName || member.user.username;
+          option.description = `@${member.user.username}`;
+        } catch {
+          option.label = `유저 (${option.value.slice(-4)})`;
+        }
+      }
+    }
+  } catch {
+    // 멤버 조회 실패해도 계속 진행
+  }
+
+  const userSelect = new StringSelectMenuBuilder()
+    .setCustomId(`game_team_users_${gameId}_${teamNumber}_${odminUserId}`)
+    .setPlaceholder('팀원을 선택하세요 (참가자만 표시)')
     .setMinValues(1)
-    .setMaxValues(25);
+    .setMaxValues(Math.min(unassignedParticipants.length, 25))
+    .addOptions(participantOptions);
 
-  const row = new ActionRowBuilder<UserSelectMenuBuilder>().addComponents(userSelect);
+  const row = new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(userSelect);
 
   await interaction.update({
-    content: `${getTeamEmoji(teamNumber)} **${teamNumber}팀** 팀원을 선택하세요:`,
+    content: `${getTeamEmoji(teamNumber)} **${teamNumber}팀** 팀원을 선택하세요:\n(미배정 참가자 ${unassignedParticipants.length}명)`,
     components: [row],
   });
 }
 
 /**
- * 유저 선택 완료 핸들러
+ * 유저 선택 완료 핸들러 (참가자 선택)
  */
 export async function handleGameTeamUsers(
-  interaction: UserSelectMenuInteraction,
+  interaction: StringSelectMenuInteraction,
   container: Container
 ) {
   const guildId = interaction.guildId;
