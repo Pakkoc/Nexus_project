@@ -46,6 +46,7 @@ interface GameRow extends RowDataPacket {
   created_by: string;
   created_at: Date;
   finished_at: Date | null;
+  max_players_per_team: number | null;
 }
 
 interface GameParticipantRow extends RowDataPacket {
@@ -67,6 +68,12 @@ interface GameCategoryRow extends RowDataPacket {
   name: string;
   team_count: number;
   enabled: number;
+  max_players_per_team: number | null;
+  rank1_percent: number | null;
+  rank2_percent: number | null;
+  rank3_percent: number | null;
+  rank4_percent: number | null;
+  winner_takes_all: number;
   created_at: Date;
 }
 
@@ -113,6 +120,7 @@ function gameRowToEntity(row: GameRow): Game {
     createdBy: row.created_by,
     createdAt: row.created_at,
     finishedAt: row.finished_at,
+    maxPlayersPerTeam: row.max_players_per_team,
   };
 }
 
@@ -138,6 +146,12 @@ function categoryRowToEntity(row: GameCategoryRow): GameCategory {
     name: row.name,
     teamCount: row.team_count,
     enabled: row.enabled === 1,
+    maxPlayersPerTeam: row.max_players_per_team,
+    rank1Percent: row.rank1_percent,
+    rank2Percent: row.rank2_percent,
+    rank3Percent: row.rank3_percent,
+    rank4Percent: row.rank4_percent,
+    winnerTakesAll: row.winner_takes_all === 1,
     createdAt: row.created_at,
   };
 }
@@ -283,8 +297,19 @@ export class GameRepository implements GameRepositoryPort {
 
   async createCategory(dto: CreateCategoryDto): Promise<GameCategory> {
     const [result] = await this.pool.query<ResultSetHeader>(
-      `INSERT INTO game_categories (guild_id, name, team_count) VALUES (?, ?, ?)`,
-      [dto.guildId, dto.name, dto.teamCount]
+      `INSERT INTO game_categories (guild_id, name, team_count, max_players_per_team, rank1_percent, rank2_percent, rank3_percent, rank4_percent, winner_takes_all)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        dto.guildId,
+        dto.name,
+        dto.teamCount,
+        dto.maxPlayersPerTeam ?? null,
+        dto.rank1Percent ?? null,
+        dto.rank2Percent ?? null,
+        dto.rank3Percent ?? null,
+        dto.rank4Percent ?? null,
+        dto.winnerTakesAll ? 1 : 0,
+      ]
     );
 
     const category = await this.findCategoryById(result.insertId);
@@ -324,7 +349,7 @@ export class GameRepository implements GameRepositoryPort {
 
   async updateCategory(categoryId: number, dto: UpdateCategoryDto): Promise<GameCategory | null> {
     const updates: string[] = [];
-    const values: (string | number)[] = [];
+    const values: (string | number | null)[] = [];
 
     if (dto.name !== undefined) {
       updates.push('name = ?');
@@ -337,6 +362,30 @@ export class GameRepository implements GameRepositoryPort {
     if (dto.enabled !== undefined) {
       updates.push('enabled = ?');
       values.push(dto.enabled ? 1 : 0);
+    }
+    if (dto.maxPlayersPerTeam !== undefined) {
+      updates.push('max_players_per_team = ?');
+      values.push(dto.maxPlayersPerTeam);
+    }
+    if (dto.rank1Percent !== undefined) {
+      updates.push('rank1_percent = ?');
+      values.push(dto.rank1Percent);
+    }
+    if (dto.rank2Percent !== undefined) {
+      updates.push('rank2_percent = ?');
+      values.push(dto.rank2Percent);
+    }
+    if (dto.rank3Percent !== undefined) {
+      updates.push('rank3_percent = ?');
+      values.push(dto.rank3Percent);
+    }
+    if (dto.rank4Percent !== undefined) {
+      updates.push('rank4_percent = ?');
+      values.push(dto.rank4Percent);
+    }
+    if (dto.winnerTakesAll !== undefined) {
+      updates.push('winner_takes_all = ?');
+      values.push(dto.winnerTakesAll ? 1 : 0);
     }
 
     if (updates.length === 0) {
@@ -364,8 +413,8 @@ export class GameRepository implements GameRepositoryPort {
 
   async createGame(dto: CreateGameDto): Promise<Game> {
     const [result] = await this.pool.query<ResultSetHeader>(
-      `INSERT INTO games (guild_id, channel_id, category_id, title, team_count, entry_fee, created_by)
-       VALUES (?, ?, ?, ?, ?, ?, ?)`,
+      `INSERT INTO games (guild_id, channel_id, category_id, title, team_count, entry_fee, created_by, max_players_per_team)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         dto.guildId,
         dto.channelId,
@@ -374,6 +423,7 @@ export class GameRepository implements GameRepositoryPort {
         dto.teamCount,
         dto.entryFee.toString(),
         dto.createdBy,
+        dto.maxPlayersPerTeam ?? null,
       ]
     );
 

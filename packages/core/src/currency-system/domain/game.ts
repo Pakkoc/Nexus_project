@@ -20,6 +20,7 @@ export interface Game {
   createdBy: string;
   createdAt: Date;
   finishedAt: Date | null;
+  maxPlayersPerTeam: number | null; // 팀당 최대 인원
 }
 
 /**
@@ -33,6 +34,7 @@ export interface CreateGameDto {
   teamCount: number;
   entryFee: bigint;
   createdBy: string;
+  maxPlayersPerTeam?: number | null;
 }
 
 /**

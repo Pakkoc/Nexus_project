@@ -46,6 +46,8 @@ export default function GameCenterPage() {
   // 새 카테고리
   const [newCategoryName, setNewCategoryName] = useState("");
   const [newCategoryTeamCount, setNewCategoryTeamCount] = useState("2");
+  const [newCategoryMaxPlayers, setNewCategoryMaxPlayers] = useState("");
+  const [newCategoryWinnerTakesAll, setNewCategoryWinnerTakesAll] = useState(true);
 
   const { data: currencySettings } = useCurrencySettings(guildId);
   const { data: settings, isLoading } = useGameSettings(guildId);
@@ -125,13 +127,19 @@ export default function GameCenterPage() {
       return;
     }
 
+    const teamCount = parseInt(newCategoryTeamCount) || 2;
+
     try {
       await createCategoryMutation.mutateAsync({
         name: newCategoryName.trim(),
-        teamCount: parseInt(newCategoryTeamCount) || 2,
+        teamCount,
+        maxPlayersPerTeam: newCategoryMaxPlayers ? parseInt(newCategoryMaxPlayers) : null,
+        winnerTakesAll: teamCount === 2 ? newCategoryWinnerTakesAll : undefined,
       });
       setNewCategoryName("");
       setNewCategoryTeamCount("2");
+      setNewCategoryMaxPlayers("");
+      setNewCategoryWinnerTakesAll(true);
       toast({ title: "카테고리가 생성되었습니다!" });
     } catch {
       toast({ title: "카테고리 생성에 실패했습니다.", variant: "destructive" });
@@ -431,36 +439,58 @@ export default function GameCenterPage() {
         </div>
 
         {/* 새 카테고리 추가 */}
-        <div className="flex flex-col sm:flex-row gap-3 mb-6">
-          <Input
-            placeholder="카테고리 이름 (예: 발로란트)"
-            value={newCategoryName}
-            onChange={(e) => setNewCategoryName(e.target.value)}
-            className="bg-white/5 border-white/10 text-white focus:border-emerald-500/50 sm:w-48"
-          />
-          <Select
-            value={newCategoryTeamCount}
-            onValueChange={setNewCategoryTeamCount}
-          >
-            <SelectTrigger className="bg-white/5 border-white/10 text-white sm:w-32">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="2">2팀 (일반 내전)</SelectItem>
-              <SelectItem value="4">4팀 (더블업/소규모)</SelectItem>
-              <SelectItem value="8">8팀 (개인전/롤체)</SelectItem>
-              <SelectItem value="3">3팀</SelectItem>
-              <SelectItem value="5">5팀</SelectItem>
-              <SelectItem value="6">6팀</SelectItem>
-            </SelectContent>
-          </Select>
-          <Button
-            onClick={handleCreateCategory}
-            disabled={!newCategoryName.trim() || createCategoryMutation.isPending}
-            className="bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white"
-          >
-            {createCategoryMutation.isPending ? "추가 중..." : "카테고리 추가"}
-          </Button>
+        <div className="flex flex-col gap-3 mb-6">
+          <div className="flex flex-col sm:flex-row gap-3">
+            <Input
+              placeholder="카테고리 이름 (예: 발로란트)"
+              value={newCategoryName}
+              onChange={(e) => setNewCategoryName(e.target.value)}
+              className="bg-white/5 border-white/10 text-white focus:border-emerald-500/50 sm:w-48"
+            />
+            <Select
+              value={newCategoryTeamCount}
+              onValueChange={setNewCategoryTeamCount}
+            >
+              <SelectTrigger className="bg-white/5 border-white/10 text-white sm:w-32">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="2">2팀 (일반 내전)</SelectItem>
+                <SelectItem value="4">4팀 (더블업/소규모)</SelectItem>
+                <SelectItem value="8">8팀 (개인전/롤체)</SelectItem>
+                <SelectItem value="3">3팀</SelectItem>
+                <SelectItem value="5">5팀</SelectItem>
+                <SelectItem value="6">6팀</SelectItem>
+              </SelectContent>
+            </Select>
+            <Input
+              type="number"
+              placeholder="팀당 인원 (선택)"
+              value={newCategoryMaxPlayers}
+              onChange={(e) => setNewCategoryMaxPlayers(e.target.value)}
+              min="1"
+              max="25"
+              className="bg-white/5 border-white/10 text-white focus:border-emerald-500/50 sm:w-32"
+            />
+            <Button
+              onClick={handleCreateCategory}
+              disabled={!newCategoryName.trim() || createCategoryMutation.isPending}
+              className="bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white"
+            >
+              {createCategoryMutation.isPending ? "추가 중..." : "카테고리 추가"}
+            </Button>
+          </div>
+          {newCategoryTeamCount === "2" && (
+            <label className="flex items-center gap-2 text-white/70 text-sm cursor-pointer">
+              <input
+                type="checkbox"
+                checked={newCategoryWinnerTakesAll}
+                onChange={(e) => setNewCategoryWinnerTakesAll(e.target.checked)}
+                className="w-4 h-4 rounded border-white/20 bg-white/5 text-emerald-500 focus:ring-emerald-500/50"
+              />
+              2팀 승자 독식 (1등 100%, 2등 0%)
+            </label>
+          )}
         </div>
 
         {/* 카테고리 목록 */}
@@ -477,7 +507,11 @@ export default function GameCenterPage() {
                   </div>
                   <div>
                     <p className="text-white font-medium">{category.name}</p>
-                    <p className="text-white/40 text-xs">{category.teamCount}팀</p>
+                    <p className="text-white/40 text-xs">
+                      {category.teamCount}팀
+                      {category.maxPlayersPerTeam && ` · 팀당 ${category.maxPlayersPerTeam}명`}
+                      {category.teamCount === 2 && category.winnerTakesAll && " · 승자독식"}
+                    </p>
                   </div>
                 </div>
                 <div className="flex items-center gap-3">

@@ -194,7 +194,20 @@ export class GameService {
    */
   async createGame(dto: CreateGameDto): Promise<Result<Game, CurrencyError>> {
     try {
-      const game = await this.gameRepo.createGame(dto);
+      // 카테고리가 지정된 경우 maxPlayersPerTeam 가져오기
+      let maxPlayersPerTeam: number | null = dto.maxPlayersPerTeam ?? null;
+
+      if (dto.categoryId) {
+        const category = await this.gameRepo.findCategoryById(dto.categoryId);
+        if (category) {
+          maxPlayersPerTeam = maxPlayersPerTeam ?? category.maxPlayersPerTeam;
+        }
+      }
+
+      const game = await this.gameRepo.createGame({
+        ...dto,
+        maxPlayersPerTeam,
+      });
       return Result.ok(game);
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
@@ -286,7 +299,20 @@ export class GameService {
         return Result.err({ type: 'ALREADY_JOINED' });
       }
 
-      // 4. 잔액 확인
+      // 4. 정원 제한 확인
+      if (game.maxPlayersPerTeam !== null) {
+        const participants = await this.gameRepo.findParticipantsByGameId(gameId);
+        const maxTotalPlayers = game.maxPlayersPerTeam * game.teamCount;
+        if (participants.length >= maxTotalPlayers) {
+          return Result.err({
+            type: 'GAME_FULL',
+            maxPlayers: maxTotalPlayers,
+            currentPlayers: participants.length,
+          });
+        }
+      }
+
+      // 5. 잔액 확인
       const walletResult = await this.topyWalletRepo.findByUser(guildId, userId);
       if (!walletResult.success) {
         return Result.err({
@@ -478,7 +504,25 @@ export class GameService {
         return Result.err({ type: 'INVALID_TEAM_NUMBER' });
       }
 
-      // 3. 각 유저가 참가자인지 확인하고 팀 배정
+      // 3. 팀당 인원 제한 확인
+      if (game.maxPlayersPerTeam !== null) {
+        const currentTeamMembers = await this.gameRepo.findParticipantsByTeam(gameId, teamNumber);
+        // 이미 해당 팀에 배정된 유저는 제외하고 새로 추가될 유저만 계산
+        const newUserIds = userIds.filter(
+          (userId) => !currentTeamMembers.some((m) => m.userId === userId)
+        );
+        const newTeamSize = currentTeamMembers.length + newUserIds.length;
+        if (newTeamSize > game.maxPlayersPerTeam) {
+          return Result.err({
+            type: 'TEAM_FULL',
+            teamNumber,
+            maxPlayers: game.maxPlayersPerTeam,
+            currentPlayers: currentTeamMembers.length,
+          });
+        }
+      }
+
+      // 4. 각 유저가 참가자인지 확인하고 팀 배정
       for (const userId of userIds) {
         const participant = await this.gameRepo.findParticipantByGameAndUser(gameId, userId);
         if (!participant) {
@@ -560,28 +604,40 @@ export class GameService {
         return Result.err({ type: 'GAME_ALREADY_FINISHED' });
       }
 
-      // 3. 설정 조회 (순위별 보상 비율)
-      const settings = await this.gameRepo.findSettingsByGuildId(guildId);
-      const rawRankPercents = {
-        1: settings?.rank1Percent ?? DEFAULT_RANK1_PERCENT,
-        2: settings?.rank2Percent ?? DEFAULT_RANK2_PERCENT,
-        3: settings?.rank3Percent ?? DEFAULT_RANK3_PERCENT,
-        4: settings?.rank4Percent ?? DEFAULT_RANK4_PERCENT,
-      };
+      // 3. 카테고리 조회 (카테고리별 보상 비율 확인)
+      let category = null;
+      if (game.categoryId) {
+        category = await this.gameRepo.findCategoryById(game.categoryId);
+      }
 
-      // 3-1. 사용되는 순위 비율만 합산하여 정규화 (2팀일 때 1,2등만 / 4팀일 때 1,2,3,4등)
-      // 예: 2팀 게임 → 1등 50%, 2등 30% → 합계 80% → 정규화: 1등 62.5%, 2등 37.5%
-      const usedRanks = results.map((r) => r.rank);
-      const totalUsedPercent = usedRanks.reduce(
-        (sum, rank) => sum + (rawRankPercents[rank as 1 | 2 | 3 | 4] || 0),
-        0
-      );
+      // 4. 순위 비율 결정
+      let rankPercents: Record<number, number>;
 
-      // 정규화된 비율 계산 (합계 100%)
-      const rankPercents: Record<number, number> = {};
-      for (const rank of usedRanks) {
-        const rawPercent = rawRankPercents[rank as 1 | 2 | 3 | 4] || 0;
-        rankPercents[rank] = totalUsedPercent > 0 ? (rawPercent * 100) / totalUsedPercent : 0;
+      // Case 1: 2팀 게임 + 승자독식 모드 (기본값: true)
+      if (game.teamCount === 2 && (category?.winnerTakesAll ?? true)) {
+        // 2팀 게임은 기본적으로 승자 독식 (1등 100%, 2등 0%)
+        rankPercents = { 1: 100, 2: 0 };
+      }
+      // Case 2: 카테고리에 커스텀 비율이 설정된 경우
+      else if (category && category.rank1Percent !== null) {
+        const rawRankPercents = {
+          1: category.rank1Percent ?? 0,
+          2: category.rank2Percent ?? 0,
+          3: category.rank3Percent ?? 0,
+          4: category.rank4Percent ?? 0,
+        };
+        rankPercents = this.normalizeRankPercents(rawRankPercents, results);
+      }
+      // Case 3: 전역 설정 사용 (기존 로직)
+      else {
+        const settings = await this.gameRepo.findSettingsByGuildId(guildId);
+        const rawRankPercents = {
+          1: settings?.rank1Percent ?? DEFAULT_RANK1_PERCENT,
+          2: settings?.rank2Percent ?? DEFAULT_RANK2_PERCENT,
+          3: settings?.rank3Percent ?? DEFAULT_RANK3_PERCENT,
+          4: settings?.rank4Percent ?? DEFAULT_RANK4_PERCENT,
+        };
+        rankPercents = this.normalizeRankPercents(rawRankPercents, results);
       }
 
       // 4. 게임 종료 처리
@@ -730,5 +786,28 @@ export class GameService {
         cause: { type: 'QUERY_ERROR', message },
       });
     }
+  }
+
+  // ========== 헬퍼 메서드 ==========
+
+  /**
+   * 사용되는 순위만 합산하여 정규화 (합계 100%)
+   */
+  private normalizeRankPercents(
+    rawPercents: Record<number, number>,
+    results: { teamNumber: number; rank: number }[]
+  ): Record<number, number> {
+    const usedRanks = results.map((r) => r.rank);
+    const totalUsedPercent = usedRanks.reduce(
+      (sum, rank) => sum + (rawPercents[rank] || 0),
+      0
+    );
+
+    const normalized: Record<number, number> = {};
+    for (const rank of usedRanks) {
+      const rawPercent = rawPercents[rank] || 0;
+      normalized[rank] = totalUsedPercent > 0 ? (rawPercent * 100) / totalUsedPercent : 0;
+    }
+    return normalized;
   }
 }

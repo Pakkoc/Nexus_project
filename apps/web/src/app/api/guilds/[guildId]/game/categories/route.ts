@@ -10,6 +10,12 @@ import { z } from "zod";
 const createCategorySchema = z.object({
   name: z.string().min(1).max(50),
   teamCount: z.number().min(2).max(10),
+  maxPlayersPerTeam: z.number().min(1).max(25).nullable().optional(),
+  rank1Percent: z.number().min(0).max(100).nullable().optional(),
+  rank2Percent: z.number().min(0).max(100).nullable().optional(),
+  rank3Percent: z.number().min(0).max(100).nullable().optional(),
+  rank4Percent: z.number().min(0).max(100).nullable().optional(),
+  winnerTakesAll: z.boolean().optional(),
 });
 
 // ========== GET: 카테고리 목록 조회 ==========
@@ -71,11 +77,21 @@ export async function POST(
       );
     }
 
-    const { name, teamCount } = parseResult.data;
+    const { name, teamCount, maxPlayersPerTeam, rank1Percent, rank2Percent, rank3Percent, rank4Percent, winnerTakesAll } = parseResult.data;
     db(); // Initialize pool
     const container = createContainer();
 
-    const result = await container.gameService.createCategory({ guildId, name, teamCount });
+    const result = await container.gameService.createCategory({
+      guildId,
+      name,
+      teamCount,
+      maxPlayersPerTeam,
+      rank1Percent,
+      rank2Percent,
+      rank3Percent,
+      rank4Percent,
+      winnerTakesAll,
+    });
 
     if (!result.success) {
       return NextResponse.json(

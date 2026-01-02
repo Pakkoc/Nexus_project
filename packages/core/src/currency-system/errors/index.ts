@@ -55,5 +55,7 @@ export type CurrencyError =
   | { type: 'CATEGORY_NOT_FOUND' }
   | { type: 'INVALID_TEAM_NUMBER' }
   | { type: 'UNASSIGNED_PARTICIPANTS'; count: number }
+  | { type: 'GAME_FULL'; maxPlayers: number; currentPlayers: number }
+  | { type: 'TEAM_FULL'; teamNumber: number; maxPlayers: number; currentPlayers: number }
   // 세금 관련 에러
   | { type: 'ALREADY_PROCESSED' };

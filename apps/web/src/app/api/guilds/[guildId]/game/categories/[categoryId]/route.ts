@@ -11,6 +11,12 @@ const updateCategorySchema = z.object({
   name: z.string().min(1).max(50).optional(),
   teamCount: z.number().min(2).max(10).optional(),
   enabled: z.boolean().optional(),
+  maxPlayersPerTeam: z.number().min(1).max(25).nullable().optional(),
+  rank1Percent: z.number().min(0).max(100).nullable().optional(),
+  rank2Percent: z.number().min(0).max(100).nullable().optional(),
+  rank3Percent: z.number().min(0).max(100).nullable().optional(),
+  rank4Percent: z.number().min(0).max(100).nullable().optional(),
+  winnerTakesAll: z.boolean().optional(),
 });
 
 // ========== PATCH: 카테고리 수정 ==========

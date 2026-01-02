@@ -70,6 +70,10 @@ function createGameEmbed(
   embed.setDescription(`**상태: ${statusText[game.status]}**`);
 
   // 참가 정보
+  const participantText = game.maxPlayersPerTeam !== null
+    ? `${participants.length}/${game.maxPlayersPerTeam * game.teamCount}명`
+    : `${participants.length}명`;
+
   embed.addFields(
     {
       name: '💰 참가비',
@@ -78,7 +82,7 @@ function createGameEmbed(
     },
     {
       name: '👥 참가자',
-      value: `${participants.length}명`,
+      value: participantText,
       inline: true,
     },
     {
@@ -512,6 +516,9 @@ export async function handleGameJoin(
       case 'INSUFFICIENT_BALANCE':
         errorMessage = `잔액이 부족합니다.\n필요: ${joinResult.error.required.toLocaleString()} ${topyName}\n보유: ${joinResult.error.available.toLocaleString()} ${topyName}`;
         break;
+      case 'GAME_FULL':
+        errorMessage = `정원이 가득 찼습니다. (${joinResult.error.currentPlayers}/${joinResult.error.maxPlayers}명)`;
+        break;
     }
 
     await interaction.editReply({ content: `❌ ${errorMessage}` });
@@ -780,6 +787,8 @@ export async function handleGameTeamUsers(
 
     if (assignResult.error.type === 'NOT_PARTICIPANT') {
       errorMessage = `<@${assignResult.error.userId}>님은 참가자가 아닙니다.`;
+    } else if (assignResult.error.type === 'TEAM_FULL') {
+      errorMessage = `${assignResult.error.teamNumber}팀 정원을 초과합니다. (현재 ${assignResult.error.currentPlayers}/${assignResult.error.maxPlayers}명)`;
     }
 
     await interaction.update({ content: `❌ ${errorMessage}`, components: [] });
