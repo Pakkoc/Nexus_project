@@ -14,9 +14,7 @@ import {
   useUpdateCurrencySettings,
   useRoles,
   useTextChannels,
-  useShopPanelSettings,
-  useCreateTopyShopPanel,
-  useCreateRubyShopPanel,
+  useCreateShopPanel,
 } from "@/hooks/queries";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -91,12 +89,10 @@ export default function ShopV2Page() {
   const [newRoleId, setNewRoleId] = useState("");
   const [newRoleDescription, setNewRoleDescription] = useState("");
 
-  // Panel settings - separate for topy and ruby
-  const [topyChannelId, setTopyChannelId] = useState("");
-  const [rubyChannelId, setRubyChannelId] = useState("");
+  // Panel settings - unified shop panel
+  const [shopChannelId, setShopChannelId] = useState("");
 
   const { data: settings } = useCurrencySettings(guildId);
-  const { data: panelSettings } = useShopPanelSettings(guildId);
   const updateSettings = useUpdateCurrencySettings(guildId);
   const { data: items, isLoading } = useShopItemsV2(guildId);
 
@@ -108,21 +104,17 @@ export default function ShopV2Page() {
   const createItem = useCreateShopItemV2(guildId);
   const updateItem = useUpdateShopItemV2(guildId);
   const deleteItem = useDeleteShopItemV2(guildId);
-  const createTopyPanelMutation = useCreateTopyShopPanel(guildId);
-  const createRubyPanelMutation = useCreateRubyShopPanel(guildId);
+  const createShopPanelMutation = useCreateShopPanel(guildId);
 
   const topyName = settings?.topyName ?? "토피";
   const rubyName = settings?.rubyName ?? "루비";
 
   // 설치된 채널이 있으면 초기값으로 설정
   useEffect(() => {
-    if (panelSettings) {
-      const topyPanel = panelSettings.find(p => p.currencyType === 'topy');
-      const rubyPanel = panelSettings.find(p => p.currencyType === 'ruby');
-      if (topyPanel?.channelId) setTopyChannelId(topyPanel.channelId);
-      if (rubyPanel?.channelId) setRubyChannelId(rubyPanel.channelId);
+    if (settings?.shopChannelId) {
+      setShopChannelId(settings.shopChannelId);
     }
-  }, [panelSettings]);
+  }, [settings]);
 
   // 수수료 설정 초기화
   useEffect(() => {
@@ -348,37 +340,25 @@ export default function ShopV2Page() {
     }
   };
 
-  const handleCreateTopyPanel = async () => {
-    if (!topyChannelId) {
+  const handleCreateShopPanel = async () => {
+    if (!shopChannelId) {
       toast({ title: "채널을 선택해주세요.", variant: "destructive" });
       return;
     }
 
     try {
-      await createTopyPanelMutation.mutateAsync(topyChannelId);
-      toast({ title: `${topyName} 상점 패널이 설치되었습니다!` });
-    } catch {
-      toast({ title: "패널 설치에 실패했습니다.", variant: "destructive" });
-    }
-  };
-
-  const handleCreateRubyPanel = async () => {
-    if (!rubyChannelId) {
-      toast({ title: "채널을 선택해주세요.", variant: "destructive" });
-      return;
-    }
-
-    try {
-      await createRubyPanelMutation.mutateAsync(rubyChannelId);
-      toast({ title: `${rubyName} 상점 패널이 설치되었습니다!` });
+      await createShopPanelMutation.mutateAsync(shopChannelId);
+      toast({ title: "통합 상점 패널이 설치되었습니다!" });
     } catch {
       toast({ title: "패널 설치에 실패했습니다.", variant: "destructive" });
     }
   };
 
   // 패널 설정 가져오기
-  const topyPanel = panelSettings?.find(p => p.currencyType === 'topy');
-  const rubyPanel = panelSettings?.find(p => p.currencyType === 'ruby');
+  const shopPanel = settings ? {
+    channelId: settings.shopChannelId,
+    messageId: settings.shopMessageId,
+  } : null;
 
   const formContent = (
     <Form {...form}>
@@ -926,7 +906,7 @@ export default function ShopV2Page() {
         </DialogContent>
       </Dialog>
 
-      {/* Panel Setup - Dual Panels */}
+      {/* Panel Setup - Unified Shop */}
       <div className="bg-white/5 backdrop-blur-sm rounded-2xl border border-white/10 p-6">
         <div className="flex items-center gap-3 mb-6">
           <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500 to-orange-500 flex items-center justify-center">
@@ -934,118 +914,62 @@ export default function ShopV2Page() {
           </div>
           <div>
             <h3 className="font-semibold text-white">상점 패널 설치</h3>
-            <p className="text-white/50 text-sm">디스코드 채널에 상점 패널을 설치합니다</p>
+            <p className="text-white/50 text-sm">디스코드 채널에 통합 상점 패널을 설치합니다</p>
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {/* 토피 상점 패널 */}
-          <div className="bg-white/5 rounded-xl border border-amber-500/20 p-4">
-            <div className="flex items-center gap-2 mb-3">
-              <span className="font-medium text-white">💰 {topyName} 상점</span>
-              {topyPanel?.messageId && (
-                <Badge className="bg-green-500/20 text-green-400 border-0 text-xs">설치됨</Badge>
-              )}
-            </div>
-            <div className="flex flex-col sm:flex-row gap-2">
-              <Select value={topyChannelId} onValueChange={setTopyChannelId}>
-                <SelectTrigger className="bg-white/5 border-white/10 text-white flex-1">
-                  <SelectValue placeholder="채널 선택...">
-                    {topyChannelId && channels?.find(c => c.id === topyChannelId)
-                      ? `# ${channels.find(c => c.id === topyChannelId)?.name}`
-                      : topyChannelId
-                        ? "로딩 중..."
-                        : "채널 선택..."}
-                  </SelectValue>
-                </SelectTrigger>
-                <SelectContent>
-                  {channels?.map((channel) => (
-                    <SelectItem key={channel.id} value={channel.id}>
-                      # {channel.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <Button
-                onClick={handleCreateTopyPanel}
-                disabled={!topyChannelId || createTopyPanelMutation.isPending}
-                className="bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white"
-              >
-                {createTopyPanelMutation.isPending ? (
-                  <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
-                ) : topyPanel?.channelId === topyChannelId && topyPanel?.messageId ? (
-                  <>
-                    <Icon icon="solar:refresh-bold" className="h-4 w-4 mr-1" />
-                    갱신
-                  </>
-                ) : (
-                  <>
-                    <Icon icon="solar:add-circle-bold" className="h-4 w-4 mr-1" />
-                    설치
-                  </>
-                )}
-              </Button>
-            </div>
-            <p className="text-white/40 text-xs mt-2">
-              {topyPanel?.messageId
-                ? "다른 채널 선택 시 기존 패널 삭제"
-                : `${topyName}로 구매하는 상점 패널`}
-            </p>
+        {/* 통합 상점 패널 */}
+        <div className="bg-white/5 rounded-xl border border-purple-500/20 p-4">
+          <div className="flex items-center gap-2 mb-3">
+            <span className="font-medium text-white">🛒 통합 상점</span>
+            {shopPanel?.messageId && (
+              <Badge className="bg-green-500/20 text-green-400 border-0 text-xs">설치됨</Badge>
+            )}
           </div>
-
-          {/* 루비 상점 패널 */}
-          <div className="bg-white/5 rounded-xl border border-pink-500/20 p-4">
-            <div className="flex items-center gap-2 mb-3">
-              <span className="font-medium text-white">💎 {rubyName} 상점</span>
-              {rubyPanel?.messageId && (
-                <Badge className="bg-green-500/20 text-green-400 border-0 text-xs">설치됨</Badge>
+          <div className="flex flex-col sm:flex-row gap-2">
+            <Select value={shopChannelId} onValueChange={setShopChannelId}>
+              <SelectTrigger className="bg-white/5 border-white/10 text-white flex-1">
+                <SelectValue placeholder="채널 선택...">
+                  {shopChannelId && channels?.find(c => c.id === shopChannelId)
+                    ? `# ${channels.find(c => c.id === shopChannelId)?.name}`
+                    : shopChannelId
+                      ? "로딩 중..."
+                      : "채널 선택..."}
+                </SelectValue>
+              </SelectTrigger>
+              <SelectContent>
+                {channels?.map((channel) => (
+                  <SelectItem key={channel.id} value={channel.id}>
+                    # {channel.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Button
+              onClick={handleCreateShopPanel}
+              disabled={!shopChannelId || createShopPanelMutation.isPending}
+              className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white"
+            >
+              {createShopPanelMutation.isPending ? (
+                <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+              ) : shopPanel?.channelId === shopChannelId && shopPanel?.messageId ? (
+                <>
+                  <Icon icon="solar:refresh-bold" className="h-4 w-4 mr-1" />
+                  갱신
+                </>
+              ) : (
+                <>
+                  <Icon icon="solar:add-circle-bold" className="h-4 w-4 mr-1" />
+                  설치
+                </>
               )}
-            </div>
-            <div className="flex flex-col sm:flex-row gap-2">
-              <Select value={rubyChannelId} onValueChange={setRubyChannelId}>
-                <SelectTrigger className="bg-white/5 border-white/10 text-white flex-1">
-                  <SelectValue placeholder="채널 선택...">
-                    {rubyChannelId && channels?.find(c => c.id === rubyChannelId)
-                      ? `# ${channels.find(c => c.id === rubyChannelId)?.name}`
-                      : rubyChannelId
-                        ? "로딩 중..."
-                        : "채널 선택..."}
-                  </SelectValue>
-                </SelectTrigger>
-                <SelectContent>
-                  {channels?.map((channel) => (
-                    <SelectItem key={channel.id} value={channel.id}>
-                      # {channel.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <Button
-                onClick={handleCreateRubyPanel}
-                disabled={!rubyChannelId || createRubyPanelMutation.isPending}
-                className="bg-gradient-to-r from-pink-500 to-rose-500 hover:from-pink-600 hover:to-rose-600 text-white"
-              >
-                {createRubyPanelMutation.isPending ? (
-                  <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
-                ) : rubyPanel?.channelId === rubyChannelId && rubyPanel?.messageId ? (
-                  <>
-                    <Icon icon="solar:refresh-bold" className="h-4 w-4 mr-1" />
-                    갱신
-                  </>
-                ) : (
-                  <>
-                    <Icon icon="solar:add-circle-bold" className="h-4 w-4 mr-1" />
-                    설치
-                  </>
-                )}
-              </Button>
-            </div>
-            <p className="text-white/40 text-xs mt-2">
-              {rubyPanel?.messageId
-                ? "다른 채널 선택 시 기존 패널 삭제"
-                : `${rubyName}로 구매하는 상점 패널`}
-            </p>
+            </Button>
           </div>
+          <p className="text-white/40 text-xs mt-2">
+            {shopPanel?.messageId
+              ? "다른 채널 선택 시 기존 패널 삭제"
+              : `${topyName}/${rubyName} 상점을 버튼으로 전환하는 통합 패널`}
+          </p>
         </div>
       </div>
 
