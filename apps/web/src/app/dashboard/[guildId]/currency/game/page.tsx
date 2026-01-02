@@ -70,10 +70,12 @@ export default function GameCenterPage() {
       }
       setManagerRoleId(settings.managerRoleId);
       setEntryFee(settings.entryFee);
-      setRank1Percent(String(settings.rank1Percent));
-      setRank2Percent(String(settings.rank2Percent));
-      setRank3Percent(String(settings.rank3Percent));
-      setRank4Percent(String(settings.rank4Percent));
+      // rankRewards 객체에서 1-4등 비율 추출
+      const rewards = settings.rankRewards || { 1: 50, 2: 30, 3: 15, 4: 5 };
+      setRank1Percent(String(rewards[1] ?? 50));
+      setRank2Percent(String(rewards[2] ?? 30));
+      setRank3Percent(String(rewards[3] ?? 15));
+      setRank4Percent(String(rewards[4] ?? 5));
     }
   }, [settings]);
 
@@ -110,10 +112,7 @@ export default function GameCenterPage() {
       await updateSettingsMutation.mutateAsync({
         managerRoleId,
         entryFee,
-        rank1Percent: r1,
-        rank2Percent: r2,
-        rank3Percent: r3,
-        rank4Percent: r4,
+        rankRewards: { 1: r1, 2: r2, 3: r3, 4: r4 },
       });
       toast({ title: "설정이 저장되었습니다!" });
     } catch {

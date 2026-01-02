@@ -9,13 +9,10 @@ import { z } from "zod";
 
 const updateCategorySchema = z.object({
   name: z.string().min(1).max(50).optional(),
-  teamCount: z.number().min(2).max(10).optional(),
+  teamCount: z.number().min(2).max(100).optional(),
   enabled: z.boolean().optional(),
   maxPlayersPerTeam: z.number().min(1).max(25).nullable().optional(),
-  rank1Percent: z.number().min(0).max(100).nullable().optional(),
-  rank2Percent: z.number().min(0).max(100).nullable().optional(),
-  rank3Percent: z.number().min(0).max(100).nullable().optional(),
-  rank4Percent: z.number().min(0).max(100).nullable().optional(),
+  rankRewards: z.record(z.string(), z.number().min(0).max(100)).nullable().optional(),
   winnerTakesAll: z.boolean().optional(),
 });
 
@@ -47,9 +44,19 @@ export async function PATCH(
     db(); // Initialize pool
     const container = createContainer();
 
+    // Convert string keys to number keys for rankRewards
+    const updateDto = {
+      ...data,
+      rankRewards: data.rankRewards
+        ? Object.fromEntries(
+            Object.entries(data.rankRewards).map(([k, v]) => [parseInt(k, 10), v])
+          )
+        : data.rankRewards,
+    };
+
     const result = await container.gameService.updateCategory(
       parseInt(categoryId, 10),
-      data
+      updateDto
     );
 
     if (!result.success) {

@@ -1,4 +1,11 @@
 /**
+ * 순위별 보상 비율 타입
+ * 키: 순위 (1, 2, 3, ...)
+ * 값: 보상 비율 (%)
+ */
+export type RankRewards = Record<number, number>;
+
+/**
  * 내전 카테고리 엔티티
  */
 export interface GameCategory {
@@ -8,10 +15,7 @@ export interface GameCategory {
   teamCount: number;
   enabled: boolean;
   maxPlayersPerTeam: number | null; // 팀당 최대 인원 (null=제한없음)
-  rank1Percent: number | null; // 카테고리별 순위 비율 (null=전역설정)
-  rank2Percent: number | null;
-  rank3Percent: number | null;
-  rank4Percent: number | null;
+  rankRewards: RankRewards | null; // 순위별 보상 비율 (null=전역설정)
   winnerTakesAll: boolean; // 2팀 승자독식
   createdAt: Date;
 }
@@ -24,10 +28,7 @@ export interface CreateCategoryDto {
   name: string;
   teamCount: number;
   maxPlayersPerTeam?: number | null;
-  rank1Percent?: number | null;
-  rank2Percent?: number | null;
-  rank3Percent?: number | null;
-  rank4Percent?: number | null;
+  rankRewards?: RankRewards | null;
   winnerTakesAll?: boolean;
 }
 
@@ -39,9 +40,6 @@ export interface UpdateCategoryDto {
   teamCount?: number;
   enabled?: boolean;
   maxPlayersPerTeam?: number | null;
-  rank1Percent?: number | null;
-  rank2Percent?: number | null;
-  rank3Percent?: number | null;
-  rank4Percent?: number | null;
+  rankRewards?: RankRewards | null;
   winnerTakesAll?: boolean;
 }

@@ -1,3 +1,5 @@
+import type { RankRewards } from './game-category';
+
 /**
  * 내전 시스템 설정 엔티티
  */
@@ -7,10 +9,7 @@ export interface GameSettings {
   messageId: string | null;
   managerRoleId: string | null;
   entryFee: bigint;
-  rank1Percent: number;
-  rank2Percent: number;
-  rank3Percent: number;
-  rank4Percent: number;
+  rankRewards: RankRewards; // 순위별 보상 비율
   createdAt: Date;
   updatedAt: Date;
 }
@@ -24,10 +23,7 @@ export interface CreateGameSettingsDto {
   messageId?: string;
   managerRoleId?: string;
   entryFee?: bigint;
-  rank1Percent?: number;
-  rank2Percent?: number;
-  rank3Percent?: number;
-  rank4Percent?: number;
+  rankRewards?: RankRewards;
 }
 
 /**
@@ -38,20 +34,19 @@ export interface UpdateGameSettingsDto {
   messageId?: string | null;
   managerRoleId?: string | null;
   entryFee?: bigint;
-  rank1Percent?: number;
-  rank2Percent?: number;
-  rank3Percent?: number;
-  rank4Percent?: number;
+  rankRewards?: RankRewards;
 }
 
 /**
  * 기본값
  */
 export const DEFAULT_ENTRY_FEE = BigInt(100);
-export const DEFAULT_RANK1_PERCENT = 50;
-export const DEFAULT_RANK2_PERCENT = 30;
-export const DEFAULT_RANK3_PERCENT = 15;
-export const DEFAULT_RANK4_PERCENT = 5;
+export const DEFAULT_RANK_REWARDS: RankRewards = {
+  1: 50,
+  2: 30,
+  3: 15,
+  4: 5,
+};
 
 /**
  * 기본 내전 설정 생성
@@ -64,10 +59,7 @@ export function createDefaultGameSettings(guildId: string): GameSettings {
     messageId: null,
     managerRoleId: null,
     entryFee: DEFAULT_ENTRY_FEE,
-    rank1Percent: DEFAULT_RANK1_PERCENT,
-    rank2Percent: DEFAULT_RANK2_PERCENT,
-    rank3Percent: DEFAULT_RANK3_PERCENT,
-    rank4Percent: DEFAULT_RANK4_PERCENT,
+    rankRewards: { ...DEFAULT_RANK_REWARDS },
     createdAt: now,
     updatedAt: now,
   };
@@ -76,11 +68,7 @@ export function createDefaultGameSettings(guildId: string): GameSettings {
 /**
  * 순위 비율 합계 검증
  */
-export function validateRankPercents(
-  rank1: number,
-  rank2: number,
-  rank3: number,
-  rank4: number
-): boolean {
-  return rank1 + rank2 + rank3 + rank4 === 100;
+export function validateRankRewards(rankRewards: RankRewards): boolean {
+  const total = Object.values(rankRewards).reduce((sum, percent) => sum + percent, 0);
+  return total === 100;
 }

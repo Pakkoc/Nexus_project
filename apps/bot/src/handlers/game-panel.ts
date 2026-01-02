@@ -46,7 +46,7 @@ function createGameEmbed(
   game: Game,
   topyName: string,
   participants: GameParticipant[] = [],
-  rankPercents?: { rank1: number; rank2: number; rank3: number; rank4: number }
+  rankRewards?: Record<number, number>
 ): EmbedBuilder {
   const embed = new EmbedBuilder()
     .setColor(
@@ -92,13 +92,21 @@ function createGameEmbed(
     }
   );
 
-  // 보상 비율 표시
-  if (rankPercents && game.status === 'open') {
-    embed.addFields({
-      name: '🎁 순위별 보상',
-      value: `1등: ${rankPercents.rank1}% | 2등: ${rankPercents.rank2}% | 3등: ${rankPercents.rank3}% | 4등: ${rankPercents.rank4}%`,
-      inline: false,
-    });
+  // 보상 비율 표시 (동적 순위 지원)
+  if (rankRewards && game.status === 'open') {
+    const rewardEntries = Object.entries(rankRewards)
+      .sort(([a], [b]) => parseInt(a) - parseInt(b))
+      .filter(([, percent]) => percent > 0)
+      .map(([rank, percent]) => `${rank}등: ${percent}%`)
+      .join(' | ');
+
+    if (rewardEntries) {
+      embed.addFields({
+        name: '🎁 순위별 보상',
+        value: rewardEntries,
+        inline: false,
+      });
+    }
   }
 
   // 참가자 목록
@@ -323,9 +331,9 @@ export async function handleGamePanelCreate(
       .setCustomId('team_count')
       .setLabel('팀 수')
       .setStyle(TextInputStyle.Short)
-      .setPlaceholder('예: 2')
+      .setPlaceholder('예: 2 (최대 100)')
       .setValue('2')
-      .setMaxLength(2)
+      .setMaxLength(3)
       .setRequired(true);
 
     modal.addComponents(
@@ -415,18 +423,15 @@ export async function handleGameCreateModal(
     const teamCountStr = interaction.fields.getTextInputValue('team_count');
     teamCount = parseInt(teamCountStr) || 2;
     if (teamCount < 2) teamCount = 2;
-    if (teamCount > 8) teamCount = 8;
+    if (teamCount > 100) teamCount = 100;
   }
 
   // 설정 조회
   const settingsResult = await container.gameService.getSettings(guildId);
   const entryFee = settingsResult.success ? settingsResult.data.entryFee : BigInt(100);
-  const rankPercents = settingsResult.success ? {
-    rank1: settingsResult.data.rank1Percent,
-    rank2: settingsResult.data.rank2Percent,
-    rank3: settingsResult.data.rank3Percent,
-    rank4: settingsResult.data.rank4Percent,
-  } : { rank1: 50, rank2: 30, rank3: 15, rank4: 5 };
+  const rankRewards = settingsResult.success
+    ? settingsResult.data.rankRewards
+    : { 1: 50, 2: 30, 3: 15, 4: 5 };
 
   // 화폐 설정 조회
   const currencySettingsResult = await container.currencyService.getSettings(guildId);
@@ -453,7 +458,7 @@ export async function handleGameCreateModal(
 
   // 채널에 내전 메시지 전송
   const channel = interaction.channel as TextChannel;
-  const embed = createGameEmbed(game, topyName, [], rankPercents);
+  const embed = createGameEmbed(game, topyName, [], rankRewards);
   const buttons = createGameButtons(game, true);
 
   const message = await channel.send({
@@ -546,14 +551,11 @@ export async function handleGameJoin(
       const participants = participantsResult.success ? participantsResult.data : [];
 
       const settingsResult = await container.gameService.getSettings(guildId);
-      const rankPercents = settingsResult.success ? {
-        rank1: settingsResult.data.rank1Percent,
-        rank2: settingsResult.data.rank2Percent,
-        rank3: settingsResult.data.rank3Percent,
-        rank4: settingsResult.data.rank4Percent,
-      } : undefined;
+      const rankRewards = settingsResult.success
+        ? settingsResult.data.rankRewards
+        : undefined;
 
-      const embed = createGameEmbed(game, topyName, participants, rankPercents);
+      const embed = createGameEmbed(game, topyName, participants, rankRewards);
       const buttons = createGameButtons(game, true);
       await message.edit({ embeds: [embed], components: buttons });
     }
@@ -633,14 +635,11 @@ export async function handleGameLeave(
       const participants = participantsResult.success ? participantsResult.data : [];
 
       const settingsResult = await container.gameService.getSettings(guildId);
-      const rankPercents = settingsResult.success ? {
-        rank1: settingsResult.data.rank1Percent,
-        rank2: settingsResult.data.rank2Percent,
-        rank3: settingsResult.data.rank3Percent,
-        rank4: settingsResult.data.rank4Percent,
-      } : undefined;
+      const rankRewards = settingsResult.success
+        ? settingsResult.data.rankRewards
+        : undefined;
 
-      const embed = createGameEmbed(game, topyName, participants, rankPercents);
+      const embed = createGameEmbed(game, topyName, participants, rankRewards);
       const buttons = createGameButtons(game, true);
       await message.edit({ embeds: [embed], components: buttons });
     }

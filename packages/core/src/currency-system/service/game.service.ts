@@ -7,12 +7,10 @@ import type {
 } from '../domain/game-settings';
 import {
   DEFAULT_ENTRY_FEE,
-  DEFAULT_RANK1_PERCENT,
-  DEFAULT_RANK2_PERCENT,
-  DEFAULT_RANK3_PERCENT,
-  DEFAULT_RANK4_PERCENT,
+  DEFAULT_RANK_REWARDS,
   createDefaultGameSettings,
 } from '../domain/game-settings';
+import type { RankRewards } from '../domain/game-category';
 import type { Game, CreateGameDto, GameResult } from '../domain/game';
 import { calculateRankReward, calculatePerPlayerReward } from '../domain/game';
 import type { GameParticipant, RewardResult } from '../domain/game-participant';
@@ -63,10 +61,7 @@ export class GameService {
         channelId: dto.channelId ?? undefined,
         messageId: dto.messageId ?? undefined,
         entryFee: dto.entryFee,
-        rank1Percent: dto.rank1Percent,
-        rank2Percent: dto.rank2Percent,
-        rank3Percent: dto.rank3Percent,
-        rank4Percent: dto.rank4Percent,
+        rankRewards: dto.rankRewards,
       });
 
       return Result.ok(result);
@@ -611,7 +606,7 @@ export class GameService {
       }
 
       // 4. 순위 비율 결정
-      let rankPercents: Record<number, number>;
+      let rankPercents: RankRewards;
 
       // Case 1: 2팀 게임 + 승자독식 모드 (기본값: true)
       if (game.teamCount === 2 && (category?.winnerTakesAll ?? true)) {
@@ -619,25 +614,14 @@ export class GameService {
         rankPercents = { 1: 100, 2: 0 };
       }
       // Case 2: 카테고리에 커스텀 비율이 설정된 경우
-      else if (category && category.rank1Percent !== null) {
-        const rawRankPercents = {
-          1: category.rank1Percent ?? 0,
-          2: category.rank2Percent ?? 0,
-          3: category.rank3Percent ?? 0,
-          4: category.rank4Percent ?? 0,
-        };
-        rankPercents = this.normalizeRankPercents(rawRankPercents, results);
+      else if (category?.rankRewards) {
+        rankPercents = this.normalizeRankPercents(category.rankRewards, results);
       }
-      // Case 3: 전역 설정 사용 (기존 로직)
+      // Case 3: 전역 설정 사용
       else {
         const settings = await this.gameRepo.findSettingsByGuildId(guildId);
-        const rawRankPercents = {
-          1: settings?.rank1Percent ?? DEFAULT_RANK1_PERCENT,
-          2: settings?.rank2Percent ?? DEFAULT_RANK2_PERCENT,
-          3: settings?.rank3Percent ?? DEFAULT_RANK3_PERCENT,
-          4: settings?.rank4Percent ?? DEFAULT_RANK4_PERCENT,
-        };
-        rankPercents = this.normalizeRankPercents(rawRankPercents, results);
+        const rawRankRewards = settings?.rankRewards ?? { ...DEFAULT_RANK_REWARDS };
+        rankPercents = this.normalizeRankPercents(rawRankRewards, results);
       }
 
       // 4. 게임 종료 처리

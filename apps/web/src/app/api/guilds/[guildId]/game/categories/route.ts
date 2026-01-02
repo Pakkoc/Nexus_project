@@ -9,12 +9,9 @@ import { z } from "zod";
 
 const createCategorySchema = z.object({
   name: z.string().min(1).max(50),
-  teamCount: z.number().min(2).max(10),
+  teamCount: z.number().min(2).max(100),
   maxPlayersPerTeam: z.number().min(1).max(25).nullable().optional(),
-  rank1Percent: z.number().min(0).max(100).nullable().optional(),
-  rank2Percent: z.number().min(0).max(100).nullable().optional(),
-  rank3Percent: z.number().min(0).max(100).nullable().optional(),
-  rank4Percent: z.number().min(0).max(100).nullable().optional(),
+  rankRewards: z.record(z.string(), z.number().min(0).max(100)).nullable().optional(),
   winnerTakesAll: z.boolean().optional(),
 });
 
@@ -77,19 +74,23 @@ export async function POST(
       );
     }
 
-    const { name, teamCount, maxPlayersPerTeam, rank1Percent, rank2Percent, rank3Percent, rank4Percent, winnerTakesAll } = parseResult.data;
+    const { name, teamCount, maxPlayersPerTeam, rankRewards, winnerTakesAll } = parseResult.data;
     db(); // Initialize pool
     const container = createContainer();
+
+    // Convert string keys to number keys for rankRewards
+    const parsedRankRewards = rankRewards
+      ? Object.fromEntries(
+          Object.entries(rankRewards).map(([k, v]) => [parseInt(k, 10), v])
+        )
+      : null;
 
     const result = await container.gameService.createCategory({
       guildId,
       name,
       teamCount,
       maxPlayersPerTeam,
-      rank1Percent,
-      rank2Percent,
-      rank3Percent,
-      rank4Percent,
+      rankRewards: parsedRankRewards,
       winnerTakesAll,
     });
 

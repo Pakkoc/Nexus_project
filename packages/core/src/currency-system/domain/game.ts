@@ -51,16 +51,6 @@ export interface GameResult {
 }
 
 /**
- * 순위별 보상 비율
- */
-export interface RankRewards {
-  rank1Percent: number;
-  rank2Percent: number;
-  rank3Percent: number;
-  rank4Percent: number;
-}
-
-/**
  * 순위별 보상 계산
  */
 export function calculateRankReward(

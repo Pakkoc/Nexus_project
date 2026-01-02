@@ -14,7 +14,9 @@ import type {
   GameCategory,
   CreateCategoryDto,
   UpdateCategoryDto,
+  RankRewards,
 } from '@topia/core';
+import { DEFAULT_RANK_REWARDS } from '@topia/core';
 
 // ========== Row Types ==========
 
@@ -24,10 +26,7 @@ interface GameSettingsRow extends RowDataPacket {
   message_id: string | null;
   manager_role_id: string | null;
   entry_fee: string;
-  rank1_percent: number;
-  rank2_percent: number;
-  rank3_percent: number;
-  rank4_percent: number;
+  rank_rewards: string | null; // JSON string
   created_at: Date;
   updated_at: Date;
 }
@@ -69,10 +68,7 @@ interface GameCategoryRow extends RowDataPacket {
   team_count: number;
   enabled: number;
   max_players_per_team: number | null;
-  rank1_percent: number | null;
-  rank2_percent: number | null;
-  rank3_percent: number | null;
-  rank4_percent: number | null;
+  rank_rewards: string | null; // JSON string
   winner_takes_all: number;
   created_at: Date;
 }
@@ -89,6 +85,21 @@ interface GameResultRow extends RowDataPacket {
 
 // ========== Row to Entity ==========
 
+function parseRankRewards(json: string | null): RankRewards {
+  if (!json) return { ...DEFAULT_RANK_REWARDS };
+  try {
+    const parsed = JSON.parse(json);
+    // Convert string keys to numbers
+    const result: RankRewards = {};
+    for (const [key, value] of Object.entries(parsed)) {
+      result[parseInt(key, 10)] = value as number;
+    }
+    return result;
+  } catch {
+    return { ...DEFAULT_RANK_REWARDS };
+  }
+}
+
 function settingsRowToEntity(row: GameSettingsRow): GameSettings {
   return {
     guildId: row.guild_id,
@@ -96,10 +107,7 @@ function settingsRowToEntity(row: GameSettingsRow): GameSettings {
     messageId: row.message_id,
     managerRoleId: row.manager_role_id,
     entryFee: BigInt(row.entry_fee),
-    rank1Percent: row.rank1_percent,
-    rank2Percent: row.rank2_percent,
-    rank3Percent: row.rank3_percent,
-    rank4Percent: row.rank4_percent,
+    rankRewards: parseRankRewards(row.rank_rewards),
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
@@ -147,10 +155,7 @@ function categoryRowToEntity(row: GameCategoryRow): GameCategory {
     teamCount: row.team_count,
     enabled: row.enabled === 1,
     maxPlayersPerTeam: row.max_players_per_team,
-    rank1Percent: row.rank1_percent,
-    rank2Percent: row.rank2_percent,
-    rank3Percent: row.rank3_percent,
-    rank4Percent: row.rank4_percent,
+    rankRewards: row.rank_rewards ? parseRankRewards(row.rank_rewards) : null,
     winnerTakesAll: row.winner_takes_all === 1,
     createdAt: row.created_at,
   };
@@ -189,18 +194,19 @@ export class GameRepository implements GameRepositoryPort {
   }
 
   async upsertSettings(dto: CreateGameSettingsDto): Promise<GameSettings> {
+    const rankRewardsJson = dto.rankRewards
+      ? JSON.stringify(dto.rankRewards)
+      : JSON.stringify(DEFAULT_RANK_REWARDS);
+
     await this.pool.query<ResultSetHeader>(
-      `INSERT INTO game_settings (guild_id, channel_id, message_id, manager_role_id, entry_fee, rank1_percent, rank2_percent, rank3_percent, rank4_percent)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `INSERT INTO game_settings (guild_id, channel_id, message_id, manager_role_id, entry_fee, rank_rewards)
+       VALUES (?, ?, ?, ?, ?, ?)
        ON DUPLICATE KEY UPDATE
          channel_id = COALESCE(VALUES(channel_id), channel_id),
          message_id = COALESCE(VALUES(message_id), message_id),
          manager_role_id = COALESCE(VALUES(manager_role_id), manager_role_id),
          entry_fee = COALESCE(VALUES(entry_fee), entry_fee),
-         rank1_percent = COALESCE(VALUES(rank1_percent), rank1_percent),
-         rank2_percent = COALESCE(VALUES(rank2_percent), rank2_percent),
-         rank3_percent = COALESCE(VALUES(rank3_percent), rank3_percent),
-         rank4_percent = COALESCE(VALUES(rank4_percent), rank4_percent),
+         rank_rewards = COALESCE(VALUES(rank_rewards), rank_rewards),
          updated_at = CURRENT_TIMESTAMP`,
       [
         dto.guildId,
@@ -208,10 +214,7 @@ export class GameRepository implements GameRepositoryPort {
         dto.messageId ?? null,
         dto.managerRoleId ?? null,
         dto.entryFee?.toString() ?? '100',
-        dto.rank1Percent ?? 50,
-        dto.rank2Percent ?? 30,
-        dto.rank3Percent ?? 15,
-        dto.rank4Percent ?? 5,
+        rankRewardsJson,
       ]
     );
 
@@ -242,21 +245,9 @@ export class GameRepository implements GameRepositoryPort {
       updates.push('entry_fee = ?');
       values.push(dto.entryFee.toString());
     }
-    if (dto.rank1Percent !== undefined) {
-      updates.push('rank1_percent = ?');
-      values.push(dto.rank1Percent);
-    }
-    if (dto.rank2Percent !== undefined) {
-      updates.push('rank2_percent = ?');
-      values.push(dto.rank2Percent);
-    }
-    if (dto.rank3Percent !== undefined) {
-      updates.push('rank3_percent = ?');
-      values.push(dto.rank3Percent);
-    }
-    if (dto.rank4Percent !== undefined) {
-      updates.push('rank4_percent = ?');
-      values.push(dto.rank4Percent);
+    if (dto.rankRewards !== undefined) {
+      updates.push('rank_rewards = ?');
+      values.push(JSON.stringify(dto.rankRewards));
     }
 
     if (updates.length === 0) {
@@ -296,18 +287,17 @@ export class GameRepository implements GameRepositoryPort {
   // ========== 카테고리 ==========
 
   async createCategory(dto: CreateCategoryDto): Promise<GameCategory> {
+    const rankRewardsJson = dto.rankRewards ? JSON.stringify(dto.rankRewards) : null;
+
     const [result] = await this.pool.query<ResultSetHeader>(
-      `INSERT INTO game_categories (guild_id, name, team_count, max_players_per_team, rank1_percent, rank2_percent, rank3_percent, rank4_percent, winner_takes_all)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      `INSERT INTO game_categories (guild_id, name, team_count, max_players_per_team, rank_rewards, winner_takes_all)
+       VALUES (?, ?, ?, ?, ?, ?)`,
       [
         dto.guildId,
         dto.name,
         dto.teamCount,
         dto.maxPlayersPerTeam ?? null,
-        dto.rank1Percent ?? null,
-        dto.rank2Percent ?? null,
-        dto.rank3Percent ?? null,
-        dto.rank4Percent ?? null,
+        rankRewardsJson,
         dto.winnerTakesAll ? 1 : 0,
       ]
     );
@@ -367,21 +357,9 @@ export class GameRepository implements GameRepositoryPort {
       updates.push('max_players_per_team = ?');
       values.push(dto.maxPlayersPerTeam);
     }
-    if (dto.rank1Percent !== undefined) {
-      updates.push('rank1_percent = ?');
-      values.push(dto.rank1Percent);
-    }
-    if (dto.rank2Percent !== undefined) {
-      updates.push('rank2_percent = ?');
-      values.push(dto.rank2Percent);
-    }
-    if (dto.rank3Percent !== undefined) {
-      updates.push('rank3_percent = ?');
-      values.push(dto.rank3Percent);
-    }
-    if (dto.rank4Percent !== undefined) {
-      updates.push('rank4_percent = ?');
-      values.push(dto.rank4Percent);
+    if (dto.rankRewards !== undefined) {
+      updates.push('rank_rewards = ?');
+      values.push(dto.rankRewards ? JSON.stringify(dto.rankRewards) : null);
     }
     if (dto.winnerTakesAll !== undefined) {
       updates.push('winner_takes_all = ?');

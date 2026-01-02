@@ -1265,10 +1265,14 @@ async function main() {
 
       // 게임 설정 조회
       const entryFee = gameSettings?.entryFee ?? 100n;
-      const rank1Percent = gameSettings?.rank1Percent ?? 50;
-      const rank2Percent = gameSettings?.rank2Percent ?? 30;
-      const rank3Percent = gameSettings?.rank3Percent ?? 15;
-      const rank4Percent = gameSettings?.rank4Percent ?? 5;
+      const rankRewards = gameSettings?.rankRewards ?? { 1: 50, 2: 30, 3: 15, 4: 5 };
+
+      // 보상 비율 문자열 생성 (동적 순위 지원)
+      const rankRewardsText = Object.entries(rankRewards)
+        .sort(([a], [b]) => parseInt(a) - parseInt(b))
+        .filter(([, percent]) => percent > 0)
+        .map(([rank, percent]) => `${rank}등 ${percent}%`)
+        .join(' | ');
 
       // 패널 Embed 생성
       const embed = new EmbedBuilder()
@@ -1277,7 +1281,7 @@ async function main() {
         .setDescription(
           '참가비를 내고 내전에 참가하세요!\n\n' +
           `💰 **참가비**: ${entryFee.toLocaleString()} ${topyName}\n` +
-          `🏆 **보상 비율**: 1등 ${rank1Percent}% | 2등 ${rank2Percent}% | 3등 ${rank3Percent}% | 4등 ${rank4Percent}%`
+          `🏆 **보상 비율**: ${rankRewardsText}`
         )
         .addFields(
           { name: '📋 참가 방법', value: '1. 내전 메시지에서 참가 버튼 클릭\n2. 참가비 자동 차감\n3. 관리자가 팀 배정\n4. 경기 후 순위 보상', inline: false }
