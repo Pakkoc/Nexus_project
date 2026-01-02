@@ -1,0 +1,2 @@
+guild_id	channel_id	message_id	manager_role_id	bet_fee_percent	min_bet	max_bet	created_at	updated_at
+1450116727332536352	1454809075534659587	1454861086242115782	NULL	20	10	1000	2025-12-28 23:53:24	2025-12-31 06:52:51

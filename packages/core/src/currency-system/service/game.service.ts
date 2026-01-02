@@ -562,12 +562,27 @@ export class GameService {
 
       // 3. 설정 조회 (순위별 보상 비율)
       const settings = await this.gameRepo.findSettingsByGuildId(guildId);
-      const rankPercents = {
+      const rawRankPercents = {
         1: settings?.rank1Percent ?? DEFAULT_RANK1_PERCENT,
         2: settings?.rank2Percent ?? DEFAULT_RANK2_PERCENT,
         3: settings?.rank3Percent ?? DEFAULT_RANK3_PERCENT,
         4: settings?.rank4Percent ?? DEFAULT_RANK4_PERCENT,
       };
+
+      // 3-1. 사용되는 순위 비율만 합산하여 정규화 (2팀일 때 1,2등만 / 4팀일 때 1,2,3,4등)
+      // 예: 2팀 게임 → 1등 50%, 2등 30% → 합계 80% → 정규화: 1등 62.5%, 2등 37.5%
+      const usedRanks = results.map((r) => r.rank);
+      const totalUsedPercent = usedRanks.reduce(
+        (sum, rank) => sum + (rawRankPercents[rank as 1 | 2 | 3 | 4] || 0),
+        0
+      );
+
+      // 정규화된 비율 계산 (합계 100%)
+      const rankPercents: Record<number, number> = {};
+      for (const rank of usedRanks) {
+        const rawPercent = rawRankPercents[rank as 1 | 2 | 3 | 4] || 0;
+        rankPercents[rank] = totalUsedPercent > 0 ? (rawPercent * 100) / totalUsedPercent : 0;
+      }
 
       // 4. 게임 종료 처리
       const finishedGame = await this.gameRepo.finishGame(gameId);
@@ -580,7 +595,7 @@ export class GameService {
 
       for (const result of results) {
         const { teamNumber, rank } = result;
-        const rewardPercent = rankPercents[rank as 1 | 2 | 3 | 4] || 0;
+        const rewardPercent = rankPercents[rank] || 0;
 
         if (rewardPercent === 0) continue;
 
