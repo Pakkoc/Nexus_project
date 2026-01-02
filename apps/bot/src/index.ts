@@ -44,6 +44,7 @@ import {
 import { commands, type Command } from './commands';
 import { startExpiredItemsScheduler } from './schedulers/expired-items.scheduler';
 import { startMonthlyTaxScheduler } from './schedulers/monthly-tax.scheduler';
+import { startDataRetentionScheduler } from './schedulers/data-retention.scheduler';
 
 const client = new Client({
   intents: [
@@ -129,6 +130,9 @@ async function main() {
 
     // 월말 세금 스케줄러 시작
     startMonthlyTaxScheduler(client, container);
+
+    // 데이터 보존 기간 만료 스케줄러 시작
+    startDataRetentionScheduler(container);
 
     // Register all guilds the bot is currently in
     const pool = getPool();
@@ -237,6 +241,39 @@ async function main() {
       }
     } catch (err) {
       console.error(`[INIT] Error initializing user ${userId}:`, err);
+    }
+
+    // 탈퇴 기록 삭제 (재입장 시 데이터 보존)
+    try {
+      const deleteResult = await container.dataRetentionService.handleMemberJoin(guildId, userId);
+      if (deleteResult.success) {
+        console.log(`[DATA_RETENTION] Cleared left member record for ${userId} in ${guildId} (rejoined)`);
+      }
+    } catch (err) {
+      console.error(`[DATA_RETENTION] Error clearing left member record:`, err);
+    }
+  });
+
+  // Member leave event - 탈퇴 유저 데이터 보존 기간 추적
+  client.on(Events.GuildMemberRemove, async (member) => {
+    if (member.user.bot) return;
+
+    const guildId = member.guild.id;
+    const userId = member.id;
+
+    console.log(`👋 Member left: ${member.user.tag} from ${member.guild.name}`);
+
+    try {
+      const result = await container.dataRetentionService.handleMemberLeave(guildId, userId);
+      if (result.success) {
+        const settingsResult = await container.dataRetentionService.getSettings(guildId);
+        const retentionDays = settingsResult.success ? settingsResult.data.retentionDays : 3;
+        console.log(`[DATA_RETENTION] User ${userId} left ${guildId}, data will be deleted in ${retentionDays} days`);
+      } else {
+        console.error(`[DATA_RETENTION] Failed to record member leave:`, result.error);
+      }
+    } catch (err) {
+      console.error(`[DATA_RETENTION] Error recording member leave:`, err);
     }
   });
 

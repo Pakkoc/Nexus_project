@@ -10,6 +10,7 @@ import type {
   GameService,
   TaxService,
   ShopPanelService,
+  DataRetentionService,
 } from '@topia/core';
 
 export interface Container {
@@ -33,4 +34,7 @@ export interface Container {
 
   // 상점 패널
   shopPanelService: ShopPanelService;
+
+  // 데이터 보존
+  dataRetentionService: DataRetentionService;
 }

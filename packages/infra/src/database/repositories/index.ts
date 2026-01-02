@@ -24,3 +24,8 @@ export * from './game.repository';
 
 // 상점 패널
 export * from './shop-panel-settings.repository';
+
+// 데이터 보존
+export * from './data-retention-settings.repository';
+export * from './left-member.repository';
+export * from './user-data-cleanup.repository';

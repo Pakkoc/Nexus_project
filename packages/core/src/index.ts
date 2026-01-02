@@ -6,3 +6,6 @@ export * from './xp-system';
 
 // Currency System
 export * from './currency-system';
+
+// Data Retention System
+export * from './data-retention';
