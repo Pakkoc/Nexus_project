@@ -1011,4 +1011,87 @@ export class CurrencyService {
       return Result.ok({ newBalance, currencyType: 'ruby' });
     }
   }
+
+  /**
+   * 관리자 화폐 차감 (화폐 관리자만 사용 가능)
+   */
+  async adminRemoveCurrency(
+    guildId: string,
+    managerUserId: string,
+    targetUserId: string,
+    amount: bigint,
+    currencyType: CurrencyType,
+    description?: string
+  ): Promise<Result<AdminGrantResult, CurrencyError>> {
+    // 1. 화폐 관리자 여부 확인
+    const isManagerResult = await this.isCurrencyManager(guildId, managerUserId);
+    if (!isManagerResult.success) {
+      return Result.err(isManagerResult.error);
+    }
+    if (!isManagerResult.data) {
+      return Result.err({ type: 'NOT_CURRENCY_MANAGER' });
+    }
+
+    // 2. 금액 검증
+    if (amount <= BigInt(0)) {
+      return Result.err({ type: 'INVALID_AMOUNT', message: '차감 금액은 0보다 커야 합니다.' });
+    }
+
+    // 3. 화폐 차감
+    if (currencyType === 'topy') {
+      // 잔액 확인
+      const walletResult = await this.topyWalletRepo.findByUser(guildId, targetUserId);
+      if (!walletResult.success) {
+        return Result.err({ type: 'REPOSITORY_ERROR', cause: walletResult.error });
+      }
+      const currentBalance = walletResult.data?.balance ?? BigInt(0);
+      if (currentBalance < amount) {
+        return Result.err({ type: 'INSUFFICIENT_BALANCE', required: amount, available: currentBalance });
+      }
+
+      const subtractResult = await this.topyWalletRepo.updateBalance(guildId, targetUserId, amount, 'subtract');
+      if (!subtractResult.success) {
+        return Result.err({ type: 'REPOSITORY_ERROR', cause: subtractResult.error });
+      }
+
+      const newBalance = subtractResult.data.balance;
+
+      // 거래 기록 저장
+      await this.transactionRepo.save(
+        createTransaction(guildId, targetUserId, 'topy', 'admin_remove', amount, newBalance, {
+          relatedUserId: managerUserId,
+          description: description ?? '관리자 차감',
+        })
+      );
+
+      return Result.ok({ newBalance, currencyType: 'topy' });
+    } else {
+      // 잔액 확인
+      const walletResult = await this.rubyWalletRepo.findByUser(guildId, targetUserId);
+      if (!walletResult.success) {
+        return Result.err({ type: 'REPOSITORY_ERROR', cause: walletResult.error });
+      }
+      const currentBalance = walletResult.data?.balance ?? BigInt(0);
+      if (currentBalance < amount) {
+        return Result.err({ type: 'INSUFFICIENT_BALANCE', required: amount, available: currentBalance });
+      }
+
+      const subtractResult = await this.rubyWalletRepo.updateBalance(guildId, targetUserId, amount, 'subtract');
+      if (!subtractResult.success) {
+        return Result.err({ type: 'REPOSITORY_ERROR', cause: subtractResult.error });
+      }
+
+      const newBalance = subtractResult.data.balance;
+
+      // 거래 기록 저장
+      await this.transactionRepo.save(
+        createTransaction(guildId, targetUserId, 'ruby', 'admin_remove', amount, newBalance, {
+          relatedUserId: managerUserId,
+          description: description ?? '관리자 차감',
+        })
+      );
+
+      return Result.ok({ newBalance, currencyType: 'ruby' });
+    }
+  }
 }

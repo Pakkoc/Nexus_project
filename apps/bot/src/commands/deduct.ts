@@ -1,0 +1,181 @@
+import {
+  SlashCommandBuilder,
+  EmbedBuilder,
+} from 'discord.js';
+import type { Command } from './types';
+
+export const deductCommand: Command = {
+  data: new SlashCommandBuilder()
+    .setName('차감')
+    .setDescription('유저의 화폐를 차감합니다 (화폐 관리자 전용)')
+    .addUserOption(option =>
+      option
+        .setName('유저')
+        .setDescription('차감할 유저')
+        .setRequired(true)
+    )
+    .addIntegerOption(option =>
+      option
+        .setName('금액')
+        .setDescription('차감할 금액')
+        .setRequired(true)
+        .setMinValue(1)
+    )
+    .addStringOption(option =>
+      option
+        .setName('화폐')
+        .setDescription('차감할 화폐 종류')
+        .setRequired(true)
+        .setAutocomplete(true)
+    )
+    .addStringOption(option =>
+      option
+        .setName('사유')
+        .setDescription('차감 사유 (선택)')
+        .setRequired(false)
+    ),
+
+  async autocomplete(interaction, container) {
+    const guildId = interaction.guildId;
+    if (!guildId) {
+      await interaction.respond([]);
+      return;
+    }
+
+    const focusedOption = interaction.options.getFocused(true);
+
+    if (focusedOption.name === '화폐') {
+      try {
+        // 서버의 화폐 설정 조회
+        const settingsResult = await container.currencyService.getSettings(guildId);
+        const topyName = settingsResult.success && settingsResult.data?.topyName || '토피';
+        const rubyName = settingsResult.success && settingsResult.data?.rubyName || '루비';
+
+        await interaction.respond([
+          { name: topyName, value: 'topy' },
+          { name: rubyName, value: 'ruby' },
+        ]);
+      } catch {
+        await interaction.respond([
+          { name: '토피', value: 'topy' },
+          { name: '루비', value: 'ruby' },
+        ]);
+      }
+    } else {
+      await interaction.respond([]);
+    }
+  },
+
+  async execute(interaction, container) {
+    const guildId = interaction.guildId;
+    const managerId = interaction.user.id;
+    const targetUser = interaction.options.getUser('유저', true);
+    const amount = interaction.options.getInteger('금액', true);
+    const currencyType = interaction.options.getString('화폐', true) as 'topy' | 'ruby';
+    const description = interaction.options.getString('사유') ?? undefined;
+
+    if (!guildId) {
+      await interaction.reply({
+        content: '서버에서만 사용할 수 있습니다.',
+        ephemeral: true,
+      });
+      return;
+    }
+
+    // 봇 차감 불가
+    if (targetUser.bot) {
+      await interaction.reply({
+        content: '봇의 화폐는 차감할 수 없습니다.',
+        ephemeral: true,
+      });
+      return;
+    }
+
+    await interaction.deferReply();
+
+    try {
+      // 화폐 설정 가져오기
+      const settingsResult = await container.currencyService.getSettings(guildId);
+      const topyName = settingsResult.success && settingsResult.data?.topyName || '토피';
+      const rubyName = settingsResult.success && settingsResult.data?.rubyName || '루비';
+      const currencyName = currencyType === 'topy' ? topyName : rubyName;
+
+      const result = await container.currencyService.adminRemoveCurrency(
+        guildId,
+        managerId,
+        targetUser.id,
+        BigInt(amount),
+        currencyType,
+        description
+      );
+
+      if (!result.success) {
+        let errorMessage = '차감 처리 중 오류가 발생했습니다.';
+
+        switch (result.error.type) {
+          case 'NOT_CURRENCY_MANAGER':
+            errorMessage = '화폐 관리자만 이 명령어를 사용할 수 있습니다.';
+            break;
+          case 'INVALID_AMOUNT':
+            errorMessage = result.error.message;
+            break;
+          case 'INSUFFICIENT_BALANCE':
+            const available = result.error.available;
+            errorMessage = `잔액이 부족합니다.\n보유: ${available.toLocaleString()} ${currencyName}`;
+            break;
+        }
+
+        const embed = new EmbedBuilder()
+          .setColor(0xFF0000)
+          .setTitle('❌ 차감 실패')
+          .setDescription(errorMessage)
+          .setTimestamp();
+
+        await interaction.editReply({ embeds: [embed] });
+        return;
+      }
+
+      const { newBalance } = result.data;
+
+      const embed = new EmbedBuilder()
+        .setColor(0xFF6B6B)
+        .setTitle('✅ 차감 완료!')
+        .setDescription(
+          `**${targetUser.displayName}**님의 **${amount.toLocaleString()} ${currencyName}**를 차감했습니다.`
+        )
+        .addFields(
+          { name: '💰 차감 후 잔액', value: `${newBalance.toLocaleString()} ${currencyName}`, inline: true },
+        );
+
+      if (description) {
+        embed.addFields({ name: '📝 사유', value: description, inline: false });
+      }
+
+      embed.setTimestamp();
+
+      await interaction.editReply({ embeds: [embed] });
+
+      // 차감 대상에게 DM 알림 (실패해도 무시)
+      const guildName = interaction.guild?.name ?? '서버';
+      const reasonText = description ? `\n사유: ${description}` : '';
+
+      const dmEmbed = new EmbedBuilder()
+        .setColor(0xFF6B6B)
+        .setTitle('💸 차감 알림')
+        .setDescription(
+          `**${guildName}**에서 관리자가 **${amount.toLocaleString()} ${currencyName}**를 차감했습니다.${reasonText}`
+        )
+        .addFields(
+          { name: '💰 현재 잔액', value: `${newBalance.toLocaleString()} ${currencyName}`, inline: true },
+        )
+        .setTimestamp();
+
+      targetUser.send({ embeds: [dmEmbed] }).catch(() => {});
+    } catch (error) {
+      console.error('차감 명령어 오류:', error);
+      await interaction.editReply({
+        content: '차감 처리 중 오류가 발생했습니다.',
+      });
+    }
+  },
+};
