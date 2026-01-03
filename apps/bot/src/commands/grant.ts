@@ -37,20 +37,32 @@ export const grantCommand: Command = {
 
   async autocomplete(interaction, container) {
     const guildId = interaction.guildId;
-    if (!guildId) return;
+    if (!guildId) {
+      await interaction.respond([]);
+      return;
+    }
 
     const focusedOption = interaction.options.getFocused(true);
 
     if (focusedOption.name === '화폐') {
-      // 서버의 화폐 설정 조회
-      const settingsResult = await container.currencyService.getSettings(guildId);
-      const topyName = settingsResult.success && settingsResult.data?.topyName || '토피';
-      const rubyName = settingsResult.success && settingsResult.data?.rubyName || '루비';
+      try {
+        // 서버의 화폐 설정 조회
+        const settingsResult = await container.currencyService.getSettings(guildId);
+        const topyName = settingsResult.success && settingsResult.data?.topyName || '토피';
+        const rubyName = settingsResult.success && settingsResult.data?.rubyName || '루비';
 
-      await interaction.respond([
-        { name: topyName, value: 'topy' },
-        { name: rubyName, value: 'ruby' },
-      ]);
+        await interaction.respond([
+          { name: topyName, value: 'topy' },
+          { name: rubyName, value: 'ruby' },
+        ]);
+      } catch {
+        await interaction.respond([
+          { name: '토피', value: 'topy' },
+          { name: '루비', value: 'ruby' },
+        ]);
+      }
+    } else {
+      await interaction.respond([]);
     }
   },
 
@@ -138,6 +150,23 @@ export const grantCommand: Command = {
       embed.setTimestamp();
 
       await interaction.editReply({ embeds: [embed] });
+
+      // 받는 사람에게 DM 알림 (실패해도 무시)
+      const guildName = interaction.guild?.name ?? '서버';
+      const reasonText = description ? `\n사유: ${description}` : '';
+
+      const dmEmbed = new EmbedBuilder()
+        .setColor(0x00FF00)
+        .setTitle('💰 지급 알림')
+        .setDescription(
+          `**${guildName}**에서 관리자가 **${amount.toLocaleString()} ${currencyName}**를 지급했습니다.${reasonText}`
+        )
+        .addFields(
+          { name: '💰 현재 잔액', value: `${newBalance.toLocaleString()} ${currencyName}`, inline: true },
+        )
+        .setTimestamp();
+
+      targetUser.send({ embeds: [dmEmbed] }).catch(() => {});
     } catch (error) {
       console.error('지급 명령어 오류:', error);
       await interaction.editReply({
