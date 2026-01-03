@@ -42,7 +42,7 @@ export default function DashboardPage() {
       <header className="relative z-10 border-b border-white/5 bg-black/40 backdrop-blur-xl">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-6 lg:px-12 py-4">
           <Link href="/" className="flex items-center">
-            <Image src="/logo.png" alt="Nexus" width={180} height={64} className="h-16 w-auto" />
+            <Image src="/logo.png" alt="Nexus" width={140} height={48} className="h-12 w-auto" />
           </Link>
 
           <div className="flex items-center gap-4">
