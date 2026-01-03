@@ -125,7 +125,7 @@ export const transferCommand: Command = {
         return;
       }
 
-      const { amount: transferAmount, fee, fromBalance } = result.data;
+      const { amount: transferAmount, fee, fromBalance, toBalance } = result.data;
       const feeText = fee > BigInt(0) ? `\n수수료: ${fee.toLocaleString()} ${currencyName}` : '';
       const reasonText = reason ? `\n사유: ${reason}` : '';
 
@@ -141,6 +141,37 @@ export const transferCommand: Command = {
         .setTimestamp();
 
       await interaction.editReply({ embeds: [embed] });
+
+      // DM 알림 발송 (실패해도 무시)
+      const guildName = interaction.guild?.name ?? '서버';
+
+      // 보내는 사람에게 DM
+      const senderDmEmbed = new EmbedBuilder()
+        .setColor(0xFFA500)
+        .setTitle('💸 이체 알림')
+        .setDescription(
+          `**${guildName}**에서 **${receiver.displayName}**님에게 **${transferAmount.toLocaleString()} ${currencyName}**를 보냈습니다.${feeText}${reasonText}`
+        )
+        .addFields(
+          { name: '💰 남은 잔액', value: `${fromBalance.toLocaleString()} ${currencyName}`, inline: true },
+        )
+        .setTimestamp();
+
+      interaction.user.send({ embeds: [senderDmEmbed] }).catch(() => {});
+
+      // 받는 사람에게 DM
+      const receiverDmEmbed = new EmbedBuilder()
+        .setColor(0x00FF00)
+        .setTitle('💰 입금 알림')
+        .setDescription(
+          `**${guildName}**에서 **${interaction.user.displayName}**님이 **${transferAmount.toLocaleString()} ${currencyName}**를 보냈습니다.${reasonText}`
+        )
+        .addFields(
+          { name: '💰 현재 잔액', value: `${toBalance.toLocaleString()} ${currencyName}`, inline: true },
+        )
+        .setTimestamp();
+
+      receiver.send({ embeds: [receiverDmEmbed] }).catch(() => {});
     } catch (error) {
       console.error('이체 명령어 오류:', error);
       await interaction.editReply({
