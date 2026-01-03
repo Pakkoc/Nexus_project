@@ -164,7 +164,7 @@ export const transferCommand: Command = {
         .setColor(0x00FF00)
         .setTitle('💰 입금 알림')
         .setDescription(
-          `**${guildName}**에서 **${interaction.user.displayName}**님이 **${transferAmount.toLocaleString()} ${currencyName}**를 보냈습니다.${reasonText}`
+          `**${guildName}**에서 **${interaction.user.displayName}**님에게서 **${transferAmount.toLocaleString()} ${currencyName}**를 받았습니다.${reasonText}`
         )
         .addFields(
           { name: '💰 현재 잔액', value: `${toBalance.toLocaleString()} ${currencyName}`, inline: true },
