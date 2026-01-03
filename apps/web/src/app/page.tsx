@@ -69,7 +69,7 @@ export default function Home() {
       {/* Navigation */}
       <nav className="relative z-10 flex items-center justify-between px-6 lg:px-12 py-4 max-w-7xl mx-auto">
         <Link href="/" className="flex items-center">
-          <Image src="/logo.png" alt="Nexus" width={140} height={48} className="h-12 w-auto" />
+          <Image src="/logo.png" alt="Nexus" width={180} height={64} className="h-16 w-auto" />
         </Link>
 
         <div className="flex items-center gap-4">
@@ -257,7 +257,7 @@ export default function Home() {
       <footer className="relative z-10 border-t border-white/10 mt-12">
         <div className="max-w-7xl mx-auto px-6 lg:px-12 py-8">
           <div className="flex flex-col md:flex-row items-center justify-between gap-4">
-            <Image src="/logo.png" alt="Nexus" width={100} height={32} className="h-8 w-auto" />
+            <Image src="/logo.png" alt="Nexus" width={140} height={48} className="h-12 w-auto" />
             <p className="text-white/40 text-sm">
               © 2025 Nexus. All rights reserved.
             </p>
