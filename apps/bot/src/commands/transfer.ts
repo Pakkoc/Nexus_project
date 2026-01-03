@@ -38,20 +38,33 @@ export const transferCommand: Command = {
 
   async autocomplete(interaction, container) {
     const guildId = interaction.guildId;
-    if (!guildId) return;
+    if (!guildId) {
+      await interaction.respond([]);
+      return;
+    }
 
     const focusedOption = interaction.options.getFocused(true);
 
     if (focusedOption.name === '화폐') {
-      // 서버의 화폐 설정 조회
-      const settingsResult = await container.currencyService.getSettings(guildId);
-      const topyName = settingsResult.success && settingsResult.data?.topyName || '토피';
-      const rubyName = settingsResult.success && settingsResult.data?.rubyName || '루비';
+      try {
+        // 서버의 화폐 설정 조회
+        const settingsResult = await container.currencyService.getSettings(guildId);
+        const topyName = settingsResult.success && settingsResult.data?.topyName || '토피';
+        const rubyName = settingsResult.success && settingsResult.data?.rubyName || '루비';
 
-      await interaction.respond([
-        { name: topyName, value: 'topy' },
-        { name: rubyName, value: 'ruby' },
-      ]);
+        await interaction.respond([
+          { name: topyName, value: 'topy' },
+          { name: rubyName, value: 'ruby' },
+        ]);
+      } catch {
+        // 에러 시 기본값 반환
+        await interaction.respond([
+          { name: '토피', value: 'topy' },
+          { name: '루비', value: 'ruby' },
+        ]);
+      }
+    } else {
+      await interaction.respond([]);
     }
   },
 
