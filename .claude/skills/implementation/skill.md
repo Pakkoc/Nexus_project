@@ -589,3 +589,174 @@ app.post('/api/shop/panel/refresh', async (req, res) => {
 
 - 상점 패널: `apps/bot/src/index.ts`의 `/api/shop/panel/refresh`
 - 화폐 설정: `apps/web/src/app/api/guilds/[guildId]/currency/settings/route.ts`
+
+## Discord Components v2
+
+**Discord 봇에서 메시지를 보낼 때는 Components v2를 사용하여 더 풍부한 UI를 구현합니다.**
+
+### 개요
+
+Components v2는 2025년 3월 출시된 Discord의 새로운 메시지 컴포넌트 시스템입니다.
+기존 `content`와 `embeds` 대신 컴포넌트만으로 메시지를 구성하여 더 유연한 레이아웃이 가능합니다.
+
+### 활성화 방법
+
+```typescript
+// 메시지 플래그에 IS_COMPONENTS_V2 (1 << 15 = 32768) 설정
+await interaction.reply({
+  components: [...],
+  flags: 1 << 15,  // MessageFlags.IsComponentsV2
+});
+```
+
+### 사용 가능한 컴포넌트
+
+| 컴포넌트 | 용도 |
+|---------|------|
+| `TextDisplay` | 마크다운 텍스트 표시 |
+| `Section` | 텍스트와 썸네일/버튼 조합 |
+| `MediaGallery` | 이미지/비디오 갤러리 |
+| `Separator` | 구분선 |
+| `Container` | 컴포넌트 그룹화 (배경색 지정 가능) |
+| `File` | 파일 첨부 |
+| `ActionRow` | 버튼/셀렉트 메뉴 행 |
+
+### 구현 예시
+
+```typescript
+import {
+  TextDisplayBuilder,
+  SectionBuilder,
+  SeparatorBuilder,
+  ContainerBuilder,
+  ThumbnailBuilder,
+  MediaGalleryBuilder,
+  MediaGalleryItemBuilder,
+  ButtonBuilder,
+  ActionRowBuilder,
+  ButtonStyle,
+  SeparatorSpacingSize,
+} from 'discord.js';
+
+// 프로필 카드 예시
+const profileMessage = {
+  components: [
+    new ContainerBuilder()
+      .addTextDisplayComponents(
+        new TextDisplayBuilder().setContent('# 🎮 유저 프로필')
+      )
+      .addSeparatorComponents(
+        new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small)
+      )
+      .addSectionComponents(
+        new SectionBuilder()
+          .addTextDisplayComponents(
+            new TextDisplayBuilder().setContent(`**레벨**: 15\n**XP**: 2,500 / 3,000`)
+          )
+          .setThumbnailAccessory(
+            new ThumbnailBuilder().setURL(user.displayAvatarURL())
+          )
+      )
+      .addSeparatorComponents(
+        new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small)
+      )
+      .addTextDisplayComponents(
+        new TextDisplayBuilder().setContent(`💰 **토피**: 1,000\n💎 **루비**: 5`)
+      )
+      .toJSON(),
+  ],
+  flags: 1 << 15,
+};
+
+// 상점 패널 예시
+const shopPanel = {
+  components: [
+    new ContainerBuilder()
+      .addTextDisplayComponents(
+        new TextDisplayBuilder().setContent('# 🛒 상점')
+      )
+      .addMediaGalleryComponents(
+        new MediaGalleryBuilder().addItems(
+          new MediaGalleryItemBuilder().setURL('https://example.com/banner.png')
+        )
+      )
+      .addSeparatorComponents(
+        new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small)
+      )
+      .addTextDisplayComponents(
+        new TextDisplayBuilder().setContent('아래 버튼을 클릭하여 아이템을 구매하세요.')
+      )
+      .addActionRowComponents(
+        new ActionRowBuilder<ButtonBuilder>().addComponents(
+          new ButtonBuilder()
+            .setCustomId('shop_buy_item')
+            .setLabel('구매하기')
+            .setStyle(ButtonStyle.Primary),
+          new ButtonBuilder()
+            .setCustomId('shop_view_inventory')
+            .setLabel('인벤토리')
+            .setStyle(ButtonStyle.Secondary)
+        )
+      )
+      .toJSON(),
+  ],
+  flags: 1 << 15,
+};
+```
+
+### 제한 사항
+
+- `content`, `embeds`, `stickers`, `poll` 필드와 함께 사용 불가
+- 최상위 컴포넌트 최대 **10개**
+- 전체 컴포넌트 최대 **40개**
+- 오디오 파일 미지원
+- URL 자동 임베드 미지원
+
+### 기존 Embed와의 선택 기준
+
+| 상황 | 권장 방식 |
+|------|----------|
+| 단순 알림/공지 | Embed |
+| 복잡한 레이아웃 (프로필, 상점) | Components v2 |
+| 이미지 갤러리 | Components v2 |
+| 텍스트 + 버튼 조합 | Components v2 |
+| 빠른 응답이 필요한 경우 | Embed |
+
+### 마이그레이션 가이드
+
+기존 Embed 기반 메시지를 Components v2로 변환:
+
+```typescript
+// ❌ 기존 Embed 방식
+const embed = new EmbedBuilder()
+  .setTitle('🎮 유저 프로필')
+  .setDescription('레벨: 15')
+  .setThumbnail(user.displayAvatarURL());
+
+await interaction.reply({ embeds: [embed] });
+
+// ✅ Components v2 방식
+const container = new ContainerBuilder()
+  .addTextDisplayComponents(
+    new TextDisplayBuilder().setContent('# 🎮 유저 프로필')
+  )
+  .addSectionComponents(
+    new SectionBuilder()
+      .addTextDisplayComponents(
+        new TextDisplayBuilder().setContent('**레벨**: 15')
+      )
+      .setThumbnailAccessory(
+        new ThumbnailBuilder().setURL(user.displayAvatarURL())
+      )
+  );
+
+await interaction.reply({
+  components: [container.toJSON()],
+  flags: 1 << 15,
+});
+```
+
+### 참고 자료
+
+- [Discord 공식 변경 로그](https://discord.com/developers/docs/change-log/2025-04-22-components-v2)
+- [discord.js 가이드](https://dev.to/best_codes/using-discord-components-v2-with-discordjs-8f)
