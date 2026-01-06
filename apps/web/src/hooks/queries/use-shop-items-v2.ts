@@ -127,13 +127,37 @@ interface SeedResult {
   items?: string[];
 }
 
+export interface DefaultShopItem {
+  itemType: string;
+  name: string;
+  description: string;
+  isRoleItem: boolean;
+  durationDays: number;
+  alreadyExists: boolean;
+}
+
+// Fetch available default items
+export function useDefaultItems(guildId: string, enabled = true) {
+  return useQuery<{ items: DefaultShopItem[] }>({
+    queryKey: ["default-shop-items", guildId],
+    queryFn: async () => {
+      const res = await fetch(`/api/guilds/${guildId}/shop-v2/seed`);
+      if (!res.ok) throw new Error("Failed to fetch default items");
+      return res.json();
+    },
+    enabled,
+  });
+}
+
 export function useSeedDefaultItems(guildId: string) {
   const queryClient = useQueryClient();
 
-  return useMutation<SeedResult, Error, void>({
-    mutationFn: async () => {
+  return useMutation<SeedResult, Error, string[]>({
+    mutationFn: async (itemTypes: string[]) => {
       const res = await fetch(`/api/guilds/${guildId}/shop-v2/seed`, {
         method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ itemTypes }),
       });
       if (!res.ok) {
         const error = await res.json();
@@ -143,6 +167,7 @@ export function useSeedDefaultItems(guildId: string) {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["shop-items-v2", guildId] });
+      queryClient.invalidateQueries({ queryKey: ["default-shop-items", guildId] });
     },
   });
 }

@@ -16,6 +16,7 @@ import {
   useTextChannels,
   useCreateShopPanel,
   useSeedDefaultItems,
+  useDefaultItems,
 } from "@/hooks/queries";
 import type { ItemType } from "@/types/shop-v2";
 import { Button } from "@/components/ui/button";
@@ -104,6 +105,10 @@ export default function ShopV2Page() {
   const [editingItem, setEditingItem] = useState<ShopItemV2 | null>(null);
   const itemListRef = useRef<HTMLDivElement>(null);
 
+  // 기본 아이템 추가 모달 상태
+  const [isSeedModalOpen, setIsSeedModalOpen] = useState(false);
+  const [selectedDefaultItems, setSelectedDefaultItems] = useState<string[]>([]);
+
   // Pending role options for new item creation
   const [pendingRoleOptions, setPendingRoleOptions] = useState<PendingRoleOption[]>([]);
   const [newRoleName, setNewRoleName] = useState("");
@@ -127,6 +132,7 @@ export default function ShopV2Page() {
   const deleteItem = useDeleteShopItemV2(guildId);
   const createShopPanelMutation = useCreateShopPanel(guildId);
   const seedDefaultItems = useSeedDefaultItems(guildId);
+  const { data: defaultItemsData, refetch: refetchDefaultItems } = useDefaultItems(guildId, isSeedModalOpen);
 
   const topyName = settings?.topyName ?? "토피";
   const rubyName = settings?.rubyName ?? "루비";
@@ -376,14 +382,39 @@ export default function ShopV2Page() {
     }
   };
 
+  const handleOpenSeedModal = () => {
+    setSelectedDefaultItems([]);
+    setIsSeedModalOpen(true);
+    refetchDefaultItems();
+  };
+
+  const handleToggleDefaultItem = (itemType: string) => {
+    setSelectedDefaultItems((prev) =>
+      prev.includes(itemType)
+        ? prev.filter((t) => t !== itemType)
+        : [...prev, itemType]
+    );
+  };
+
   const handleSeedDefaultItems = async () => {
+    if (selectedDefaultItems.length === 0) {
+      toast({
+        title: "아이템을 선택해주세요",
+        description: "추가할 아이템을 하나 이상 선택해주세요.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     try {
-      const result = await seedDefaultItems.mutateAsync();
+      const result = await seedDefaultItems.mutateAsync(selectedDefaultItems);
       if (result.seeded > 0) {
         toast({
           title: "기본 아이템 추가 완료",
           description: `${result.seeded}개의 아이템이 추가되었습니다.`,
         });
+        setIsSeedModalOpen(false);
+        setSelectedDefaultItems([]);
         // 아이템 목록으로 스크롤 이동
         setTimeout(() => {
           itemListRef.current?.scrollIntoView({
@@ -924,15 +955,10 @@ export default function ShopV2Page() {
         <div className="flex gap-2">
           <Button
             variant="outline"
-            onClick={handleSeedDefaultItems}
-            disabled={seedDefaultItems.isPending}
+            onClick={handleOpenSeedModal}
             className="border-white/20 text-white/70 hover:bg-white/10"
           >
-            {seedDefaultItems.isPending ? (
-              <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent mr-2" />
-            ) : (
-              <Icon icon="solar:box-minimalistic-linear" className="mr-2 h-4 w-4" />
-            )}
+            <Icon icon="solar:box-minimalistic-linear" className="mr-2 h-4 w-4" />
             기본 아이템 추가
           </Button>
 
@@ -971,6 +997,138 @@ export default function ShopV2Page() {
             <DialogTitle className="text-white">아이템 수정</DialogTitle>
           </DialogHeader>
           {formContent}
+        </DialogContent>
+      </Dialog>
+
+      {/* Default Items Seed Modal */}
+      <Dialog open={isSeedModalOpen} onOpenChange={setIsSeedModalOpen}>
+        <DialogContent className="bg-zinc-900 border-white/10 max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-white">기본 아이템 추가</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            {/* 인벤토리형 */}
+            <div>
+              <h4 className="text-sm font-medium text-white/70 mb-2 flex items-center gap-2">
+                <Icon icon="solar:box-bold" className="h-4 w-4 text-blue-400" />
+                인벤토리형 (소모성)
+              </h4>
+              <div className="space-y-2">
+                {defaultItemsData?.items
+                  .filter((item) => !item.isRoleItem)
+                  .map((item) => (
+                    <label
+                      key={item.itemType}
+                      className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${
+                        item.alreadyExists
+                          ? "bg-white/5 border-white/10 opacity-50 cursor-not-allowed"
+                          : selectedDefaultItems.includes(item.itemType)
+                          ? "bg-blue-500/20 border-blue-500/50"
+                          : "bg-white/5 border-white/10 hover:bg-white/10"
+                      }`}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={selectedDefaultItems.includes(item.itemType)}
+                        onChange={() => handleToggleDefaultItem(item.itemType)}
+                        disabled={item.alreadyExists}
+                        className="sr-only"
+                      />
+                      <div className={`w-5 h-5 rounded border-2 flex items-center justify-center ${
+                        item.alreadyExists
+                          ? "border-white/20 bg-white/10"
+                          : selectedDefaultItems.includes(item.itemType)
+                          ? "border-blue-500 bg-blue-500"
+                          : "border-white/30"
+                      }`}>
+                        {(selectedDefaultItems.includes(item.itemType) || item.alreadyExists) && (
+                          <Icon icon="solar:check-read-linear" className="h-3 w-3 text-white" />
+                        )}
+                      </div>
+                      <div className="flex-1">
+                        <div className="font-medium text-white text-sm">{item.name}</div>
+                        <div className="text-xs text-white/50">{item.description}</div>
+                      </div>
+                      {item.alreadyExists && (
+                        <Badge className="bg-green-500/20 text-green-400 border-0 text-xs">등록됨</Badge>
+                      )}
+                    </label>
+                  ))}
+              </div>
+            </div>
+
+            {/* 역할지급형 */}
+            <div>
+              <h4 className="text-sm font-medium text-white/70 mb-2 flex items-center gap-2">
+                <Icon icon="solar:ticket-bold" className="h-4 w-4 text-purple-400" />
+                역할지급형 (기간제)
+              </h4>
+              <div className="space-y-2">
+                {defaultItemsData?.items
+                  .filter((item) => item.isRoleItem)
+                  .map((item) => (
+                    <label
+                      key={item.itemType}
+                      className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${
+                        item.alreadyExists
+                          ? "bg-white/5 border-white/10 opacity-50 cursor-not-allowed"
+                          : selectedDefaultItems.includes(item.itemType)
+                          ? "bg-purple-500/20 border-purple-500/50"
+                          : "bg-white/5 border-white/10 hover:bg-white/10"
+                      }`}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={selectedDefaultItems.includes(item.itemType)}
+                        onChange={() => handleToggleDefaultItem(item.itemType)}
+                        disabled={item.alreadyExists}
+                        className="sr-only"
+                      />
+                      <div className={`w-5 h-5 rounded border-2 flex items-center justify-center ${
+                        item.alreadyExists
+                          ? "border-white/20 bg-white/10"
+                          : selectedDefaultItems.includes(item.itemType)
+                          ? "border-purple-500 bg-purple-500"
+                          : "border-white/30"
+                      }`}>
+                        {(selectedDefaultItems.includes(item.itemType) || item.alreadyExists) && (
+                          <Icon icon="solar:check-read-linear" className="h-3 w-3 text-white" />
+                        )}
+                      </div>
+                      <div className="flex-1">
+                        <div className="font-medium text-white text-sm">
+                          {item.name}
+                          <span className="ml-2 text-xs text-white/40">{item.durationDays}일</span>
+                        </div>
+                        <div className="text-xs text-white/50">{item.description}</div>
+                      </div>
+                      {item.alreadyExists && (
+                        <Badge className="bg-green-500/20 text-green-400 border-0 text-xs">등록됨</Badge>
+                      )}
+                    </label>
+                  ))}
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-2 pt-2">
+              <Button
+                variant="ghost"
+                onClick={() => setIsSeedModalOpen(false)}
+              >
+                취소
+              </Button>
+              <Button
+                onClick={handleSeedDefaultItems}
+                disabled={seedDefaultItems.isPending || selectedDefaultItems.length === 0}
+                className="bg-gradient-to-r from-amber-600 to-orange-600"
+              >
+                {seedDefaultItems.isPending ? (
+                  <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent mr-2" />
+                ) : null}
+                선택 항목 추가 ({selectedDefaultItems.length})
+              </Button>
+            </div>
+          </div>
         </DialogContent>
       </Dialog>
 
