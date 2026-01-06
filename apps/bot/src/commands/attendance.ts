@@ -1,6 +1,10 @@
 import {
   SlashCommandBuilder,
-  EmbedBuilder,
+  ContainerBuilder,
+  TextDisplayBuilder,
+  SeparatorBuilder,
+  SeparatorSpacingSize,
+  MessageFlags,
 } from 'discord.js';
 import type { Command } from './types';
 import { formatDistanceToNow } from 'date-fns';
@@ -26,6 +30,10 @@ export const attendanceCommand: Command = {
     await interaction.deferReply();
 
     try {
+      // 화폐 설정 조회
+      const settingsResult = await container.currencyService.getSettings(guildId);
+      const topyName = settingsResult.success && settingsResult.data?.topyName || '토피';
+
       const result = await container.currencyService.claimAttendance(guildId, userId);
 
       if (!result.success) {
@@ -33,13 +41,24 @@ export const attendanceCommand: Command = {
           const nextClaimAt = result.error.nextClaimAt;
           const timeUntil = formatDistanceToNow(nextClaimAt, { locale: ko, addSuffix: true });
 
-          const embed = new EmbedBuilder()
-            .setColor(0xFFA500) // Orange
-            .setTitle('📅 이미 출석 완료')
-            .setDescription(`오늘은 이미 출석했습니다!\n다음 출석은 **${timeUntil}** 가능합니다.`)
-            .setTimestamp();
+          const alreadyContainer = new ContainerBuilder()
+            .setAccentColor(0xFFA500)
+            .addTextDisplayComponents(
+              new TextDisplayBuilder().setContent('# 📅 이미 출석 완료')
+            )
+            .addSeparatorComponents(
+              new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small)
+            )
+            .addTextDisplayComponents(
+              new TextDisplayBuilder().setContent(
+                `오늘은 이미 출석했습니다!\n다음 출석은 **${timeUntil}** 가능합니다.`
+              )
+            );
 
-          await interaction.editReply({ embeds: [embed] });
+          await interaction.editReply({
+            components: [alreadyContainer.toJSON()],
+            flags: MessageFlags.IsComponentsV2,
+          });
           return;
         }
 
@@ -51,19 +70,38 @@ export const attendanceCommand: Command = {
 
       const { reward, streakCount, totalCount, newBalance } = result.data;
 
-      const embed = new EmbedBuilder()
-        .setColor(0x00FF00) // Green
-        .setTitle('✅ 출석 완료!')
-        .setDescription(`**+${reward} 토피**를 받았습니다!`)
-        .addFields(
-          { name: '🔥 연속 출석', value: `${streakCount}일`, inline: true },
-          { name: '📊 총 출석', value: `${totalCount}회`, inline: true },
-          { name: '💰 현재 잔액', value: `${newBalance.toLocaleString()} 토피`, inline: true },
+      const successContainer = new ContainerBuilder()
+        .setAccentColor(0x00FF00)
+        .addTextDisplayComponents(
+          new TextDisplayBuilder().setContent('# ✅ 출석 완료!')
         )
-        .setFooter({ text: '매일 자정에 출석이 초기화됩니다' })
-        .setTimestamp();
+        .addSeparatorComponents(
+          new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small)
+        )
+        .addTextDisplayComponents(
+          new TextDisplayBuilder().setContent(`**+${reward} ${topyName}**를 받았습니다!`)
+        )
+        .addSeparatorComponents(
+          new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small)
+        )
+        .addTextDisplayComponents(
+          new TextDisplayBuilder().setContent(
+            `🔥 **연속 출석**: ${streakCount}일\n` +
+            `📊 **총 출석**: ${totalCount}회\n` +
+            `💰 **현재 잔액**: ${newBalance.toLocaleString()} ${topyName}`
+          )
+        )
+        .addSeparatorComponents(
+          new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small)
+        )
+        .addTextDisplayComponents(
+          new TextDisplayBuilder().setContent('-# 매일 자정에 출석이 초기화됩니다')
+        );
 
-      await interaction.editReply({ embeds: [embed] });
+      await interaction.editReply({
+        components: [successContainer.toJSON()],
+        flags: MessageFlags.IsComponentsV2,
+      });
     } catch (error) {
       console.error('출석 명령어 오류:', error);
       await interaction.editReply({

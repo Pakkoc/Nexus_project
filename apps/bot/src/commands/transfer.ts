@@ -5,6 +5,11 @@ import {
   ButtonBuilder,
   ButtonStyle,
   ComponentType,
+  ContainerBuilder,
+  TextDisplayBuilder,
+  SeparatorBuilder,
+  SeparatorSpacingSize,
+  MessageFlags,
 } from 'discord.js';
 import type { Command } from './types';
 
@@ -131,20 +136,31 @@ export const transferCommand: Command = {
                 .setStyle(ButtonStyle.Secondary),
             );
 
-          const confirmEmbed = new EmbedBuilder()
-            .setColor(0xFFAA00)
-            .setTitle('💳 이체수수료감면권 보유')
-            .setDescription(
-              `이체 금액: **${amount.toLocaleString()} ${currencyName}**\n` +
-              `수수료: **${expectedFee.toLocaleString()} ${currencyName}**\n\n` +
-              `이체수수료감면권을 사용하시겠습니까?`
+          const confirmContainer = new ContainerBuilder()
+            .setAccentColor(0xFFAA00)
+            .addTextDisplayComponents(
+              new TextDisplayBuilder().setContent('# 💳 이체수수료감면권 보유')
             )
-            .setFooter({ text: '30초 내에 선택해주세요' })
-            .setTimestamp();
+            .addSeparatorComponents(
+              new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small)
+            )
+            .addTextDisplayComponents(
+              new TextDisplayBuilder().setContent(
+                `이체 금액: **${amount.toLocaleString()} ${currencyName}**\n` +
+                `수수료: **${expectedFee.toLocaleString()} ${currencyName}**\n\n` +
+                `이체수수료감면권을 사용하시겠습니까?`
+              )
+            )
+            .addSeparatorComponents(
+              new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small)
+            )
+            .addTextDisplayComponents(
+              new TextDisplayBuilder().setContent('-# 30초 내에 선택해주세요')
+            );
 
           const response = await interaction.editReply({
-            embeds: [confirmEmbed],
-            components: [row],
+            components: [confirmContainer.toJSON(), row],
+            flags: MessageFlags.IsComponentsV2,
           });
 
           try {
@@ -165,15 +181,21 @@ export const transferCommand: Command = {
             await buttonInteraction.deferUpdate();
           } catch {
             // 시간 초과 - 일반 이체로 진행
-            const timeoutEmbed = new EmbedBuilder()
-              .setColor(0xFF0000)
-              .setTitle('⏰ 시간 초과')
-              .setDescription('선택 시간이 초과되어 이체가 취소되었습니다.')
-              .setTimestamp();
+            const timeoutContainer = new ContainerBuilder()
+              .setAccentColor(0xFF0000)
+              .addTextDisplayComponents(
+                new TextDisplayBuilder().setContent('# ⏰ 시간 초과')
+              )
+              .addSeparatorComponents(
+                new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small)
+              )
+              .addTextDisplayComponents(
+                new TextDisplayBuilder().setContent('선택 시간이 초과되어 이체가 취소되었습니다.')
+              );
 
             await interaction.editReply({
-              embeds: [timeoutEmbed],
-              components: [],
+              components: [timeoutContainer.toJSON()],
+              flags: MessageFlags.IsComponentsV2,
             });
             return;
           }
@@ -207,20 +229,29 @@ export const transferCommand: Command = {
             break;
         }
 
-        const embed = new EmbedBuilder()
-          .setColor(0xFF0000)
-          .setTitle('❌ 이체 실패')
-          .setDescription(errorMessage)
-          .setTimestamp();
+        const errorContainer = new ContainerBuilder()
+          .setAccentColor(0xFF0000)
+          .addTextDisplayComponents(
+            new TextDisplayBuilder().setContent('# ❌ 이체 실패')
+          )
+          .addSeparatorComponents(
+            new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small)
+          )
+          .addTextDisplayComponents(
+            new TextDisplayBuilder().setContent(errorMessage)
+          );
 
-        await interaction.editReply({ embeds: [embed] });
+        await interaction.editReply({
+          components: [errorContainer.toJSON()],
+          flags: MessageFlags.IsComponentsV2,
+        });
         return;
       }
 
       const { amount: transferAmount, fee, fromBalance, toBalance } = result.data;
       const totalDeducted = transferAmount + fee;
       const hasFee = fee > BigInt(0);
-      const reasonText = reason ? `\n사유: ${reason}` : '';
+      const reasonText = reason ? `\n📝 사유: ${reason}` : '';
       const reductionText = usedReductionItem ? '\n🎫 이체수수료감면권 사용 (수수료 면제)' : '';
 
       // 채널 응답
@@ -233,28 +264,40 @@ export const transferCommand: Command = {
         replyDescription = `**${receiver.displayName}**님에게 **${transferAmount.toLocaleString()} ${currencyName}**를 보냈습니다.${reasonText}`;
       }
 
-      const embed = new EmbedBuilder()
-        .setColor(0x00FF00)
-        .setTitle('✅ 이체 완료!')
-        .setDescription(replyDescription)
-        .addFields(
-          { name: '💰 남은 잔액', value: `${fromBalance.toLocaleString()} ${currencyName}`, inline: true },
+      const successContainer = new ContainerBuilder()
+        .setAccentColor(0x00FF00)
+        .addTextDisplayComponents(
+          new TextDisplayBuilder().setContent('# ✅ 이체 완료!')
         )
-        .setTimestamp();
+        .addSeparatorComponents(
+          new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small)
+        )
+        .addTextDisplayComponents(
+          new TextDisplayBuilder().setContent(replyDescription)
+        )
+        .addSeparatorComponents(
+          new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small)
+        )
+        .addTextDisplayComponents(
+          new TextDisplayBuilder().setContent(`💰 **남은 잔액**: ${fromBalance.toLocaleString()} ${currencyName}`)
+        );
 
-      await interaction.editReply({ embeds: [embed], components: [] });
+      await interaction.editReply({
+        components: [successContainer.toJSON()],
+        flags: MessageFlags.IsComponentsV2,
+      });
 
-      // DM 알림 발송 (실패해도 무시)
+      // DM 알림 발송 (실패해도 무시) - DM은 Embed 유지
       const guildName = interaction.guild?.name ?? '서버';
 
       // 보내는 사람에게 DM
       let senderDmDescription: string;
       if (usedReductionItem) {
-        senderDmDescription = `**${guildName}**에서 **${receiver.displayName}**님에게 **${transferAmount.toLocaleString()} ${currencyName}**를 보냈습니다.${reductionText}${reasonText}`;
+        senderDmDescription = `**${guildName}**에서 **${receiver.displayName}**님에게 **${transferAmount.toLocaleString()} ${currencyName}**를 보냈습니다.${reductionText}${reason ? `\n사유: ${reason}` : ''}`;
       } else if (hasFee) {
-        senderDmDescription = `**${guildName}**에서 **${receiver.displayName}**님에게 **${transferAmount.toLocaleString()} ${currencyName}**를 보냈습니다.\n총 **${totalDeducted.toLocaleString()} ${currencyName}** 차감 (송금 ${transferAmount.toLocaleString()} + 수수료 ${fee.toLocaleString()})${reasonText}`;
+        senderDmDescription = `**${guildName}**에서 **${receiver.displayName}**님에게 **${transferAmount.toLocaleString()} ${currencyName}**를 보냈습니다.\n총 **${totalDeducted.toLocaleString()} ${currencyName}** 차감 (송금 ${transferAmount.toLocaleString()} + 수수료 ${fee.toLocaleString()})${reason ? `\n사유: ${reason}` : ''}`;
       } else {
-        senderDmDescription = `**${guildName}**에서 **${receiver.displayName}**님에게 **${transferAmount.toLocaleString()} ${currencyName}**를 보냈습니다.${reasonText}`;
+        senderDmDescription = `**${guildName}**에서 **${receiver.displayName}**님에게 **${transferAmount.toLocaleString()} ${currencyName}**를 보냈습니다.${reason ? `\n사유: ${reason}` : ''}`;
       }
 
       const senderDmEmbed = new EmbedBuilder()
@@ -273,7 +316,7 @@ export const transferCommand: Command = {
         .setColor(0x00FF00)
         .setTitle('💰 입금 알림')
         .setDescription(
-          `**${guildName}**에서 **${interaction.user.displayName}**님에게서 **${transferAmount.toLocaleString()} ${currencyName}**를 받았습니다.${reasonText}`
+          `**${guildName}**에서 **${interaction.user.displayName}**님에게서 **${transferAmount.toLocaleString()} ${currencyName}**를 받았습니다.${reason ? `\n사유: ${reason}` : ''}`
         )
         .addFields(
           { name: '💰 현재 잔액', value: `${toBalance.toLocaleString()} ${currencyName}`, inline: true },

@@ -1,11 +1,9 @@
 import {
   SlashCommandBuilder,
-  EmbedBuilder,
   ActionRowBuilder,
   StringSelectMenuBuilder,
   ButtonBuilder,
   ButtonStyle,
-  ComponentType,
   ContainerBuilder,
   TextDisplayBuilder,
   SeparatorBuilder,
@@ -171,64 +169,6 @@ function createTicketInventoryContainer(
   return container.toJSON();
 }
 
-/** 인벤토리 Embed 생성 (fallback) */
-function createInventoryEmbed(
-  tickets: AvailableTicket[],
-  topyName: string,
-  rubyName: string
-): EmbedBuilder {
-  const embed = new EmbedBuilder()
-    .setColor(0x5865F2)
-    .setTitle('🎒 인벤토리')
-    .setTimestamp();
-
-  if (tickets.length === 0) {
-    embed.setDescription('사용 가능한 선택권이 없습니다.\n상점에서 티켓을 구매해보세요!');
-    return embed;
-  }
-
-  embed.setDescription('아래 메뉴에서 사용할 선택권을 선택하세요.');
-
-  const fields = tickets.map((t, idx) => {
-    const currencyName = t.shopItem.currencyType === 'topy' ? topyName : rubyName;
-    const isPeriod = t.ticket.consumeQuantity === 0;
-
-    let info = `📦 보유: **${t.userItem.quantity}개**`;
-    if (isPeriod) {
-      info += '\n♾️ 기간제 (무제한 변경)';
-    } else {
-      info += `\n🔄 사용 시 ${t.ticket.consumeQuantity}개 소모`;
-    }
-
-    if (t.userItem.expiresAt) {
-      const expiresAt = new Date(t.userItem.expiresAt);
-      const daysLeft = Math.ceil((expiresAt.getTime() - Date.now()) / (1000 * 60 * 60 * 24));
-      info += `\n⏰ ${daysLeft}일 남음`;
-    }
-
-    if (t.ticket.removePreviousRole) {
-      info += '\n🔁 이전 역할 자동 제거';
-    }
-
-    if (t.ticket.description) {
-      info += `\n> ${t.ticket.description}`;
-    }
-
-    const roleCount = t.ticket.roleOptions?.length ?? 0;
-    info += `\n🎭 ${roleCount}개 역할 선택 가능`;
-
-    return {
-      name: `${idx + 1}. ${t.ticket.name}`,
-      value: info,
-      inline: true,
-    };
-  });
-
-  embed.addFields(fields);
-
-  return embed;
-}
-
 /** 선택권 선택 메뉴 생성 */
 function createTicketSelectMenu(
   tickets: AvailableTicket[],
@@ -302,45 +242,6 @@ function createRoleSelectContainer(
   );
 
   return container.toJSON();
-}
-
-/** 역할 선택 Embed 생성 (fallback) */
-function createRoleSelectEmbed(
-  ticket: AvailableTicket,
-  roleOptions: TicketRoleOption[]
-): EmbedBuilder {
-  const isPeriod = ticket.ticket.consumeQuantity === 0;
-  const embed = new EmbedBuilder()
-    .setColor(0xFFA500)
-    .setTitle(`🎫 ${ticket.ticket.name}`)
-    .setDescription('원하는 역할을 선택하세요.')
-    .addFields(
-      {
-        name: '📦 보유 수량',
-        value: `${ticket.userItem.quantity}개`,
-        inline: true,
-      },
-      {
-        name: isPeriod ? '♾️ 기간제' : '🔄 소모 개수',
-        value: isPeriod ? '무제한 변경 가능' : `${ticket.ticket.consumeQuantity}개`,
-        inline: true,
-      }
-    );
-
-  if (ticket.ticket.removePreviousRole) {
-    embed.addFields({
-      name: '🔁 이전 역할',
-      value: '자동으로 제거됩니다',
-      inline: true,
-    });
-  }
-
-  embed.addFields({
-    name: '🎭 선택 가능한 역할',
-    value: roleOptions.map((opt) => `• ${opt.name}`).join('\n'),
-  });
-
-  return embed;
 }
 
 /** 역할 선택 메뉴 생성 */
@@ -430,40 +331,6 @@ function createMessageContainer(title: string, description: string): APIContaine
   );
 
   return container.toJSON();
-}
-
-/** 확인 Embed 생성 (fallback) */
-function createConfirmEmbed(
-  ticket: AvailableTicket,
-  roleOption: TicketRoleOption
-): EmbedBuilder {
-  const isPeriod = ticket.ticket.consumeQuantity === 0;
-  const embed = new EmbedBuilder()
-    .setColor(0x00FF00)
-    .setTitle('✅ 역할 교환 확인')
-    .setDescription(`**${roleOption.name}** 역할로 교환하시겠습니까?`)
-    .addFields(
-      { name: '선택권', value: ticket.ticket.name, inline: true },
-      { name: '선택한 역할', value: roleOption.name, inline: true }
-    );
-
-  if (!isPeriod) {
-    embed.addFields({
-      name: '소모',
-      value: `${ticket.ticket.consumeQuantity}개 → 남은 수량: ${ticket.userItem.quantity - ticket.ticket.consumeQuantity}개`,
-      inline: false,
-    });
-  }
-
-  if (ticket.ticket.removePreviousRole) {
-    embed.addFields({
-      name: '⚠️ 주의',
-      value: '이 선택권의 다른 역할이 있다면 제거됩니다.',
-      inline: false,
-    });
-  }
-
-  return embed;
 }
 
 /** 확인/취소 버튼 생성 */
