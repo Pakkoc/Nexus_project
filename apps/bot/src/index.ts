@@ -8,7 +8,6 @@ import {
   REST,
   Routes,
   Collection,
-  EmbedBuilder,
   ActionRowBuilder,
   ButtonBuilder,
   ButtonStyle,

@@ -1,7 +1,11 @@
 import {
   SlashCommandBuilder,
-  EmbedBuilder,
   PermissionFlagsBits,
+  ContainerBuilder,
+  TextDisplayBuilder,
+  SeparatorBuilder,
+  SeparatorSpacingSize,
+  MessageFlags,
 } from 'discord.js';
 import type { Command } from './types';
 
@@ -158,52 +162,88 @@ export const itemTakeCommand: Command = {
             break;
         }
 
-        const embed = new EmbedBuilder()
-          .setColor(0xFF0000)
-          .setTitle('❌ 회수 실패')
-          .setDescription(errorMessage)
-          .setTimestamp();
+        const errorContainer = new ContainerBuilder()
+          .setAccentColor(0xFF0000)
+          .addTextDisplayComponents(
+            new TextDisplayBuilder().setContent('# ❌ 회수 실패')
+          )
+          .addSeparatorComponents(
+            new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small)
+          )
+          .addTextDisplayComponents(
+            new TextDisplayBuilder().setContent(errorMessage)
+          );
 
-        await interaction.editReply({ embeds: [embed] });
+        await interaction.editReply({
+          components: [errorContainer.toJSON()],
+          flags: MessageFlags.IsComponentsV2,
+        });
         return;
       }
 
       const { remainingQuantity, item } = result.data;
 
-      const embed = new EmbedBuilder()
-        .setColor(0xFFA500)
-        .setTitle('✅ 아이템 회수 완료!')
-        .setDescription(
-          `**${targetUser.displayName}**님에게서 **${item.name}** ${quantity}개를 회수했습니다.`
-        )
-        .addFields(
-          { name: '📦 남은 수량', value: `${remainingQuantity}개`, inline: true },
-        );
+      let infoText = `📦 **남은 수량**: ${remainingQuantity}개`;
 
       if (reason) {
-        embed.addFields({ name: '📝 사유', value: reason, inline: false });
+        infoText += `\n📝 **사유**: ${reason}`;
       }
 
-      embed.setTimestamp();
+      const successContainer = new ContainerBuilder()
+        .setAccentColor(0xFFA500)
+        .addTextDisplayComponents(
+          new TextDisplayBuilder().setContent('# ✅ 아이템 회수 완료!')
+        )
+        .addSeparatorComponents(
+          new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small)
+        )
+        .addTextDisplayComponents(
+          new TextDisplayBuilder().setContent(
+            `**${targetUser.displayName}**님에게서 **${item.name}** ${quantity}개를 회수했습니다.`
+          )
+        )
+        .addSeparatorComponents(
+          new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small)
+        )
+        .addTextDisplayComponents(
+          new TextDisplayBuilder().setContent(infoText)
+        );
 
-      await interaction.editReply({ embeds: [embed] });
+      await interaction.editReply({
+        components: [successContainer.toJSON()],
+        flags: MessageFlags.IsComponentsV2,
+      });
 
       // 회수 대상에게 DM 알림
       const guildName = interaction.guild?.name ?? '서버';
-      const reasonText = reason ? `\n사유: ${reason}` : '';
+      const reasonText = reason ? `\n📝 사유: ${reason}` : '';
 
-      const dmEmbed = new EmbedBuilder()
-        .setColor(0xFFA500)
-        .setTitle('📦 아이템 회수 알림')
-        .setDescription(
-          `**${guildName}**에서 관리자가 **${item.name}** ${quantity}개를 회수했습니다.${reasonText}`
+      const dmContainer = new ContainerBuilder()
+        .setAccentColor(0xFFA500)
+        .addTextDisplayComponents(
+          new TextDisplayBuilder().setContent('# 📦 아이템 회수 알림')
         )
-        .addFields(
-          { name: '📦 남은 수량', value: `${remainingQuantity}개`, inline: true },
+        .addSeparatorComponents(
+          new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small)
         )
-        .setTimestamp();
+        .addTextDisplayComponents(
+          new TextDisplayBuilder().setContent(
+            `**${guildName}**에서 관리자가 **${item.name}** ${quantity}개를 회수했습니다.${reasonText}`
+          )
+        )
+        .addSeparatorComponents(
+          new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small)
+        )
+        .addTextDisplayComponents(
+          new TextDisplayBuilder().setContent(
+            `📦 **남은 수량**: ${remainingQuantity}개`
+          )
+        );
 
-      targetUser.send({ embeds: [dmEmbed] }).catch(() => {});
+      targetUser.send({
+        components: [dmContainer.toJSON()],
+        flags: MessageFlags.IsComponentsV2,
+      }).catch(() => {});
     } catch (error) {
       console.error('아이템 회수 명령어 오류:', error);
       await interaction.editReply({

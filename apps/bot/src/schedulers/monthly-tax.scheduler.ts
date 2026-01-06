@@ -1,7 +1,13 @@
 import type { Client, TextChannel } from 'discord.js';
 import type { Container } from '@topia/infra';
 import type { RowDataPacket } from 'mysql2';
-import { EmbedBuilder } from 'discord.js';
+import {
+  ContainerBuilder,
+  TextDisplayBuilder,
+  SeparatorBuilder,
+  SeparatorSpacingSize,
+  MessageFlags,
+} from 'discord.js';
 import { getPool } from '@topia/infra';
 
 interface GuildRow extends RowDataPacket {
@@ -129,23 +135,33 @@ async function sendTaxNotification(
     const year = summary.processedAt.getFullYear();
     const month = summary.processedAt.getMonth() + 1;
 
-    const embed = new EmbedBuilder()
-      .setTitle('📊 월말 세금 처리 완료')
-      .setDescription(`${year}년 ${month}월 세금이 자동으로 차감되었습니다.`)
-      .addFields(
-        { name: '처리 대상', value: `${summary.totalUsers}명`, inline: true },
-        { name: '세금 납부', value: `${summary.taxedUsers}명`, inline: true },
-        { name: '면제', value: `${summary.exemptedUsers}명`, inline: true },
-        {
-          name: '총 세금액',
-          value: `${summary.totalTaxAmount.toLocaleString()} 토피`,
-          inline: false,
-        }
+    const notificationContainer = new ContainerBuilder()
+      .setAccentColor(0x4ade80)
+      .addTextDisplayComponents(
+        new TextDisplayBuilder().setContent('# 📊 월말 세금 처리 완료')
       )
-      .setColor(0x4ade80)
-      .setTimestamp();
+      .addSeparatorComponents(
+        new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small)
+      )
+      .addTextDisplayComponents(
+        new TextDisplayBuilder().setContent(`${year}년 ${month}월 세금이 자동으로 차감되었습니다.`)
+      )
+      .addSeparatorComponents(
+        new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small)
+      )
+      .addTextDisplayComponents(
+        new TextDisplayBuilder().setContent(
+          `👥 **처리 대상**: ${summary.totalUsers}명\n` +
+          `💰 **세금 납부**: ${summary.taxedUsers}명\n` +
+          `🎫 **면제**: ${summary.exemptedUsers}명\n` +
+          `💵 **총 세금액**: ${summary.totalTaxAmount.toLocaleString()} 토피`
+        )
+      );
 
-    await channel.send({ embeds: [embed] });
+    await channel.send({
+      components: [notificationContainer.toJSON()],
+      flags: MessageFlags.IsComponentsV2,
+    });
   } catch (err) {
     // 알림 전송 실패는 무시
     console.error(`[MONTHLY TAX] Failed to send notification for guild ${guildId}:`, err);

@@ -1,6 +1,10 @@
 import {
   SlashCommandBuilder,
-  EmbedBuilder,
+  ContainerBuilder,
+  TextDisplayBuilder,
+  SeparatorBuilder,
+  SeparatorSpacingSize,
+  MessageFlags,
 } from 'discord.js';
 import type { Command } from './types';
 
@@ -125,52 +129,85 @@ export const deductCommand: Command = {
             break;
         }
 
-        const embed = new EmbedBuilder()
-          .setColor(0xFF0000)
-          .setTitle('❌ 차감 실패')
-          .setDescription(errorMessage)
-          .setTimestamp();
+        const errorContainer = new ContainerBuilder()
+          .setAccentColor(0xFF0000)
+          .addTextDisplayComponents(
+            new TextDisplayBuilder().setContent('# ❌ 차감 실패')
+          )
+          .addSeparatorComponents(
+            new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small)
+          )
+          .addTextDisplayComponents(
+            new TextDisplayBuilder().setContent(errorMessage)
+          );
 
-        await interaction.editReply({ embeds: [embed] });
+        await interaction.editReply({
+          components: [errorContainer.toJSON()],
+          flags: MessageFlags.IsComponentsV2,
+        });
         return;
       }
 
       const { newBalance } = result.data;
+      const reasonText = description ? `\n📝 **사유**: ${description}` : '';
 
-      const embed = new EmbedBuilder()
-        .setColor(0xFF6B6B)
-        .setTitle('✅ 차감 완료!')
-        .setDescription(
-          `**${targetUser.displayName}**님의 **${amount.toLocaleString()} ${currencyName}**를 차감했습니다.`
+      const successContainer = new ContainerBuilder()
+        .setAccentColor(0xFF6B6B)
+        .addTextDisplayComponents(
+          new TextDisplayBuilder().setContent('# ✅ 차감 완료!')
         )
-        .addFields(
-          { name: '💰 차감 후 잔액', value: `${newBalance.toLocaleString()} ${currencyName}`, inline: true },
+        .addSeparatorComponents(
+          new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small)
+        )
+        .addTextDisplayComponents(
+          new TextDisplayBuilder().setContent(
+            `**${targetUser.displayName}**님의 **${amount.toLocaleString()} ${currencyName}**를 차감했습니다.`
+          )
+        )
+        .addSeparatorComponents(
+          new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small)
+        )
+        .addTextDisplayComponents(
+          new TextDisplayBuilder().setContent(
+            `💰 **차감 후 잔액**: ${newBalance.toLocaleString()} ${currencyName}${reasonText}`
+          )
         );
 
-      if (description) {
-        embed.addFields({ name: '📝 사유', value: description, inline: false });
-      }
-
-      embed.setTimestamp();
-
-      await interaction.editReply({ embeds: [embed] });
+      await interaction.editReply({
+        components: [successContainer.toJSON()],
+        flags: MessageFlags.IsComponentsV2,
+      });
 
       // 차감 대상에게 DM 알림 (실패해도 무시)
       const guildName = interaction.guild?.name ?? '서버';
-      const reasonText = description ? `\n사유: ${description}` : '';
+      const dmReasonText = description ? `\n📝 사유: ${description}` : '';
 
-      const dmEmbed = new EmbedBuilder()
-        .setColor(0xFF6B6B)
-        .setTitle('💸 차감 알림')
-        .setDescription(
-          `**${guildName}**에서 관리자가 **${amount.toLocaleString()} ${currencyName}**를 차감했습니다.${reasonText}`
+      const dmContainer = new ContainerBuilder()
+        .setAccentColor(0xFF6B6B)
+        .addTextDisplayComponents(
+          new TextDisplayBuilder().setContent('# 💸 차감 알림')
         )
-        .addFields(
-          { name: '💰 현재 잔액', value: `${newBalance.toLocaleString()} ${currencyName}`, inline: true },
+        .addSeparatorComponents(
+          new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small)
         )
-        .setTimestamp();
+        .addTextDisplayComponents(
+          new TextDisplayBuilder().setContent(
+            `**${guildName}**에서 관리자가 **${amount.toLocaleString()} ${currencyName}**를 차감했습니다.${dmReasonText}`
+          )
+        )
+        .addSeparatorComponents(
+          new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small)
+        )
+        .addTextDisplayComponents(
+          new TextDisplayBuilder().setContent(
+            `💰 **현재 잔액**: ${newBalance.toLocaleString()} ${currencyName}`
+          )
+        );
 
-      targetUser.send({ embeds: [dmEmbed] }).catch(() => {});
+      targetUser.send({
+        components: [dmContainer.toJSON()],
+        flags: MessageFlags.IsComponentsV2,
+      }).catch(() => {});
     } catch (error) {
       console.error('차감 명령어 오류:', error);
       await interaction.editReply({

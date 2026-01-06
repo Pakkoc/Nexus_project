@@ -1,5 +1,4 @@
 import {
-  EmbedBuilder,
   ActionRowBuilder,
   ButtonBuilder,
   ButtonStyle,
@@ -13,6 +12,7 @@ import {
   TextDisplayBuilder,
   SeparatorBuilder,
   SeparatorSpacingSize,
+  MessageFlags,
   type ButtonInteraction,
   type ModalSubmitInteraction,
   type TextChannel,
@@ -171,136 +171,6 @@ function createGameContainer(
   }
 
   return container.toJSON();
-}
-
-/**
- * 내전 메시지 Embed 생성 (fallback)
- */
-function createGameEmbed(
-  game: Game,
-  topyName: string,
-  participants: GameParticipant[] = [],
-  rankRewards?: Record<number, number>
-): EmbedBuilder {
-  const embed = new EmbedBuilder()
-    .setColor(
-      game.status === 'open' ? 0x00FF00 :
-      game.status === 'team_assign' ? 0xFFFF00 :
-      game.status === 'in_progress' ? 0x5865F2 :
-      game.status === 'finished' ? 0x808080 : 0xFF0000
-    )
-    .setTitle(`🎮 ${game.title}`)
-    .setTimestamp();
-
-  // 상태별 설명
-  const statusText = {
-    'open': '🟢 모집중',
-    'team_assign': '🟡 팀 배정중',
-    'in_progress': '🔵 경기중',
-    'finished': '✅ 완료',
-    'cancelled': '❌ 취소됨',
-  };
-
-  embed.setDescription(`**상태: ${statusText[game.status]}**`);
-
-  // 참가 정보
-  const participantText = game.maxPlayersPerTeam !== null
-    ? `${participants.length}/${game.maxPlayersPerTeam * game.teamCount}명`
-    : `${participants.length}명`;
-
-  embed.addFields(
-    {
-      name: '💰 참가비',
-      value: `${game.entryFee.toLocaleString()} ${topyName}`,
-      inline: true,
-    },
-    {
-      name: '👥 참가자',
-      value: participantText,
-      inline: true,
-    },
-    {
-      name: '🏆 상금 풀',
-      value: `${game.totalPool.toLocaleString()} ${topyName}`,
-      inline: true,
-    }
-  );
-
-  // 보상 비율 표시 (동적 순위 지원)
-  if (game.status === 'open') {
-    // 커스텀 설정 우선 표시
-    if (game.customWinnerTakesAll) {
-      embed.addFields({
-        name: '🎁 순위별 보상',
-        value: '🏆 **승자 독식** (1등 100%)',
-        inline: false,
-      });
-    } else if (game.customRankRewards) {
-      // 비율 정규화하여 표시
-      const total = Object.values(game.customRankRewards).reduce((a, b) => a + b, 0);
-      const rewardEntries = Object.entries(game.customRankRewards)
-        .sort(([a], [b]) => parseInt(a) - parseInt(b))
-        .map(([rank, ratio]) => {
-          const percent = total > 0 ? Math.round((ratio / total) * 100) : 0;
-          return `${rank}등: ${percent}%`;
-        })
-        .join(' | ');
-
-      embed.addFields({
-        name: '🎁 순위별 보상 (커스텀)',
-        value: rewardEntries,
-        inline: false,
-      });
-    } else if (rankRewards) {
-      // 비율 정규화하여 표시
-      const total = Object.values(rankRewards).reduce((a, b) => a + b, 0);
-      const rewardEntries = Object.entries(rankRewards)
-        .sort(([a], [b]) => parseInt(a) - parseInt(b))
-        .filter(([, ratio]) => ratio > 0)
-        .map(([rank, ratio]) => {
-          const percent = total > 0 ? Math.round((ratio / total) * 100) : 0;
-          return `${rank}등: ${percent}%`;
-        })
-        .join(' | ');
-
-      if (rewardEntries) {
-        embed.addFields({
-          name: '🎁 순위별 보상',
-          value: rewardEntries,
-          inline: false,
-        });
-      }
-    }
-  }
-
-  // 참가자 목록
-  if (participants.length > 0) {
-    if (game.status === 'open' || game.status === 'team_assign') {
-      // 미배정 참가자 목록
-      const participantMentions = participants.map(p => `<@${p.userId}>`).join(', ');
-      embed.addFields({
-        name: '📋 참가자 목록',
-        value: participantMentions.length > 1000 ? participantMentions.substring(0, 997) + '...' : participantMentions,
-        inline: false,
-      });
-    } else if (game.status === 'in_progress' || game.status === 'finished') {
-      // 팀별 참가자 표시
-      for (let teamNum = 1; teamNum <= game.teamCount; teamNum++) {
-        const teamMembers = participants.filter(p => p.teamNumber === teamNum);
-        if (teamMembers.length > 0) {
-          const teamColor = getTeamEmoji(teamNum);
-          const memberMentions = teamMembers.map(p => `<@${p.userId}>`).join(', ');
-          embed.addFields({
-            name: `${teamColor} ${teamNum}팀`,
-            value: memberMentions,
-            inline: true,
-          });
-        }
-      }
-    }
-  }
-
-  return embed;
 }
 
 /**
@@ -797,12 +667,12 @@ export async function handleGameCreateModal(
 
   // 채널에 내전 메시지 전송
   const channel = interaction.channel as TextChannel;
-  const embed = createGameEmbed(game, topyName, [], displayRankRewards);
+  const gameContainer = createGameContainer(game, topyName, [], displayRankRewards);
   const buttons = createGameButtons(game, true);
 
   const message = await channel.send({
-    embeds: [embed],
-    components: buttons,
+    components: [gameContainer, ...buttons],
+    flags: MessageFlags.IsComponentsV2,
   });
 
   // 메시지 ID 저장
@@ -906,9 +776,13 @@ export async function handleGameJoin(
         ? settingsResult.data.rankRewards
         : undefined;
 
-      const embed = createGameEmbed(game, topyName, participants, rankRewards);
+      const gameContainer = createGameContainer(game, topyName, participants, rankRewards);
       const buttons = createGameButtons(game, true);
-      await message.edit({ embeds: [embed], components: buttons });
+      await message.edit({
+        components: [gameContainer, ...buttons],
+        flags: MessageFlags.IsComponentsV2,
+        embeds: [],
+      });
     }
   } catch (err) {
     console.error('[GAME] Failed to update game message:', err);
@@ -990,9 +864,13 @@ export async function handleGameLeave(
         ? settingsResult.data.rankRewards
         : undefined;
 
-      const embed = createGameEmbed(game, topyName, participants, rankRewards);
+      const gameContainer = createGameContainer(game, topyName, participants, rankRewards);
       const buttons = createGameButtons(game, true);
-      await message.edit({ embeds: [embed], components: buttons });
+      await message.edit({
+        components: [gameContainer, ...buttons],
+        flags: MessageFlags.IsComponentsV2,
+        embeds: [],
+      });
     }
   } catch (err) {
     console.error('[GAME] Failed to update game message:', err);
@@ -1201,9 +1079,13 @@ export async function handleGameTeamUsers(
         const participantsResult = await container.gameService.getParticipants(gameId);
         const participants = participantsResult.success ? participantsResult.data : [];
 
-        const embed = createGameEmbed(game, topyName, participants);
+        const gameContainer = createGameContainer(game, topyName, participants);
         const buttons = createGameButtons(game, true);
-        await message.edit({ embeds: [embed], components: buttons });
+        await message.edit({
+          components: [gameContainer, ...buttons],
+          flags: MessageFlags.IsComponentsV2,
+          embeds: [],
+        });
       }
     } catch (err) {
       console.error('[GAME] Failed to update game message:', err);
@@ -1276,9 +1158,13 @@ export async function handleGameStart(
       const participantsResult = await container.gameService.getParticipants(gameId);
       const participants = participantsResult.success ? participantsResult.data : [];
 
-      const embed = createGameEmbed(game, topyName, participants);
+      const gameContainer = createGameContainer(game, topyName, participants);
       const buttons = createGameButtons(game, true);
-      await message.edit({ embeds: [embed], components: buttons });
+      await message.edit({
+        components: [gameContainer, ...buttons],
+        flags: MessageFlags.IsComponentsV2,
+        embeds: [],
+      });
     }
   } catch (err) {
     console.error('[GAME] Failed to update game message:', err);
@@ -1487,8 +1373,12 @@ export async function handleGameResultRank(
       const participantsResult = await container.gameService.getParticipants(gameId);
       const participants = participantsResult.success ? participantsResult.data : [];
 
-      const embed = createGameEmbed(finishedGame, topyName, participants);
-      await message.edit({ embeds: [embed], components: [] });
+      const gameContainer = createGameContainer(finishedGame, topyName, participants);
+      await message.edit({
+        components: [gameContainer],
+        flags: MessageFlags.IsComponentsV2,
+        embeds: [],
+      });
 
       // 10분 후 메시지 삭제
       setTimeout(async () => {
@@ -1571,8 +1461,12 @@ export async function handleGameCancel(
       const channel = interaction.channel as TextChannel;
       const message = await channel.messages.fetch(game.messageId);
 
-      const embed = createGameEmbed(game, topyName);
-      await message.edit({ embeds: [embed], components: [] });
+      const gameContainer = createGameContainer(game, topyName);
+      await message.edit({
+        components: [gameContainer],
+        flags: MessageFlags.IsComponentsV2,
+        embeds: [],
+      });
 
       // 10분 후 메시지 삭제
       setTimeout(async () => {

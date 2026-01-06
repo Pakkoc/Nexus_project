@@ -1,7 +1,11 @@
 import {
   SlashCommandBuilder,
-  EmbedBuilder,
   PermissionFlagsBits,
+  ContainerBuilder,
+  TextDisplayBuilder,
+  SeparatorBuilder,
+  SeparatorSpacingSize,
+  MessageFlags,
 } from 'discord.js';
 import type { Command } from './types';
 
@@ -119,63 +123,95 @@ export const itemGiveCommand: Command = {
             break;
         }
 
-        const embed = new EmbedBuilder()
-          .setColor(0xFF0000)
-          .setTitle('❌ 지급 실패')
-          .setDescription(errorMessage)
-          .setTimestamp();
+        const errorContainer = new ContainerBuilder()
+          .setAccentColor(0xFF0000)
+          .addTextDisplayComponents(
+            new TextDisplayBuilder().setContent('# ❌ 지급 실패')
+          )
+          .addSeparatorComponents(
+            new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small)
+          )
+          .addTextDisplayComponents(
+            new TextDisplayBuilder().setContent(errorMessage)
+          );
 
-        await interaction.editReply({ embeds: [embed] });
+        await interaction.editReply({
+          components: [errorContainer.toJSON()],
+          flags: MessageFlags.IsComponentsV2,
+        });
         return;
       }
 
       const { item, userItem } = result.data;
 
-      const embed = new EmbedBuilder()
-        .setColor(0x00FF00)
-        .setTitle('✅ 아이템 지급 완료!')
-        .setDescription(
-          `**${targetUser.displayName}**님에게 **${item.name}** ${quantity}개를 지급했습니다.`
-        )
-        .addFields(
-          { name: '📦 보유 수량', value: `${userItem.quantity}개`, inline: true },
-        );
+      let infoText = `📦 **보유 수량**: ${userItem.quantity}개`;
 
       if (userItem.expiresAt) {
         const daysLeft = Math.ceil(
           (new Date(userItem.expiresAt).getTime() - Date.now()) / (1000 * 60 * 60 * 24)
         );
-        embed.addFields({
-          name: '⏰ 만료일',
-          value: `${daysLeft}일 남음`,
-          inline: true,
-        });
+        infoText += `\n⏰ **만료일**: ${daysLeft}일 남음`;
       }
 
       if (reason) {
-        embed.addFields({ name: '📝 사유', value: reason, inline: false });
+        infoText += `\n📝 **사유**: ${reason}`;
       }
 
-      embed.setTimestamp();
+      const successContainer = new ContainerBuilder()
+        .setAccentColor(0x00FF00)
+        .addTextDisplayComponents(
+          new TextDisplayBuilder().setContent('# ✅ 아이템 지급 완료!')
+        )
+        .addSeparatorComponents(
+          new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small)
+        )
+        .addTextDisplayComponents(
+          new TextDisplayBuilder().setContent(
+            `**${targetUser.displayName}**님에게 **${item.name}** ${quantity}개를 지급했습니다.`
+          )
+        )
+        .addSeparatorComponents(
+          new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small)
+        )
+        .addTextDisplayComponents(
+          new TextDisplayBuilder().setContent(infoText)
+        );
 
-      await interaction.editReply({ embeds: [embed] });
+      await interaction.editReply({
+        components: [successContainer.toJSON()],
+        flags: MessageFlags.IsComponentsV2,
+      });
 
       // 받는 사람에게 DM 알림
       const guildName = interaction.guild?.name ?? '서버';
-      const reasonText = reason ? `\n사유: ${reason}` : '';
+      const reasonText = reason ? `\n📝 사유: ${reason}` : '';
 
-      const dmEmbed = new EmbedBuilder()
-        .setColor(0x00FF00)
-        .setTitle('🎁 아이템 지급 알림')
-        .setDescription(
-          `**${guildName}**에서 관리자가 **${item.name}** ${quantity}개를 지급했습니다.${reasonText}`
+      const dmContainer = new ContainerBuilder()
+        .setAccentColor(0x00FF00)
+        .addTextDisplayComponents(
+          new TextDisplayBuilder().setContent('# 🎁 아이템 지급 알림')
         )
-        .addFields(
-          { name: '📦 보유 수량', value: `${userItem.quantity}개`, inline: true },
+        .addSeparatorComponents(
+          new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small)
         )
-        .setTimestamp();
+        .addTextDisplayComponents(
+          new TextDisplayBuilder().setContent(
+            `**${guildName}**에서 관리자가 **${item.name}** ${quantity}개를 지급했습니다.${reasonText}`
+          )
+        )
+        .addSeparatorComponents(
+          new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small)
+        )
+        .addTextDisplayComponents(
+          new TextDisplayBuilder().setContent(
+            `📦 **보유 수량**: ${userItem.quantity}개`
+          )
+        );
 
-      targetUser.send({ embeds: [dmEmbed] }).catch(() => {});
+      targetUser.send({
+        components: [dmContainer.toJSON()],
+        flags: MessageFlags.IsComponentsV2,
+      }).catch(() => {});
     } catch (error) {
       console.error('아이템 지급 명령어 오류:', error);
       await interaction.editReply({

@@ -1,5 +1,4 @@
 import {
-  EmbedBuilder,
   ActionRowBuilder,
   StringSelectMenuBuilder,
   ButtonBuilder,
@@ -122,81 +121,6 @@ function createShopContainer(
   }
 
   return container.toJSON();
-}
-
-/** 상점 아이템을 Embed 형식으로 변환 (fallback) */
-function createShopEmbed(
-  items: ShopItemV2[],
-  currentMode: CurrencyType,
-  currencyName: string,
-  topyBalance: bigint,
-  rubyBalance: bigint,
-  topyName: string,
-  rubyName: string,
-  page: number = 0,
-  itemsPerPage: number = ITEMS_PER_PAGE
-): EmbedBuilder {
-  const totalPages = Math.ceil(items.length / itemsPerPage);
-  const startIdx = page * itemsPerPage;
-  const pageItems = items.slice(startIdx, startIdx + itemsPerPage);
-
-  const color = currentMode === 'topy' ? 0xFFD700 : 0xE91E63;
-  const emoji = currentMode === 'topy' ? '💰' : '💎';
-
-  const embed = new EmbedBuilder()
-    .setColor(color)
-    .setTitle(`${emoji} ${currencyName} 상점`)
-    .setDescription(
-      items.length > 0
-        ? `${currencyName}로 구매할 수 있는 아이템입니다.\n아래 메뉴에서 구매할 아이템을 선택하세요.`
-        : '현재 판매 중인 아이템이 없습니다.'
-    )
-    .setTimestamp();
-
-  if (pageItems.length > 0) {
-    const fields = pageItems.map((item, idx) => {
-      const price = getItemPrice(item, currentMode) ?? BigInt(0);
-
-      let info = `💰 **${price.toLocaleString()}** ${currencyName}`;
-
-      if (item.durationDays > 0) {
-        info += `\n⏰ ${item.durationDays}일 유효`;
-      } else {
-        info += '\n♾️ 영구';
-      }
-
-      if (item.stock !== null) {
-        info += `\n📦 재고: ${item.stock}개`;
-      }
-      if (item.maxPerUser !== null) {
-        info += `\n👤 인당 ${item.maxPerUser}회`;
-      }
-      if (item.description) {
-        info += `\n> ${item.description}`;
-      }
-
-      return {
-        name: `${startIdx + idx + 1}. ${item.name}`,
-        value: info,
-        inline: true,
-      };
-    });
-
-    embed.addFields(fields);
-  }
-
-  // 잔액 정보 추가
-  embed.addFields({
-    name: '💳 보유 잔액',
-    value: `💰 ${topyBalance.toLocaleString()} ${topyName}  |  💎 ${rubyBalance.toLocaleString()} ${rubyName}`,
-    inline: false,
-  });
-
-  if (totalPages > 1) {
-    embed.setFooter({ text: `페이지 ${page + 1}/${totalPages}` });
-  }
-
-  return embed;
 }
 
 /** 모드 전환 버튼 생성 */
@@ -531,37 +455,6 @@ function createQuantitySelectContainer(
   );
 
   return container.toJSON();
-}
-
-/** 수량 선택 UI 생성 (Embed fallback) */
-function createQuantitySelectEmbed(
-  item: ShopItemV2,
-  currencyName: string,
-  currencyType: CurrencyType,
-  currentQuantity: number
-): EmbedBuilder {
-  const price = getItemPrice(item, currencyType) ?? BigInt(0);
-  const totalPrice = price * BigInt(currentQuantity);
-  const color = currencyType === 'topy' ? 0xFFD700 : 0xE91E63;
-
-  const embed = new EmbedBuilder()
-    .setColor(color)
-    .setTitle('🔢 수량 선택')
-    .setDescription(`**${item.name}**을(를) 몇 개 구매하시겠습니까?`)
-    .addFields(
-      { name: '💰 개당 가격', value: `${price.toLocaleString()} ${currencyName}`, inline: true },
-      { name: '📦 선택 수량', value: `${currentQuantity}개`, inline: true },
-      { name: '💵 총 가격', value: `${totalPrice.toLocaleString()} ${currencyName}`, inline: true }
-    );
-
-  if (item.stock !== null) {
-    embed.addFields({ name: '📦 남은 재고', value: `${item.stock}개`, inline: true });
-  }
-  if (item.maxPerUser !== null) {
-    embed.addFields({ name: '👤 인당 제한', value: `${item.maxPerUser}개`, inline: true });
-  }
-
-  return embed;
 }
 
 /** 수량 선택 버튼 생성 */

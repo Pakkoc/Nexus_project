@@ -1,7 +1,13 @@
 import type { Client, TextChannel } from 'discord.js';
 import type { Container } from '@topia/infra';
 import type { RowDataPacket } from 'mysql2';
-import { EmbedBuilder } from 'discord.js';
+import {
+  ContainerBuilder,
+  TextDisplayBuilder,
+  SeparatorBuilder,
+  SeparatorSpacingSize,
+  MessageFlags,
+} from 'discord.js';
 import { getPool } from '@topia/infra';
 
 interface GuildRow extends RowDataPacket {
@@ -115,21 +121,31 @@ async function sendInterestNotification(
     const year = summary.processedAt.getFullYear();
     const month = summary.processedAt.getMonth() + 1;
 
-    const embed = new EmbedBuilder()
-      .setTitle('🏦 금고 이자 지급 완료')
-      .setDescription(`${year}년 ${month}월 금고 이자가 지급되었습니다.`)
-      .addFields(
-        { name: '이자 지급 대상', value: `${summary.totalUsers}명`, inline: true },
-        {
-          name: '총 이자액',
-          value: `${summary.totalInterestPaid.toLocaleString()} 토피`,
-          inline: true,
-        }
+    const notificationContainer = new ContainerBuilder()
+      .setAccentColor(0x00BFFF)
+      .addTextDisplayComponents(
+        new TextDisplayBuilder().setContent('# 🏦 금고 이자 지급 완료')
       )
-      .setColor(0x00BFFF)
-      .setTimestamp();
+      .addSeparatorComponents(
+        new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small)
+      )
+      .addTextDisplayComponents(
+        new TextDisplayBuilder().setContent(`${year}년 ${month}월 금고 이자가 지급되었습니다.`)
+      )
+      .addSeparatorComponents(
+        new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small)
+      )
+      .addTextDisplayComponents(
+        new TextDisplayBuilder().setContent(
+          `👥 **이자 지급 대상**: ${summary.totalUsers}명\n` +
+          `💰 **총 이자액**: ${summary.totalInterestPaid.toLocaleString()} 토피`
+        )
+      );
 
-    await channel.send({ embeds: [embed] });
+    await channel.send({
+      components: [notificationContainer.toJSON()],
+      flags: MessageFlags.IsComponentsV2,
+    });
   } catch (err) {
     // 알림 전송 실패는 무시
     console.error(`[VAULT INTEREST] Failed to send notification for guild ${guildId}:`, err);

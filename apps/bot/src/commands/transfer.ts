@@ -1,6 +1,5 @@
 import {
   SlashCommandBuilder,
-  EmbedBuilder,
   ActionRowBuilder,
   ButtonBuilder,
   ButtonStyle,
@@ -287,43 +286,67 @@ export const transferCommand: Command = {
         flags: MessageFlags.IsComponentsV2,
       });
 
-      // DM 알림 발송 (실패해도 무시) - DM은 Embed 유지
+      // DM 알림 발송 (실패해도 무시)
       const guildName = interaction.guild?.name ?? '서버';
 
       // 보내는 사람에게 DM
       let senderDmDescription: string;
       if (usedReductionItem) {
-        senderDmDescription = `**${guildName}**에서 **${receiver.displayName}**님에게 **${transferAmount.toLocaleString()} ${currencyName}**를 보냈습니다.${reductionText}${reason ? `\n사유: ${reason}` : ''}`;
+        senderDmDescription = `**${guildName}**에서 **${receiver.displayName}**님에게 **${transferAmount.toLocaleString()} ${currencyName}**를 보냈습니다.${reductionText}${reason ? `\n📝 사유: ${reason}` : ''}`;
       } else if (hasFee) {
-        senderDmDescription = `**${guildName}**에서 **${receiver.displayName}**님에게 **${transferAmount.toLocaleString()} ${currencyName}**를 보냈습니다.\n총 **${totalDeducted.toLocaleString()} ${currencyName}** 차감 (송금 ${transferAmount.toLocaleString()} + 수수료 ${fee.toLocaleString()})${reason ? `\n사유: ${reason}` : ''}`;
+        senderDmDescription = `**${guildName}**에서 **${receiver.displayName}**님에게 **${transferAmount.toLocaleString()} ${currencyName}**를 보냈습니다.\n총 **${totalDeducted.toLocaleString()} ${currencyName}** 차감 (송금 ${transferAmount.toLocaleString()} + 수수료 ${fee.toLocaleString()})${reason ? `\n📝 사유: ${reason}` : ''}`;
       } else {
-        senderDmDescription = `**${guildName}**에서 **${receiver.displayName}**님에게 **${transferAmount.toLocaleString()} ${currencyName}**를 보냈습니다.${reason ? `\n사유: ${reason}` : ''}`;
+        senderDmDescription = `**${guildName}**에서 **${receiver.displayName}**님에게 **${transferAmount.toLocaleString()} ${currencyName}**를 보냈습니다.${reason ? `\n📝 사유: ${reason}` : ''}`;
       }
 
-      const senderDmEmbed = new EmbedBuilder()
-        .setColor(0xFFA500)
-        .setTitle('💸 이체 알림')
-        .setDescription(senderDmDescription)
-        .addFields(
-          { name: '💰 남은 잔액', value: `${fromBalance.toLocaleString()} ${currencyName}`, inline: true },
+      const senderDmContainer = new ContainerBuilder()
+        .setAccentColor(0xFFA500)
+        .addTextDisplayComponents(
+          new TextDisplayBuilder().setContent('# 💸 이체 알림')
         )
-        .setTimestamp();
+        .addSeparatorComponents(
+          new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small)
+        )
+        .addTextDisplayComponents(
+          new TextDisplayBuilder().setContent(senderDmDescription)
+        )
+        .addSeparatorComponents(
+          new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small)
+        )
+        .addTextDisplayComponents(
+          new TextDisplayBuilder().setContent(`💰 **남은 잔액**: ${fromBalance.toLocaleString()} ${currencyName}`)
+        );
 
-      interaction.user.send({ embeds: [senderDmEmbed] }).catch(() => {});
+      interaction.user.send({
+        components: [senderDmContainer.toJSON()],
+        flags: MessageFlags.IsComponentsV2,
+      }).catch(() => {});
 
       // 받는 사람에게 DM
-      const receiverDmEmbed = new EmbedBuilder()
-        .setColor(0x00FF00)
-        .setTitle('💰 입금 알림')
-        .setDescription(
-          `**${guildName}**에서 **${interaction.user.displayName}**님에게서 **${transferAmount.toLocaleString()} ${currencyName}**를 받았습니다.${reason ? `\n사유: ${reason}` : ''}`
+      const receiverDmContainer = new ContainerBuilder()
+        .setAccentColor(0x00FF00)
+        .addTextDisplayComponents(
+          new TextDisplayBuilder().setContent('# 💰 입금 알림')
         )
-        .addFields(
-          { name: '💰 현재 잔액', value: `${toBalance.toLocaleString()} ${currencyName}`, inline: true },
+        .addSeparatorComponents(
+          new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small)
         )
-        .setTimestamp();
+        .addTextDisplayComponents(
+          new TextDisplayBuilder().setContent(
+            `**${guildName}**에서 **${interaction.user.displayName}**님에게서 **${transferAmount.toLocaleString()} ${currencyName}**를 받았습니다.${reason ? `\n📝 사유: ${reason}` : ''}`
+          )
+        )
+        .addSeparatorComponents(
+          new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small)
+        )
+        .addTextDisplayComponents(
+          new TextDisplayBuilder().setContent(`💰 **현재 잔액**: ${toBalance.toLocaleString()} ${currencyName}`)
+        );
 
-      receiver.send({ embeds: [receiverDmEmbed] }).catch(() => {});
+      receiver.send({
+        components: [receiverDmContainer.toJSON()],
+        flags: MessageFlags.IsComponentsV2,
+      }).catch(() => {});
     } catch (error) {
       console.error('이체 명령어 오류:', error);
       await interaction.editReply({

@@ -1,5 +1,4 @@
 import {
-  EmbedBuilder,
   ActionRowBuilder,
   StringSelectMenuBuilder,
   ButtonBuilder,
@@ -12,6 +11,7 @@ import {
   TextDisplayBuilder,
   SeparatorBuilder,
   SeparatorSpacingSize,
+  MessageFlags,
   type ButtonInteraction,
   type ModalSubmitInteraction,
   type StringSelectMenuInteraction,
@@ -247,50 +247,6 @@ function createMarketContainer(
   }
 
   return container.toJSON();
-}
-
-/** 장터 목록 Embed 생성 (fallback) */
-function createMarketEmbed(
-  listings: MarketListing[],
-  topyName: string,
-  rubyName: string,
-  page: number,
-  totalCount: number
-): EmbedBuilder {
-  const totalPages = Math.ceil(totalCount / ITEMS_PER_PAGE);
-  const startIdx = page * ITEMS_PER_PAGE;
-
-  const embed = new EmbedBuilder()
-    .setColor(0x5865F2)
-    .setTitle('🛒 장터 목록')
-    .setTimestamp();
-
-  if (listings.length === 0) {
-    embed.setDescription('현재 판매 중인 상품이 없습니다.\n\n상품을 등록하려면 패널의 **등록하기** 버튼을 클릭하세요.');
-  } else {
-    embed.setDescription(`📦 판매 중인 상품 (${totalCount}개)\n\n아래 메뉴에서 구매할 상품을 선택하세요.`);
-
-    const fields = listings.map((listing, idx) => {
-      const currencyName = listing.currencyType === 'topy' ? topyName : rubyName;
-      const currencyEmoji = listing.currencyType === 'topy' ? '💰' : '💎';
-      const categoryLabel = CATEGORY_LABELS[listing.category];
-      const expiresIn = formatDistanceToNow(listing.expiresAt, { locale: ko, addSuffix: true });
-
-      return {
-        name: `${startIdx + idx + 1}. ${listing.title}`,
-        value: `${categoryLabel} | ${currencyEmoji} **${listing.price.toLocaleString()}** ${currencyName}\n판매자: <@${listing.sellerId}> · 만료 ${expiresIn}`,
-        inline: false,
-      };
-    });
-
-    embed.addFields(fields);
-  }
-
-  if (totalPages > 1) {
-    embed.setFooter({ text: `페이지 ${page + 1}/${totalPages}` });
-  }
-
-  return embed;
 }
 
 /** 상품 선택 메뉴 생성 */
@@ -680,20 +636,39 @@ async function handlePurchase(
     // 판매자에게 DM 알림
     try {
       const seller = await interaction.client.users.fetch(listing.sellerId);
-      const sellerEmbed = new EmbedBuilder()
-        .setColor(0x00FF00)
-        .setTitle('💰 장터 판매 알림!')
-        .setDescription(`<@${userId}>님이 상품을 구매했습니다.`)
-        .addFields(
-          { name: '📦 상품', value: listing.title, inline: false },
-          { name: '💰 판매 금액', value: `${price.toLocaleString()} ${currencyName}`, inline: true },
-          { name: '📋 수수료', value: `${actualFee.toLocaleString()} ${currencyName}`, inline: true },
-          { name: '💵 실수령액', value: `${sellerReceived.toLocaleString()} ${currencyName}`, inline: true }
+      const sellerDmContainer = new ContainerBuilder()
+        .setAccentColor(0x00FF00)
+        .addTextDisplayComponents(
+          new TextDisplayBuilder().setContent('# 💰 장터 판매 알림!')
         )
-        .setFooter({ text: '구매자에게 DM으로 서비스를 제공해주세요.' })
-        .setTimestamp();
+        .addSeparatorComponents(
+          new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small)
+        )
+        .addTextDisplayComponents(
+          new TextDisplayBuilder().setContent(`<@${userId}>님이 상품을 구매했습니다.`)
+        )
+        .addSeparatorComponents(
+          new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small)
+        )
+        .addTextDisplayComponents(
+          new TextDisplayBuilder().setContent(
+            `📦 **상품**: ${listing.title}\n` +
+            `💰 **판매 금액**: ${price.toLocaleString()} ${currencyName}\n` +
+            `📋 **수수료**: ${actualFee.toLocaleString()} ${currencyName}\n` +
+            `💵 **실수령액**: ${sellerReceived.toLocaleString()} ${currencyName}`
+          )
+        )
+        .addSeparatorComponents(
+          new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small)
+        )
+        .addTextDisplayComponents(
+          new TextDisplayBuilder().setContent('-# 구매자에게 DM으로 서비스를 제공해주세요.')
+        );
 
-      await seller.send({ embeds: [sellerEmbed] });
+      await seller.send({
+        components: [sellerDmContainer.toJSON()],
+        flags: MessageFlags.IsComponentsV2,
+      });
     } catch {
       // DM 전송 실패 무시
     }

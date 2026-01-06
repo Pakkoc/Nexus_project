@@ -4,7 +4,6 @@ import {
   ActionRowBuilder,
   StringSelectMenuBuilder,
   ComponentType,
-  EmbedBuilder,
 } from 'discord.js';
 import type { Command } from './types';
 import { generateProfileCard, type ProfileCardData } from '../utils/canvas/profile-card';
