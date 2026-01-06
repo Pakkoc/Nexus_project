@@ -32,6 +32,16 @@ export interface ExpiredItem {
   fixedRoleIdToRevoke: string | null; // 고정 역할도 함께 제거
 }
 
+/** 유저 보유 아이템 (상점 아이템 정보 포함) */
+export interface OwnedItem {
+  userItem: UserItemV2;
+  shopItem: ShopItemV2;
+  /** 선택권 여부 (역할 교환 가능) */
+  isTicket: boolean;
+  /** 선택권 정보 (isTicket이 true일 때만 존재) */
+  ticket?: RoleTicket;
+}
+
 export class InventoryService {
   constructor(
     private readonly shopRepo: ShopRepositoryPort,
@@ -88,6 +98,54 @@ export class InventoryService {
     }
 
     return { success: true, data: availableTickets };
+  }
+
+  /**
+   * 유저가 보유한 모든 아이템 조회 (만료/수량 0 제외)
+   */
+  async getOwnedItems(
+    guildId: string,
+    userId: string
+  ): Promise<Result<OwnedItem[], CurrencyError>> {
+    const now = this.clock.now();
+
+    // 1. 유저의 모든 아이템 조회
+    const userItemsResult = await this.shopRepo.findUserItems(guildId, userId);
+    if (!userItemsResult.success) {
+      return { success: false, error: { type: 'REPOSITORY_ERROR', cause: userItemsResult.error } };
+    }
+
+    // 2. 활성화된 선택권 조회 (선택권 여부 판별용)
+    const ticketsResult = await this.ticketRepo.findEnabledByGuild(guildId);
+    const tickets = ticketsResult.success ? ticketsResult.data : [];
+    const ticketByShopItemId = new Map(tickets.map(t => [t.shopItemId, t]));
+
+    // 3. 유효한 아이템 필터링 및 상점 정보 조회
+    const ownedItems: OwnedItem[] = [];
+
+    for (const userItem of userItemsResult.data) {
+      // 만료 확인
+      if (isItemV2Expired(userItem, now)) continue;
+
+      // 수량 0이고 기간제가 아닌 경우 제외
+      if (userItem.quantity <= 0 && userItem.expiresAt === null) continue;
+
+      // 상점 아이템 정보 조회
+      const shopItemResult = await this.shopRepo.findById(userItem.shopItemId);
+      if (!shopItemResult.success || !shopItemResult.data) continue;
+
+      // 선택권 여부 확인
+      const ticket = ticketByShopItemId.get(userItem.shopItemId);
+
+      ownedItems.push({
+        userItem,
+        shopItem: shopItemResult.data,
+        isTicket: !!ticket,
+        ticket,
+      });
+    }
+
+    return { success: true, data: ownedItems };
   }
 
   /**

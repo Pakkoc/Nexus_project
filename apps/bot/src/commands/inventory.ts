@@ -13,14 +13,27 @@ import {
   type APIContainerComponent,
 } from 'discord.js';
 import type { Command } from './types';
-import type { AvailableTicket, TicketRoleOption } from '@topia/core';
+import type { AvailableTicket, TicketRoleOption, OwnedItem, ShopItemType } from '@topia/core';
 
 // Components v2 플래그 (1 << 15)
 const IS_COMPONENTS_V2 = 32768;
 
-/** 인벤토리 Container 생성 (Components v2) */
+/** 아이템 타입별 라벨 */
+const ITEM_TYPE_LABELS: Record<ShopItemType, string> = {
+  custom: '🎁 일반',
+  warning_reduction: '⚠️ 경고차감',
+  tax_exemption: '💸 세금면제',
+  transfer_fee_reduction: '💳 수수료감면',
+  activity_boost: '🚀 활동부스트',
+  premium_afk: '💤 프리미엄잠수',
+  vip_lounge: '👑 VIP라운지',
+  dito_silver: '🥈 디토실버',
+  dito_gold: '🥇 디토골드',
+};
+
+/** 인벤토리 Container 생성 (Components v2) - 모든 보유 아이템 */
 function createInventoryContainer(
-  tickets: AvailableTicket[],
+  items: OwnedItem[],
   topyName: string,
   rubyName: string
 ): APIContainerComponent {
@@ -34,9 +47,81 @@ function createInventoryContainer(
     new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small)
   );
 
+  if (items.length === 0) {
+    container.addTextDisplayComponents(
+      new TextDisplayBuilder().setContent('보유한 아이템이 없습니다.\n상점에서 아이템을 구매해보세요!')
+    );
+    return container.toJSON();
+  }
+
+  // 선택권과 일반 아이템 분류
+  const ticketItems = items.filter(i => i.isTicket);
+  const otherItems = items.filter(i => !i.isTicket);
+
+  // 선택권이 있으면 안내 메시지 표시
+  if (ticketItems.length > 0) {
+    container.addTextDisplayComponents(
+      new TextDisplayBuilder().setContent('🎫 **선택권**은 아래 메뉴에서 역할로 교환할 수 있습니다.')
+    );
+    container.addSeparatorComponents(
+      new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small)
+    );
+  }
+
+  // 모든 아이템 표시
+  items.forEach((item, idx) => {
+    const isPeriod = item.shopItem.durationDays > 0;
+    const typeLabel = ITEM_TYPE_LABELS[item.shopItem.itemType] || '🎁 일반';
+
+    let info = `**${idx + 1}. ${item.shopItem.name}**\n`;
+    info += `${typeLabel}`;
+
+    // 수량 표시 (기간제는 수량 대신 남은 기간)
+    if (isPeriod && item.userItem.expiresAt) {
+      const expiresAt = new Date(item.userItem.expiresAt);
+      const daysLeft = Math.ceil((expiresAt.getTime() - Date.now()) / (1000 * 60 * 60 * 24));
+      info += ` · ⏰ ${daysLeft}일 남음`;
+    } else {
+      info += ` · 📦 **${item.userItem.quantity}개**`;
+    }
+
+    // 선택권인 경우 추가 정보
+    if (item.isTicket && item.ticket) {
+      const roleCount = item.ticket.roleOptions?.length ?? 0;
+      info += ` · 🎭 ${roleCount}개 역할`;
+    }
+
+    if (item.shopItem.description) {
+      info += `\n> ${item.shopItem.description}`;
+    }
+
+    container.addTextDisplayComponents(
+      new TextDisplayBuilder().setContent(info)
+    );
+  });
+
+  return container.toJSON();
+}
+
+/** 인벤토리 Container 생성 (선택권용) - 역할 교환 시 사용 */
+function createTicketInventoryContainer(
+  tickets: AvailableTicket[],
+  topyName: string,
+  rubyName: string
+): APIContainerComponent {
+  const container = new ContainerBuilder();
+
+  container.addTextDisplayComponents(
+    new TextDisplayBuilder().setContent('# 🎫 선택권')
+  );
+
+  container.addSeparatorComponents(
+    new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small)
+  );
+
   if (tickets.length === 0) {
     container.addTextDisplayComponents(
-      new TextDisplayBuilder().setContent('사용 가능한 선택권이 없습니다.\n상점에서 티켓을 구매해보세요!')
+      new TextDisplayBuilder().setContent('사용 가능한 선택권이 없습니다.')
     );
     return container.toJSON();
   }
@@ -404,7 +489,7 @@ function createConfirmButtons(
 export const inventoryCommand: Command = {
   data: new SlashCommandBuilder()
     .setName('인벤토리')
-    .setDescription('보유한 선택권을 확인하고 역할로 교환합니다'),
+    .setDescription('보유한 아이템을 확인하고 선택권은 역할로 교환합니다'),
 
   async execute(interaction, container) {
     const guildId = interaction.guildId;
@@ -426,21 +511,25 @@ export const inventoryCommand: Command = {
       const topyName = settingsResult.success && settingsResult.data?.topyName || '토피';
       const rubyName = settingsResult.success && settingsResult.data?.rubyName || '루비';
 
-      // 사용 가능한 선택권 조회
-      const ticketsResult = await container.inventoryService.getAvailableTickets(guildId, userId);
-      if (!ticketsResult.success) {
+      // 모든 보유 아이템 조회
+      const ownedItemsResult = await container.inventoryService.getOwnedItems(guildId, userId);
+      if (!ownedItemsResult.success) {
         await interaction.editReply({
           content: '인벤토리 정보를 불러오는 중 오류가 발생했습니다.',
         });
         return;
       }
 
-      const tickets = ticketsResult.data;
+      const ownedItems = ownedItemsResult.data;
+
+      // 사용 가능한 선택권 조회 (역할 교환용)
+      const ticketsResult = await container.inventoryService.getAvailableTickets(guildId, userId);
+      const tickets = ticketsResult.success ? ticketsResult.data : [];
 
       // 인벤토리가 비어있는 경우
-      if (tickets.length === 0) {
+      if (ownedItems.length === 0) {
         await interaction.editReply({
-          components: [createInventoryContainer(tickets, topyName, rubyName)],
+          components: [createInventoryContainer(ownedItems, topyName, rubyName)],
           flags: IS_COMPONENTS_V2,
         });
         return;
@@ -455,13 +544,19 @@ export const inventoryCommand: Command = {
 
       let state: State = { type: 'ticket_select' };
 
-      // 초기 화면 렌더링 (Components v2)
+      // 초기 화면 렌더링 (Components v2) - 모든 아이템 + 선택권 선택 메뉴
       const renderTicketSelect = () => {
-        const inventoryContainer = createInventoryContainer(tickets, topyName, rubyName);
-        const selectRow = new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(
-          createTicketSelectMenu(tickets, `inv_ticket_${userId}`)
-        );
-        return { components: [inventoryContainer, selectRow.toJSON()], flags: IS_COMPONENTS_V2 };
+        const inventoryContainer = createInventoryContainer(ownedItems, topyName, rubyName);
+
+        // 선택권이 있으면 선택 메뉴 표시
+        if (tickets.length > 0) {
+          const selectRow = new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(
+            createTicketSelectMenu(tickets, `inv_ticket_${userId}`)
+          );
+          return { components: [inventoryContainer, selectRow.toJSON()], flags: IS_COMPONENTS_V2 };
+        }
+
+        return { components: [inventoryContainer], flags: IS_COMPONENTS_V2 };
       };
 
       const renderRoleSelect = (ticketId: number, roleOptions: TicketRoleOption[]) => {
