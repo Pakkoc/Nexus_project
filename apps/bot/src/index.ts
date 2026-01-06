@@ -13,6 +13,11 @@ import {
   ButtonBuilder,
   ButtonStyle,
   ChannelType,
+  ContainerBuilder,
+  TextDisplayBuilder,
+  SeparatorBuilder,
+  SeparatorSpacingSize,
+  MessageFlags,
 } from 'discord.js';
 import { createPool, createRedisClient, createContainer, getPool, type Container } from '@topia/infra';
 import { createXpHandler } from './handlers/xp.handler';
@@ -778,24 +783,40 @@ async function main() {
       const topyFeePercent = marketSettings?.topyFeePercent ?? 5;
       const rubyFeePercent = marketSettings?.rubyFeePercent ?? 3;
 
-      // 패널 Embed 생성
-      const embed = new EmbedBuilder()
-        .setColor(0x5865F2)
-        .setTitle('🛒 토피아 장터')
-        .setDescription(
-          '재능과 서비스를 자유롭게 거래하세요!\n\n' +
-          '아래 버튼을 클릭하여 장터를 이용할 수 있습니다.'
+      // Components v2 패널 생성
+      const marketContainer = new ContainerBuilder()
+        .setAccentColor(0x5865F2)
+        .addTextDisplayComponents(
+          new TextDisplayBuilder().setContent('# 🛒 토피아 장터')
         )
-        .addFields(
-          { name: `💰 ${topyName} 수수료`, value: `${topyFeePercent}%`, inline: true },
-          { name: `💎 ${rubyName} 수수료`, value: `${rubyFeePercent}%`, inline: true },
-          { name: '⏰ 등록 유효기간', value: '30일', inline: true }
+        .addSeparatorComponents(
+          new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small)
         )
-        .setFooter({ text: '거래 시 발생하는 분쟁은 관리자에게 문의하세요.' })
-        .setTimestamp();
+        .addTextDisplayComponents(
+          new TextDisplayBuilder().setContent(
+            '재능과 서비스를 자유롭게 거래하세요!\n\n' +
+            '아래 버튼을 클릭하여 장터를 이용할 수 있습니다.'
+          )
+        )
+        .addSeparatorComponents(
+          new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small)
+        )
+        .addTextDisplayComponents(
+          new TextDisplayBuilder().setContent(
+            `💰 **${topyName} 수수료**: ${topyFeePercent}%\n` +
+            `💎 **${rubyName} 수수료**: ${rubyFeePercent}%\n` +
+            `⏰ **등록 유효기간**: 30일`
+          )
+        )
+        .addSeparatorComponents(
+          new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small)
+        )
+        .addTextDisplayComponents(
+          new TextDisplayBuilder().setContent('-# 거래 시 발생하는 분쟁은 관리자에게 문의하세요.')
+        );
 
       // 버튼 생성
-      const buttonRow = new ActionRowBuilder<ButtonBuilder>().addComponents(
+      const marketButtonRow = new ActionRowBuilder<ButtonBuilder>().addComponents(
         new ButtonBuilder()
           .setCustomId('market_panel_list')
           .setLabel('목록보기')
@@ -815,8 +836,8 @@ async function main() {
 
       // 채널에 패널 메시지 전송
       const message = await channel.send({
-        embeds: [embed],
-        components: [buttonRow],
+        components: [marketContainer.toJSON(), marketButtonRow],
+        flags: MessageFlags.IsComponentsV2,
       });
 
       // 설정에 채널/메시지 ID 저장
@@ -876,17 +897,28 @@ async function main() {
       const topyName = (currencySettingsResult.success && currencySettingsResult.data?.topyName) || '토피';
       const rubyName = (currencySettingsResult.success && currencySettingsResult.data?.rubyName) || '루비';
 
-      // 패널 Embed 생성
-      const embed = new EmbedBuilder()
-        .setColor(0x5865F2)
-        .setTitle('🛒 상점')
-        .setDescription(
-          '아이템을 구매하여 다양한 혜택을 누려보세요!\n\n' +
-          `💰 **${topyName}** 또는 💎 **${rubyName}**로 아이템을 구매할 수 있습니다.\n` +
-          '구매한 아이템은 `/인벤토리` 명령어에서 확인할 수 있습니다.'
+      // Components v2 패널 생성
+      const panelContainer = new ContainerBuilder()
+        .setAccentColor(0x5865F2)
+        .addTextDisplayComponents(
+          new TextDisplayBuilder().setContent('# 🛒 상점')
         )
-        .setFooter({ text: '아래 버튼을 눌러 상점을 열어보세요!' })
-        .setTimestamp();
+        .addSeparatorComponents(
+          new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small)
+        )
+        .addTextDisplayComponents(
+          new TextDisplayBuilder().setContent(
+            '아이템을 구매하여 다양한 혜택을 누려보세요!\n\n' +
+            `💰 **${topyName}** 또는 💎 **${rubyName}**로 아이템을 구매할 수 있습니다.\n` +
+            '구매한 아이템은 `/인벤토리` 명령어에서 확인할 수 있습니다.'
+          )
+        )
+        .addSeparatorComponents(
+          new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small)
+        )
+        .addTextDisplayComponents(
+          new TextDisplayBuilder().setContent('-# 아래 버튼을 눌러 상점을 열어보세요!')
+        );
 
       // 버튼 생성
       const buttonRow = new ActionRowBuilder<ButtonBuilder>().addComponents(
@@ -899,8 +931,8 @@ async function main() {
 
       // 채널에 패널 메시지 전송
       const message = await channel.send({
-        embeds: [embed],
-        components: [buttonRow],
+        components: [panelContainer.toJSON(), buttonRow],
+        flags: MessageFlags.IsComponentsV2,
       });
 
       // 설정에 채널/메시지 ID 저장
@@ -958,23 +990,56 @@ async function main() {
       const guild = await client.guilds.fetch(guildId);
       const results: { type: string; success: boolean; reason?: string }[] = [];
 
+      // 헬퍼: 상점 패널 Components v2 빌더
+      const buildShopContainer = (title: string, color: number, currencyName: string, currencyEmoji: string, currencyType: 'topy' | 'ruby' | 'combined') => {
+        const description = currencyType === 'combined'
+          ? `💰 **${topyName || '토피'}** 또는 💎 **${rubyName || '루비'}**로 아이템을 구매할 수 있습니다.`
+          : `${currencyEmoji} **${currencyName}**로 아이템을 구매할 수 있습니다.`;
+
+        return new ContainerBuilder()
+          .setAccentColor(color)
+          .addTextDisplayComponents(
+            new TextDisplayBuilder().setContent(`# ${title}`)
+          )
+          .addSeparatorComponents(
+            new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small)
+          )
+          .addTextDisplayComponents(
+            new TextDisplayBuilder().setContent(
+              '아이템을 구매하여 다양한 혜택을 누려보세요!\n\n' +
+              description + '\n' +
+              '구매한 아이템은 `/인벤토리` 명령어에서 확인할 수 있습니다.'
+            )
+          )
+          .addSeparatorComponents(
+            new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small)
+          )
+          .addTextDisplayComponents(
+            new TextDisplayBuilder().setContent('-# 아래 버튼을 눌러 상점을 열어보세요!')
+          );
+      };
+
+      // 상점 버튼
+      const shopButton = new ActionRowBuilder<ButtonBuilder>().addComponents(
+        new ButtonBuilder()
+          .setCustomId('shop_panel_open')
+          .setLabel('상점 열기')
+          .setStyle(ButtonStyle.Primary)
+          .setEmoji('🛒')
+      );
+
       // 1. 기존 통합 패널 업데이트
       if (shopChannelId && shopMessageId) {
         try {
           const channel = await guild.channels.fetch(shopChannelId);
           if (channel && 'messages' in channel) {
             const message = await channel.messages.fetch(shopMessageId);
-            const embed = new EmbedBuilder()
-              .setColor(0x5865F2)
-              .setTitle('🛒 상점')
-              .setDescription(
-                '아이템을 구매하여 다양한 혜택을 누려보세요!\n\n' +
-                `💰 **${topyName || '토피'}** 또는 💎 **${rubyName || '루비'}**로 아이템을 구매할 수 있습니다.\n` +
-                '구매한 아이템은 `/인벤토리` 명령어에서 확인할 수 있습니다.'
-              )
-              .setFooter({ text: '아래 버튼을 눌러 상점을 열어보세요!' })
-              .setTimestamp();
-            await message.edit({ embeds: [embed] });
+            const panelContainer = buildShopContainer('🛒 상점', 0x5865F2, '', '', 'combined');
+            await message.edit({
+              components: [panelContainer.toJSON(), shopButton],
+              flags: MessageFlags.IsComponentsV2,
+              embeds: [],
+            });
             results.push({ type: 'combined', success: true });
           }
         } catch {
@@ -989,17 +1054,12 @@ async function main() {
           const channel = await guild.channels.fetch(topyPanelResult.data.channelId);
           if (channel && 'messages' in channel) {
             const message = await channel.messages.fetch(topyPanelResult.data.messageId);
-            const embed = new EmbedBuilder()
-              .setColor(0xFFD700)
-              .setTitle(`💰 ${topyName || '토피'} 상점`)
-              .setDescription(
-                `아이템을 구매하여 다양한 혜택을 누려보세요!\n\n` +
-                `💰 **${topyName || '토피'}**로 아이템을 구매할 수 있습니다.\n` +
-                '구매한 아이템은 `/인벤토리` 명령어에서 확인할 수 있습니다.'
-              )
-              .setFooter({ text: '아래 버튼을 눌러 상점을 열어보세요!' })
-              .setTimestamp();
-            await message.edit({ embeds: [embed] });
+            const panelContainer = buildShopContainer(`💰 ${topyName || '토피'} 상점`, 0xFFD700, topyName || '토피', '💰', 'topy');
+            await message.edit({
+              components: [panelContainer.toJSON(), shopButton],
+              flags: MessageFlags.IsComponentsV2,
+              embeds: [],
+            });
             results.push({ type: 'topy', success: true });
           }
         } catch {
@@ -1014,17 +1074,12 @@ async function main() {
           const channel = await guild.channels.fetch(rubyPanelResult.data.channelId);
           if (channel && 'messages' in channel) {
             const message = await channel.messages.fetch(rubyPanelResult.data.messageId);
-            const embed = new EmbedBuilder()
-              .setColor(0xE91E63)
-              .setTitle(`💎 ${rubyName || '루비'} 상점`)
-              .setDescription(
-                `아이템을 구매하여 다양한 혜택을 누려보세요!\n\n` +
-                `💎 **${rubyName || '루비'}**로 아이템을 구매할 수 있습니다.\n` +
-                '구매한 아이템은 `/인벤토리` 명령어에서 확인할 수 있습니다.'
-              )
-              .setFooter({ text: '아래 버튼을 눌러 상점을 열어보세요!' })
-              .setTimestamp();
-            await message.edit({ embeds: [embed] });
+            const panelContainer = buildShopContainer(`💎 ${rubyName || '루비'} 상점`, 0xE91E63, rubyName || '루비', '💎', 'ruby');
+            await message.edit({
+              components: [panelContainer.toJSON(), shopButton],
+              flags: MessageFlags.IsComponentsV2,
+              embeds: [],
+            });
             results.push({ type: 'ruby', success: true });
           }
         } catch {
@@ -1043,21 +1098,60 @@ async function main() {
             const topyFeePercent = marketSettings.topyFeePercent ?? 5;
             const rubyFeePercent = marketSettings.rubyFeePercent ?? 3;
 
-            const embed = new EmbedBuilder()
-              .setColor(0x5865F2)
-              .setTitle('🛒 토피아 장터')
-              .setDescription(
-                '재능과 서비스를 자유롭게 거래하세요!\n\n' +
-                '아래 버튼을 클릭하여 장터를 이용할 수 있습니다.'
+            const marketContainer = new ContainerBuilder()
+              .setAccentColor(0x5865F2)
+              .addTextDisplayComponents(
+                new TextDisplayBuilder().setContent('# 🛒 토피아 장터')
               )
-              .addFields(
-                { name: `💰 ${topyName || '토피'} 수수료`, value: `${topyFeePercent}%`, inline: true },
-                { name: `💎 ${rubyName || '루비'} 수수료`, value: `${rubyFeePercent}%`, inline: true },
-                { name: '⏰ 등록 유효기간', value: '30일', inline: true }
+              .addSeparatorComponents(
+                new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small)
               )
-              .setFooter({ text: '거래 시 발생하는 분쟁은 관리자에게 문의하세요.' })
-              .setTimestamp();
-            await message.edit({ embeds: [embed] });
+              .addTextDisplayComponents(
+                new TextDisplayBuilder().setContent(
+                  '재능과 서비스를 자유롭게 거래하세요!\n\n' +
+                  '아래 버튼을 클릭하여 장터를 이용할 수 있습니다.'
+                )
+              )
+              .addSeparatorComponents(
+                new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small)
+              )
+              .addTextDisplayComponents(
+                new TextDisplayBuilder().setContent(
+                  `💰 **${topyName || '토피'} 수수료**: ${topyFeePercent}%\n` +
+                  `💎 **${rubyName || '루비'} 수수료**: ${rubyFeePercent}%\n` +
+                  `⏰ **등록 유효기간**: 30일`
+                )
+              )
+              .addSeparatorComponents(
+                new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small)
+              )
+              .addTextDisplayComponents(
+                new TextDisplayBuilder().setContent('-# 거래 시 발생하는 분쟁은 관리자에게 문의하세요.')
+              );
+
+            const marketButtons = new ActionRowBuilder<ButtonBuilder>().addComponents(
+              new ButtonBuilder()
+                .setCustomId('market_panel_list')
+                .setLabel('목록보기')
+                .setStyle(ButtonStyle.Primary)
+                .setEmoji('📋'),
+              new ButtonBuilder()
+                .setCustomId('market_panel_register')
+                .setLabel('등록하기')
+                .setStyle(ButtonStyle.Success)
+                .setEmoji('📝'),
+              new ButtonBuilder()
+                .setCustomId('market_panel_my')
+                .setLabel('내상품')
+                .setStyle(ButtonStyle.Secondary)
+                .setEmoji('📦')
+            );
+
+            await message.edit({
+              components: [marketContainer.toJSON(), marketButtons],
+              flags: MessageFlags.IsComponentsV2,
+              embeds: [],
+            });
             results.push({ type: 'market', success: true });
           }
         } catch {
@@ -1134,23 +1228,43 @@ async function main() {
         .map(([rank, percent]) => `${rank}등 ${percent}%`)
         .join(' | ');
 
-      // 패널 Embed 생성
-      const embed = new EmbedBuilder()
-        .setColor(0x5865F2)
-        .setTitle('🎮 내전 시스템')
-        .setDescription(
-          '참가비를 내고 내전에 참가하세요!\n\n' +
-          `💰 **참가비**: ${entryFee.toLocaleString()} ${topyName}\n` +
-          `🏆 **보상 비율**: ${rankRewardsText}`
+      // Components v2 패널 생성
+      const gameContainer = new ContainerBuilder()
+        .setAccentColor(0x5865F2)
+        .addTextDisplayComponents(
+          new TextDisplayBuilder().setContent('# 🎮 내전 시스템')
         )
-        .addFields(
-          { name: '📋 참가 방법', value: '1. 내전 메시지에서 참가 버튼 클릭\n2. 참가비 자동 차감\n3. 관리자가 팀 배정\n4. 경기 후 순위 보상', inline: false }
+        .addSeparatorComponents(
+          new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small)
         )
-        .setFooter({ text: '관리자만 내전을 생성할 수 있습니다.' })
-        .setTimestamp();
+        .addTextDisplayComponents(
+          new TextDisplayBuilder().setContent(
+            '참가비를 내고 내전에 참가하세요!\n\n' +
+            `💰 **참가비**: ${entryFee.toLocaleString()} ${topyName}\n` +
+            `🏆 **보상 비율**: ${rankRewardsText}`
+          )
+        )
+        .addSeparatorComponents(
+          new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small)
+        )
+        .addTextDisplayComponents(
+          new TextDisplayBuilder().setContent(
+            '**📋 참가 방법**\n' +
+            '1. 내전 메시지에서 참가 버튼 클릭\n' +
+            '2. 참가비 자동 차감\n' +
+            '3. 관리자가 팀 배정\n' +
+            '4. 경기 후 순위 보상'
+          )
+        )
+        .addSeparatorComponents(
+          new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small)
+        )
+        .addTextDisplayComponents(
+          new TextDisplayBuilder().setContent('-# 관리자만 내전을 생성할 수 있습니다.')
+        );
 
-      // 버튼 생성 (2개: 내전 생성, 카테고리)
-      const buttonRow = new ActionRowBuilder<ButtonBuilder>().addComponents(
+      // 버튼 생성
+      const gameButtonRow = new ActionRowBuilder<ButtonBuilder>().addComponents(
         new ButtonBuilder()
           .setCustomId('game_panel_create')
           .setLabel('내전 생성')
@@ -1165,8 +1279,8 @@ async function main() {
 
       // 채널에 패널 메시지 전송
       const message = await channel.send({
-        embeds: [embed],
-        components: [buttonRow],
+        components: [gameContainer.toJSON(), gameButtonRow],
+        flags: MessageFlags.IsComponentsV2,
       });
 
       // 설정에 채널/메시지 ID 저장

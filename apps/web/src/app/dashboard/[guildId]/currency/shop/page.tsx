@@ -1,7 +1,7 @@
 "use client";
 
 import { useParams } from "next/navigation";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -102,6 +102,7 @@ export default function ShopV2Page() {
 
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<ShopItemV2 | null>(null);
+  const itemListRef = useRef<HTMLDivElement>(null);
 
   // Pending role options for new item creation
   const [pendingRoleOptions, setPendingRoleOptions] = useState<PendingRoleOption[]>([]);
@@ -383,6 +384,13 @@ export default function ShopV2Page() {
           title: "기본 아이템 추가 완료",
           description: `${result.seeded}개의 아이템이 추가되었습니다.`,
         });
+        // 아이템 목록으로 스크롤 이동
+        setTimeout(() => {
+          itemListRef.current?.scrollIntoView({
+            behavior: "smooth",
+            block: "start",
+          });
+        }, 100);
       } else {
         toast({
           title: "추가할 아이템 없음",
@@ -1112,7 +1120,7 @@ export default function ShopV2Page() {
       </div>
 
       {/* Items List */}
-      <div className="bg-white/5 backdrop-blur-sm rounded-2xl border border-white/10 overflow-hidden">
+      <div ref={itemListRef} className="bg-white/5 backdrop-blur-sm rounded-2xl border border-white/10 overflow-hidden">
         <div className="p-6 border-b border-white/10">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500 to-orange-500 flex items-center justify-center">

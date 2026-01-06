@@ -1,9 +1,5 @@
 # Topia Empire ERD (Entity Relationship Diagram)
 
-## 개요
-
-Topia Empire 데이터베이스는 Discord 봇의 다양한 기능을 지원하기 위해 설계되었습니다.
-
 - **총 테이블 수**: 42개
 - **데이터베이스**: MySQL 8
 - **인코딩**: utf8mb4_unicode_ci
@@ -11,9 +7,11 @@ Topia Empire 데이터베이스는 Discord 봇의 다양한 기능을 지원하�
 ## 시스템별 구조
 
 ### 1. 핵심 (Core)
+
 - `guilds` - 길드(서버) 정보
 
 ### 2. 재화 시스템 (Currency System)
+
 - `currency_settings` - 재화 설정
 - `topy_wallets` - 토피 지갑
 - `ruby_wallets` - 루비 지갑
@@ -30,6 +28,7 @@ Topia Empire 데이터베이스는 Discord 봇의 다양한 기능을 지원하�
 - `user_vaults` - 사용자 금고
 
 ### 3. 상점 시스템 (Shop System)
+
 - `shop_items` - 상점 아이템 (v1)
 - `shop_items_v2` - 상점 아이템 (v2)
 - `shop_color_options` - 색상 옵션
@@ -41,6 +40,7 @@ Topia Empire 데이터베이스는 Discord 봇의 다양한 기능을 지원하�
 - `ticket_role_options` - 티켓 역할 옵션
 
 ### 4. XP/레벨 시스템 (XP System)
+
 - `xp_settings` - XP 설정
 - `xp_users` - 사용자 XP/레벨
 - `xp_multipliers` - XP 배율
@@ -52,6 +52,7 @@ Topia Empire 데이터베이스는 Discord 봇의 다양한 기능을 지원하�
 - `xp_level_channels` - 레벨별 채널 접근
 
 ### 5. 게임 시스템 (Game System)
+
 - `game_settings` - 게임 설정
 - `game_categories` - 게임 카테고리
 - `games` - 게임
@@ -59,10 +60,12 @@ Topia Empire 데이터베이스는 Discord 봇의 다양한 기능을 지원하�
 - `game_results` - 게임 결과
 
 ### 6. 마켓 시스템 (Market System)
+
 - `market_settings` - 마켓 설정
 - `market_listings` - 마켓 등록 상품
 
 ### 7. 기타
+
 - `data_retention_settings` - 데이터 보관 설정
 - `left_members` - 퇴장 멤버
 
@@ -590,74 +593,87 @@ erDiagram
 ## 테이블별 상세 설명
 
 ### guilds (길드)
+
 Discord 서버(길드) 정보를 저장하는 핵심 테이블입니다. 대부분의 테이블이 이 테이블을 참조합니다.
 
 ### currency_settings (재화 설정)
+
 길드별 재화 시스템 설정을 저장합니다.
+
 - 토피/루비 이름 커스터마이징
 - 텍스트/음성 채팅 재화 획득 설정
 - 이체 수수료, 상점 수수료 설정
 - 월세(세금) 설정
 
 ### topy_wallets / ruby_wallets (지갑)
+
 사용자별 토피/루비 잔액을 저장합니다.
+
 - 복합 PK: (guild_id, user_id)
 - 쿨다운 및 일일 획득량 추적
 
 ### shop_items_v2 (상점 아이템 v2)
+
 새로운 상점 시스템의 아이템 정의입니다.
+
 - 토피/루비 동시 가격 설정 가능
 - 역할 티켓 연동 가능
 
 ### role_tickets (역할 티켓)
+
 상점 아이템과 연결된 역할 부여 티켓입니다.
+
 - `shop_item_id`: shop_items_v2와 1:1 관계
 - 다중 역할 옵션 지원 (ticket_role_options)
 
 ### games / game_participants / game_results
+
 게임 시스템의 핵심 테이블들입니다.
+
 - 게임 생성 -> 참가자 등록 -> 결과 기록 흐름
 
 ### user_vaults (금고)
+
 사용자별 토피 예치 금고입니다.
+
 - 이자 지급 기능 지원
 
 ---
 
 ## 외래키 제약조건
 
-| 테이블 | 컬럼 | 참조 테이블 | 참조 컬럼 |
-|--------|------|-------------|-----------|
-| currency_category_multipliers | guild_id | guilds | id |
-| currency_channel_categories | guild_id | guilds | id |
-| currency_exclusions | guild_id | guilds | id |
-| currency_hot_times | guild_id | guilds | id |
-| currency_multipliers | guild_id | guilds | id |
-| currency_settings | guild_id | guilds | id |
-| currency_transactions | guild_id | guilds | id |
-| daily_rewards | guild_id | guilds | id |
-| data_retention_settings | guild_id | guilds | id |
-| left_members | guild_id | guilds | id |
-| market_listings | guild_id | guilds | id |
-| purchase_history | guild_id | guilds | id |
-| role_tickets | shop_item_id | shop_items_v2 | id |
-| ruby_wallets | guild_id | guilds | id |
-| shop_color_options | item_id | shop_items | id |
-| shop_items | guild_id | guilds | id |
-| tax_history | guild_id | guilds | id |
-| ticket_role_options | ticket_id | role_tickets | id |
-| topy_wallets | guild_id | guilds | id |
-| user_items | guild_id | guilds | id |
-| user_items_v2 | shop_item_id | shop_items_v2 | id |
-| xp_exclusions | guild_id | guilds | id |
-| xp_hot_time_channels | hot_time_id | xp_hot_times | id |
-| xp_hot_times | guild_id | guilds | id |
-| xp_level_channels | guild_id | guilds | id |
-| xp_level_requirements | guild_id | guilds | id |
-| xp_level_rewards | guild_id | guilds | id |
-| xp_multipliers | guild_id | guilds | id |
-| xp_settings | guild_id | guilds | id |
-| xp_users | guild_id | guilds | id |
+| 테이블                        | 컬럼         | 참조 테이블   | 참조 컬럼 |
+| ----------------------------- | ------------ | ------------- | --------- |
+| currency_category_multipliers | guild_id     | guilds        | id        |
+| currency_channel_categories   | guild_id     | guilds        | id        |
+| currency_exclusions           | guild_id     | guilds        | id        |
+| currency_hot_times            | guild_id     | guilds        | id        |
+| currency_multipliers          | guild_id     | guilds        | id        |
+| currency_settings             | guild_id     | guilds        | id        |
+| currency_transactions         | guild_id     | guilds        | id        |
+| daily_rewards                 | guild_id     | guilds        | id        |
+| data_retention_settings       | guild_id     | guilds        | id        |
+| left_members                  | guild_id     | guilds        | id        |
+| market_listings               | guild_id     | guilds        | id        |
+| purchase_history              | guild_id     | guilds        | id        |
+| role_tickets                  | shop_item_id | shop_items_v2 | id        |
+| ruby_wallets                  | guild_id     | guilds        | id        |
+| shop_color_options            | item_id      | shop_items    | id        |
+| shop_items                    | guild_id     | guilds        | id        |
+| tax_history                   | guild_id     | guilds        | id        |
+| ticket_role_options           | ticket_id    | role_tickets  | id        |
+| topy_wallets                  | guild_id     | guilds        | id        |
+| user_items                    | guild_id     | guilds        | id        |
+| user_items_v2                 | shop_item_id | shop_items_v2 | id        |
+| xp_exclusions                 | guild_id     | guilds        | id        |
+| xp_hot_time_channels          | hot_time_id  | xp_hot_times  | id        |
+| xp_hot_times                  | guild_id     | guilds        | id        |
+| xp_level_channels             | guild_id     | guilds        | id        |
+| xp_level_requirements         | guild_id     | guilds        | id        |
+| xp_level_rewards              | guild_id     | guilds        | id        |
+| xp_multipliers                | guild_id     | guilds        | id        |
+| xp_settings                   | guild_id     | guilds        | id        |
+| xp_users                      | guild_id     | guilds        | id        |
 
 ---
 
@@ -665,19 +681,19 @@ Discord 서버(길드) 정보를 저장하는 핵심 테이블입니다. 대부�
 
 다음 테이블들은 논리적으로 연결되어 있지만, 외래키가 정의되지 않았습니다:
 
-| 테이블 | 컬럼 | 논리적 참조 | 설명 |
-|--------|------|-------------|------|
-| bank_subscriptions | guild_id | guilds.id | 은행 구독 |
-| game_settings | guild_id | guilds.id | 게임 설정 |
-| game_categories | guild_id | guilds.id | 게임 카테고리 |
-| games | guild_id | guilds.id | 게임 |
-| games | category_id | game_categories.id | 게임-카테고리 |
-| game_participants | game_id | games.id | 참가자-게임 |
-| game_participants | guild_id | guilds.id | 참가자-길드 |
-| game_results | game_id | games.id | 결과-게임 |
-| market_settings | guild_id | guilds.id | 마켓 설정 |
-| shop_items_v2 | guild_id | guilds.id | 상점 아이템 v2 |
-| shop_panel_settings | guild_id | guilds.id | 상점 패널 |
-| user_items_v2 | guild_id | guilds.id | 사용자 아이템 v2 |
-| user_vaults | guild_id | guilds.id | 금고 |
-| purchase_history | item_id | shop_items.id | 구매 내역-아이템 |
+| 테이블              | 컬럼        | 논리적 참조        | 설명             |
+| ------------------- | ----------- | ------------------ | ---------------- |
+| bank_subscriptions  | guild_id    | guilds.id          | 은행 구독        |
+| game_settings       | guild_id    | guilds.id          | 게임 설정        |
+| game_categories     | guild_id    | guilds.id          | 게임 카테고리    |
+| games               | guild_id    | guilds.id          | 게임             |
+| games               | category_id | game_categories.id | 게임-카테고리    |
+| game_participants   | game_id     | games.id           | 참가자-게임      |
+| game_participants   | guild_id    | guilds.id          | 참가자-길드      |
+| game_results        | game_id     | games.id           | 결과-게임        |
+| market_settings     | guild_id    | guilds.id          | 마켓 설정        |
+| shop_items_v2       | guild_id    | guilds.id          | 상점 아이템 v2   |
+| shop_panel_settings | guild_id    | guilds.id          | 상점 패널        |
+| user_items_v2       | guild_id    | guilds.id          | 사용자 아이템 v2 |
+| user_vaults         | guild_id    | guilds.id          | 금고             |
+| purchase_history    | item_id     | shop_items.id      | 구매 내역-아이템 |

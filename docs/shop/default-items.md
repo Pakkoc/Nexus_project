@@ -13,21 +13,21 @@
 
 ### 인벤토리형 (소모성)
 
-| 아이템 | item_type | 설명 | 동작 방식 |
-|--------|-----------|------|-----------|
-| 경고차감권 | `warning_reduction` | 경고 1회 차감 | 티켓 문의를 통해 수동 처리 |
-| 세금면제권 | `tax_exemption` | 월말 세금 면제 | 세금 징수 시 자동 소모 |
-| 이체수수료감면권 | `transfer_fee_reduction` | 이체 수수료 면제 | 이체 시 선택적 사용 |
+| 아이템           | item_type                | 설명             | 동작 방식                  |
+| ---------------- | ------------------------ | ---------------- | -------------------------- |
+| 경고차감권       | `warning_reduction`      | 경고 1회 차감    | 티켓 문의를 통해 수동 처리 |
+| 세금면제권       | `tax_exemption`          | 월말 세금 면제   | 세금 징수 시 자동 소모     |
+| 이체수수료감면권 | `transfer_fee_reduction` | 이체 수수료 면제 | 이체 시 선택적 사용        |
 
 ### 역할지급형 (기간제)
 
-| 아이템 | item_type | 기본 기간 | 설명 |
-|--------|-----------|-----------|------|
-| 활동부스트권 | `activity_boost` | 30일 | XP/화폐 배율 적용 (설정에서 조정) |
-| 프리미엄잠수방 | `premium_afk` | 30일 | 프리미엄 잠수방 채널 접근 |
-| VIP라운지입장권 | `vip_lounge` | 30일 | VIP 라운지 채널 접근 |
-| 디토실버 | `dito_silver` | 30일 | 디토뱅크 실버 혜택 |
-| 디토골드 | `dito_gold` | 30일 | 디토뱅크 골드 혜택 |
+| 아이템          | item_type        | 기본 기간 | 설명                              |
+| --------------- | ---------------- | --------- | --------------------------------- |
+| 활동부스트권    | `activity_boost` | 30일      | XP/화폐 배율 적용 (설정에서 조정) |
+| 프리미엄잠수방  | `premium_afk`    | 30일      | 프리미엄 잠수방 채널 접근         |
+| VIP라운지입장권 | `vip_lounge`     | 30일      | VIP 라운지 채널 접근              |
+| 디토실버        | `dito_silver`    | 30일      | 디토뱅크 실버 혜택                |
+| 디토골드        | `dito_gold`      | 30일      | 디토뱅크 골드 혜택                |
 
 ---
 
@@ -44,7 +44,9 @@
 ```typescript
 // tax.service.ts
 const exemptionItem = await this.shopV2Repo.findUserItemByType(
-  guildId, wallet.userId, 'tax_exemption'
+  guildId,
+  wallet.userId,
+  "tax_exemption"
 );
 
 if (exemptionItem && exemptionItem.quantity > 0) {
@@ -67,7 +69,7 @@ if (exemptionItem && exemptionItem.quantity > 0) {
 
 ```
 ┌─────────────────────────────────────┐
-│ 이체수수료감면권을 보유하고 있습니다    │
+│ 이체수수료감면권을 보유하고 있습니다     │
 │ 사용하시겠습니까?                     │
 │                                     │
 │ [감면권 사용] [그냥 이체]              │
@@ -88,8 +90,8 @@ if (exemptionItem && exemptionItem.quantity > 0) {
 
 ```typescript
 // shop.service.ts
-if (item.itemType === 'dito_silver' || item.itemType === 'dito_gold') {
-  const tier = item.itemType === 'dito_silver' ? 'silver' : 'gold';
+if (item.itemType === "dito_silver" || item.itemType === "dito_gold") {
+  const tier = item.itemType === "dito_silver" ? "silver" : "gold";
   // bank_subscriptions 테이블에 구독 생성/연장
 }
 ```
@@ -132,26 +134,26 @@ CREATE INDEX idx_shop_item_type ON shop_items_v2 (guild_id, item_type);
 
 ### item_type 값
 
-| 값 | 한글명 |
-|----|--------|
-| `custom` | 일반 |
-| `warning_reduction` | 경고차감권 |
-| `tax_exemption` | 세금면제권 |
+| 값                       | 한글명           |
+| ------------------------ | ---------------- |
+| `custom`                 | 일반             |
+| `warning_reduction`      | 경고차감권       |
+| `tax_exemption`          | 세금면제권       |
 | `transfer_fee_reduction` | 이체수수료감면권 |
-| `activity_boost` | 활동부스트권 |
-| `premium_afk` | 프리미엄잠수방 |
-| `vip_lounge` | VIP라운지입장권 |
-| `dito_silver` | 디토실버 |
-| `dito_gold` | 디토골드 |
+| `activity_boost`         | 활동부스트권     |
+| `premium_afk`            | 프리미엄잠수방   |
+| `vip_lounge`             | VIP라운지입장권  |
+| `dito_silver`            | 디토실버         |
+| `dito_gold`              | 디토골드         |
 
 ---
 
 ## 관련 파일
 
-| 파일 | 설명 |
-|------|------|
+| 파일                                                             | 설명               |
+| ---------------------------------------------------------------- | ------------------ |
 | `packages/core/src/currency-system/domain/default-shop-items.ts` | 디폴트 아이템 정의 |
-| `packages/core/src/currency-system/domain/shop-item.ts` | ShopItemType 타입 |
-| `packages/core/src/currency-system/service/tax.service.ts` | 세금면제권 로직 |
-| `apps/bot/src/commands/transfer.ts` | 이체감면권 UI |
-| `apps/web/src/app/api/guilds/[guildId]/shop-v2/seed/route.ts` | 시딩 API |
+| `packages/core/src/currency-system/domain/shop-item.ts`          | ShopItemType 타입  |
+| `packages/core/src/currency-system/service/tax.service.ts`       | 세금면제권 로직    |
+| `apps/bot/src/commands/transfer.ts`                              | 이체감면권 UI      |
+| `apps/web/src/app/api/guilds/[guildId]/shop-v2/seed/route.ts`    | 시딩 API           |
