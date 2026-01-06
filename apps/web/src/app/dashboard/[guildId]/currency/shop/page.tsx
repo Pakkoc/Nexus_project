@@ -354,6 +354,19 @@ export default function ShopV2Page() {
   };
 
   const handleToggleEnabled = async (item: ShopItemV2) => {
+    // 역할지급형 아이템을 활성화하려 할 때 역할이 설정되지 않았으면 막기
+    if (!item.enabled && item.roleTicket) {
+      const hasRoles = (item.roleTicket.roleOptions?.length ?? 0) > 0 || item.roleTicket.fixedRoleId;
+      if (!hasRoles) {
+        toast({
+          title: "역할을 먼저 설정해주세요",
+          description: "역할지급형 아이템은 역할을 설정한 후 활성화할 수 있습니다. 아이템을 수정하여 고정 역할 또는 선택 역할을 추가해주세요.",
+          variant: "destructive",
+        });
+        return;
+      }
+    }
+
     try {
       await updateItem.mutateAsync({
         id: item.id,
