@@ -167,27 +167,20 @@ export class CurrencyService {
       }
     }
 
-    // 핫타임 미적용 시 역할/채널 배율 확인
+    // 핫타임 미적용 시 역할/채널 배율 확인 (가장 높은 배율 적용)
     if (appliedMultiplier === 1) {
       const multipliersResult = await this.settingsRepo.getMultipliers(guildId);
       if (multipliersResult.success) {
         const multipliers = multipliersResult.data;
 
-        // 역할 배율 (가장 높은 것)
-        const roleMultipliers = multipliers.filter(
-          m => m.targetType === 'role' && roleIds.includes(m.targetId)
+        // 역할/채널 배율 중 가장 높은 배율 적용
+        const applicableMultipliers = multipliers.filter(
+          m => (m.targetType === 'role' && roleIds.includes(m.targetId)) ||
+               (m.targetType === 'channel' && m.targetId === channelId)
         );
 
-        if (roleMultipliers.length > 0) {
-          appliedMultiplier = Math.max(...roleMultipliers.map(m => m.multiplier));
-        } else {
-          // 채널 배율
-          const channelMultiplier = multipliers.find(
-            m => m.targetType === 'channel' && m.targetId === channelId
-          );
-          if (channelMultiplier) {
-            appliedMultiplier = channelMultiplier.multiplier;
-          }
+        if (applicableMultipliers.length > 0) {
+          appliedMultiplier = Math.max(...applicableMultipliers.map(m => m.multiplier));
         }
       }
     }
@@ -325,24 +318,20 @@ export class CurrencyService {
       }
     }
 
+    // 핫타임 미적용 시 역할/채널 배율 확인 (가장 높은 배율 적용)
     if (appliedMultiplier === 1) {
       const multipliersResult = await this.settingsRepo.getMultipliers(guildId);
       if (multipliersResult.success) {
         const multipliers = multipliersResult.data;
 
-        const roleMultipliers = multipliers.filter(
-          m => m.targetType === 'role' && roleIds.includes(m.targetId)
+        // 역할/채널 배율 중 가장 높은 배율 적용
+        const applicableMultipliers = multipliers.filter(
+          m => (m.targetType === 'role' && roleIds.includes(m.targetId)) ||
+               (m.targetType === 'channel' && m.targetId === channelId)
         );
 
-        if (roleMultipliers.length > 0) {
-          appliedMultiplier = Math.max(...roleMultipliers.map(m => m.multiplier));
-        } else {
-          const channelMultiplier = multipliers.find(
-            m => m.targetType === 'channel' && m.targetId === channelId
-          );
-          if (channelMultiplier) {
-            appliedMultiplier = channelMultiplier.multiplier;
-          }
+        if (applicableMultipliers.length > 0) {
+          appliedMultiplier = Math.max(...applicableMultipliers.map(m => m.multiplier));
         }
       }
     }

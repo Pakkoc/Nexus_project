@@ -794,8 +794,7 @@ export default function XpRulesPage() {
               <Icon icon="solar:info-circle-linear" className="w-4 h-4 text-amber-400" />
             </div>
             <p className="text-sm text-amber-200/80">
-              <strong className="text-amber-200">우선순위:</strong> 역할 배율이 채널 배율보다 우선됩니다.
-              여러 역할을 가진 경우 가장 높은 배율이 적용됩니다.
+              <strong className="text-amber-200">배율 적용:</strong> 역할/채널 구분 없이 가장 높은 배율이 적용됩니다.
             </p>
           </div>
 
