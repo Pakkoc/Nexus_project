@@ -90,8 +90,8 @@ export const DEFAULT_SHOP_ITEMS: DefaultShopItemDefinition[] = [
     description: '닉네임 색상을 1회 변경할 수 있습니다. 변경된 색상은 영구 유지됩니다.',
     itemType: 'color_basic',
     currencyType: 'topy',
-    durationDays: 0,  // 영구 (인벤토리형)
-    isRoleItem: false,
+    durationDays: 0,  // 영구 (1회 사용 후 역할 영구 유지)
+    isRoleItem: true,  // 역할선택권 (고정역할 없음, 교환 가능 역할에서 선택)
   },
   {
     name: '색상선택권(프리미엄)',
