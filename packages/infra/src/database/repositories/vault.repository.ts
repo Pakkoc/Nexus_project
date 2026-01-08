@@ -22,7 +22,7 @@ function rowToEntity(row: VaultRow): UserVault {
     id: row.id,
     guildId: row.guild_id,
     userId: row.user_id,
-    depositedAmount: row.deposited_amount,
+    depositedAmount: BigInt(row.deposited_amount),
     lastInterestAt: row.last_interest_at,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
