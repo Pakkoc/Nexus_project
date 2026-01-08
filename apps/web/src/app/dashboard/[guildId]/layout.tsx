@@ -1,9 +1,10 @@
 "use client";
 
-import { useParams } from "next/navigation";
+import { useParams, usePathname } from "next/navigation";
 import { useGuilds } from "@/hooks/queries/use-guilds";
 import { DashboardHeader } from "@/components/layout/dashboard-header";
 import { DashboardSidebar } from "@/components/layout/dashboard-sidebar";
+import { ForgeSidebar } from "@/components/layout/forge-sidebar";
 import { UnsavedChangesProvider } from "@/contexts/unsaved-changes-context";
 
 export default function GuildDashboardLayout({
@@ -12,12 +13,16 @@ export default function GuildDashboardLayout({
   children: React.ReactNode;
 }) {
   const params = useParams();
+  const pathname = usePathname();
   const guildId = params['guildId'] as string;
   const { data: guilds } = useGuilds();
 
   const guild = guilds?.find((g) => g.id === guildId);
   const guildName = guild?.name ?? "Loading...";
   const guildIcon = guild?.icon;
+
+  // forge 경로인지 확인
+  const isForge = pathname.includes(`/dashboard/${guildId}/forge`);
 
   return (
     <UnsavedChangesProvider>
@@ -42,7 +47,11 @@ export default function GuildDashboardLayout({
 
         <DashboardHeader />
         <div className="relative flex flex-1 overflow-hidden">
-          <DashboardSidebar guildId={guildId} guildName={guildName} guildIcon={guildIcon} />
+          {isForge ? (
+            <ForgeSidebar guildId={guildId} />
+          ) : (
+            <DashboardSidebar guildId={guildId} guildName={guildName} guildIcon={guildIcon} />
+          )}
           <main className="flex-1 overflow-y-auto p-8">
             <div className="max-w-6xl mx-auto">
               {children}

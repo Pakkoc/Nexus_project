@@ -1,0 +1,165 @@
+"use client";
+
+import { useParams } from "next/navigation";
+import Link from "next/link";
+import { Icon } from "@iconify/react";
+import { useGuildStats, useCurrencySettings } from "@/hooks/queries";
+
+export default function ForgePage() {
+  const params = useParams();
+  const guildId = params["guildId"] as string;
+  const { data: stats, isLoading: statsLoading } = useGuildStats(guildId);
+  const { data: currencySettings, isLoading: currencyLoading } = useCurrencySettings(guildId);
+
+  const isLoading = statsLoading || currencyLoading;
+
+  if (isLoading) {
+    return (
+      <div className="space-y-8">
+        <div className="animate-pulse">
+          <div className="h-8 w-48 rounded-lg bg-white/10" />
+          <div className="h-5 w-64 rounded-lg bg-white/5 mt-2" />
+        </div>
+        <div className="grid gap-6 sm:grid-cols-2">
+          {[...Array(2)].map((_, i) => (
+            <div key={i} className="animate-pulse bg-white/5 rounded-2xl p-8 border border-white/5">
+              <div className="h-12 w-12 rounded-xl bg-white/10 mb-4" />
+              <div className="h-6 w-32 rounded bg-white/10 mb-2" />
+              <div className="h-4 w-48 rounded bg-white/5" />
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  const systems = [
+    {
+      name: "XP 시스템",
+      description: "유저 활동에 따른 경험치 지급 및 레벨업 시스템",
+      href: `/dashboard/${guildId}/forge/xp/settings`,
+      icon: "solar:bolt-bold",
+      color: "from-yellow-500 to-amber-500",
+      enabled: stats?.xpEnabled ?? false,
+      stats: [
+        { label: "총 XP", value: stats?.totalXp?.toLocaleString() ?? "0" },
+        { label: "평균 레벨", value: `Lv. ${stats?.avgLevel ?? 0}` },
+      ],
+    },
+    {
+      name: "화폐 시스템",
+      description: "서버 내 경제 활동을 위한 화폐 시스템",
+      href: `/dashboard/${guildId}/forge/currency/settings`,
+      icon: "solar:wallet-bold",
+      color: "from-emerald-500 to-green-500",
+      enabled: currencySettings?.enabled ?? false,
+      stats: [
+        { label: "화폐명", value: currencySettings?.topyName ?? "토피" },
+        { label: "유상 화폐", value: currencySettings?.rubyName ?? "루비" },
+      ],
+    },
+  ];
+
+  return (
+    <div className="space-y-8">
+      {/* Page Header */}
+      <div className="animate-fade-up">
+        <div className="flex items-center gap-4 mb-2">
+          <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-emerald-500/20 to-green-500/20 flex items-center justify-center">
+            <img src="/logo/forge_logo.png" alt="FORGE" className="w-8 h-8 object-contain" />
+          </div>
+          <div>
+            <h1 className="text-2xl md:text-3xl font-bold text-white">FORGE</h1>
+            <p className="text-white/50">살아있는 커뮤니티를 위한 경제 시스템</p>
+          </div>
+        </div>
+      </div>
+
+      {/* System Cards */}
+      <div className="grid gap-6 sm:grid-cols-2">
+        {systems.map((system, index) => (
+          <Link key={system.name} href={system.href}>
+            <div
+              className="group relative h-full bg-white/5 hover:bg-white/10 backdrop-blur-sm rounded-2xl p-8 border border-white/10 hover:border-white/20 transition-all duration-300 animate-fade-up"
+              style={{ animationDelay: `${index * 100}ms` }}
+            >
+              {/* Background gradient */}
+              <div className={`absolute inset-0 bg-gradient-to-br ${system.color} opacity-0 group-hover:opacity-10 rounded-2xl transition-opacity duration-300`} />
+
+              <div className="relative">
+                {/* Icon & Status */}
+                <div className="flex items-start justify-between mb-4">
+                  <div className={`w-14 h-14 rounded-2xl bg-gradient-to-br ${system.color} flex items-center justify-center group-hover:scale-105 transition-transform`}>
+                    <Icon icon={system.icon} className="w-7 h-7 text-white" />
+                  </div>
+                  <span className={`px-3 py-1 text-xs font-medium rounded-full ${
+                    system.enabled
+                      ? "bg-green-500/20 text-green-400"
+                      : "bg-white/10 text-white/50"
+                  }`}>
+                    {system.enabled ? "활성화" : "비활성화"}
+                  </span>
+                </div>
+
+                {/* Title & Description */}
+                <h3 className="text-xl font-bold text-white mb-2 group-hover:text-white transition-colors">
+                  {system.name}
+                </h3>
+                <p className="text-white/40 text-sm mb-6">
+                  {system.description}
+                </p>
+
+                {/* Stats */}
+                <div className="flex gap-6">
+                  {system.stats.map((stat) => (
+                    <div key={stat.label}>
+                      <p className="text-white/40 text-xs mb-1">{stat.label}</p>
+                      <p className="text-white font-semibold">{stat.value}</p>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Arrow */}
+                <div className="absolute bottom-8 right-8 text-white/30 group-hover:text-white/60 transition-colors">
+                  <Icon icon="solar:arrow-right-linear" className="w-6 h-6 group-hover:translate-x-1 transition-transform" />
+                </div>
+              </div>
+            </div>
+          </Link>
+        ))}
+      </div>
+
+      {/* Quick Stats */}
+      <div className="animate-fade-up" style={{ animationDelay: "200ms" }}>
+        <h2 className="text-lg font-semibold text-white mb-4">오늘의 활동</h2>
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          {[
+            { label: "텍스트 활동", value: stats?.todayTextActive?.toLocaleString() ?? "0", unit: "명", icon: "solar:chat-line-linear", color: "from-blue-500 to-cyan-500" },
+            { label: "음성 활동", value: stats?.todayVoiceActive?.toLocaleString() ?? "0", unit: "명", icon: "solar:microphone-linear", color: "from-purple-500 to-pink-500" },
+            { label: "XP 보유 멤버", value: stats?.membersWithXp?.toLocaleString() ?? "0", unit: "명", icon: "solar:users-group-rounded-linear", color: "from-green-500 to-emerald-500" },
+            { label: "최고 레벨", value: `Lv. ${stats?.maxLevel ?? 0}`, unit: "", icon: "solar:crown-linear", color: "from-yellow-500 to-amber-500" },
+          ].map((stat, index) => (
+            <div
+              key={stat.label}
+              className="group relative bg-white/5 hover:bg-white/10 backdrop-blur-sm rounded-2xl p-5 border border-white/10 transition-all duration-300"
+            >
+              <div className={`absolute inset-0 bg-gradient-to-br ${stat.color} opacity-0 group-hover:opacity-5 rounded-2xl transition-opacity duration-300`} />
+              <div className="relative">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-white/50 text-sm">{stat.label}</span>
+                  <div className={`w-8 h-8 rounded-lg bg-gradient-to-br ${stat.color} flex items-center justify-center`}>
+                    <Icon icon={stat.icon} className="w-4 h-4 text-white" />
+                  </div>
+                </div>
+                <p className="text-2xl font-bold text-white">
+                  {stat.value}
+                  {stat.unit && <span className="text-sm text-white/40 ml-1">{stat.unit}</span>}
+                </p>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}

@@ -1,13 +1,12 @@
 "use client";
 
 import { usePathname } from "next/navigation";
-import { useState, useMemo } from "react";
+import { useMemo } from "react";
 import Image from "next/image";
 import { cn } from "@/lib/utils";
 import { NavigationLink } from "@/components/navigation-link";
 import { Icon } from "@iconify/react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { useCurrencySettings } from "@/hooks/queries";
 
 interface SidebarProps {
   guildId: string;
@@ -20,39 +19,13 @@ function getGuildIconUrl(guildId: string, icon: string | null | undefined) {
   return `https://cdn.discordapp.com/icons/${guildId}/${icon}.png`;
 }
 
-function createNavigation(topyName: string, rubyName: string) {
+function createNavigation() {
   return [
     {
       name: "대시보드",
       href: "",
       icon: "solar:home-2-linear",
       iconActive: "solar:home-2-bold",
-    },
-    {
-      name: "XP 시스템",
-      icon: "solar:bolt-linear",
-      iconActive: "solar:bolt-bold",
-      children: [
-        { name: "XP 설정", href: "/xp/settings", icon: "solar:settings-linear", iconActive: "solar:settings-bold" },
-        { name: "XP 규칙", href: "/xp/rules", icon: "solar:book-linear", iconActive: "solar:book-bold" },
-        { name: "레벨 보상", href: "/xp/rewards", icon: "solar:cup-star-linear", iconActive: "solar:cup-star-bold" },
-        { name: "알림 설정", href: "/xp/notifications", icon: "solar:bell-linear", iconActive: "solar:bell-bold" },
-        { name: "통계", href: "/xp/stats", icon: "solar:chart-2-linear", iconActive: "solar:chart-2-bold" },
-      ],
-    },
-    {
-      name: "화폐 시스템",
-      icon: "solar:wallet-linear",
-      iconActive: "solar:wallet-bold",
-      children: [
-        { name: "화폐 설정", href: "/currency/settings", icon: "solar:settings-linear", iconActive: "solar:settings-bold" },
-        { name: "화폐 규칙", href: "/currency/rules", icon: "solar:book-linear", iconActive: "solar:book-bold" },
-        { name: "상점", href: "/currency/shop", icon: "solar:shop-linear", iconActive: "solar:shop-bold" },
-        { name: "장터", href: "/market", icon: "solar:bag-4-linear", iconActive: "solar:bag-4-bold" },
-        { name: "게임센터", href: "/currency/game", icon: "solar:gamepad-linear", iconActive: "solar:gamepad-bold" },
-        { name: "지갑 관리", href: "/currency/wallets", icon: "solar:card-linear", iconActive: "solar:card-bold" },
-        { name: "거래 기록", href: "/currency/transactions", icon: "solar:document-text-linear", iconActive: "solar:document-text-bold" },
-      ],
     },
     {
       name: "멤버 관리",
@@ -73,19 +46,8 @@ export function DashboardSidebar({ guildId, guildName, guildIcon }: SidebarProps
   const pathname = usePathname();
   const basePath = `/dashboard/${guildId}`;
 
-  // 화폐 설정 조회
-  const { data: currencySettings } = useCurrencySettings(guildId);
-  const topyName = currencySettings?.topyName ?? "토피";
-  const rubyName = currencySettings?.rubyName ?? "루비";
-
-  // 동적 네비게이션 생성
-  const navigation = useMemo(
-    () => createNavigation(topyName, rubyName),
-    [topyName, rubyName]
-  );
-
-  // 토글 상태 관리 (카테고리 이름을 키로 사용)
-  const [openCategories, setOpenCategories] = useState<Record<string, boolean>>({});
+  // 네비게이션 생성
+  const navigation = useMemo(() => createNavigation(), []);
 
   const isActive = (href: string) => {
     const fullPath = `${basePath}${href}`;
@@ -93,32 +55,6 @@ export function DashboardSidebar({ guildId, guildName, guildIcon }: SidebarProps
       return pathname === basePath;
     }
     return pathname.startsWith(fullPath);
-  };
-
-  const isParentActive = (children: typeof navigation[1]["children"]) => {
-    return children?.some(child => isActive(child.href));
-  };
-
-
-  const toggleCategory = (name: string) => {
-    setOpenCategories((prev) => ({
-      ...prev,
-      [name]: !prev[name],
-    }));
-  };
-
-  const isCategoryOpen = (name: string) => {
-    // 명시적으로 설정된 값이 있으면 그 값 사용, 없으면 false
-    return openCategories[name] ?? false;
-  };
-
-  // 접힌 상태에서 활성화된 항목만 필터링
-  const getVisibleChildren = (name: string, children: NonNullable<typeof navigation[1]["children"]>) => {
-    if (isCategoryOpen(name)) {
-      return children; // 펼쳐진 상태면 전체 표시
-    }
-    // 접힌 상태면 활성화된 항목만 표시
-    return children.filter(child => isActive(child.href));
   };
 
   return (
@@ -154,78 +90,21 @@ export function DashboardSidebar({ guildId, guildName, guildIcon }: SidebarProps
         <ul className="space-y-1">
           {navigation.map((item) => (
             <li key={item.name}>
-              {item.children ? (
-                <div className="space-y-1">
-                  <button
-                    onClick={() => toggleCategory(item.name)}
-                    className={cn(
-                      "w-full flex items-center justify-between gap-3 px-4 py-2.5 text-sm font-medium rounded-xl transition-colors",
-                      isParentActive(item.children)
-                        ? "text-white bg-white/5"
-                        : "text-white/50 hover:bg-white/5 hover:text-white/80"
-                    )}
-                  >
-                    <div className="flex items-center gap-3">
-                      <Icon
-                        icon={isParentActive(item.children) ? item.iconActive : item.icon}
-                        className="h-5 w-5"
-                      />
-                      {item.name}
-                    </div>
-                    <Icon
-                      icon="solar:alt-arrow-down-linear"
-                      className={cn(
-                        "h-4 w-4 transition-transform duration-200",
-                        isCategoryOpen(item.name) ? "rotate-180" : ""
-                      )}
-                    />
-                  </button>
-                  {/* 하위 항목 목록 */}
-                  {(() => {
-                    const visibleChildren = getVisibleChildren(item.name, item.children);
-                    if (visibleChildren.length === 0) return null;
-                    return (
-                      <ul className="ml-4 space-y-0.5 pl-4 border-l border-white/10">
-                        {visibleChildren.map((child) => (
-                          <li key={child.name}>
-                            <NavigationLink
-                              href={`${basePath}${child.href}`}
-                              className={cn(
-                                "flex items-center gap-3 rounded-xl px-4 py-2.5 text-sm transition-all",
-                                isActive(child.href)
-                                  ? "bg-gradient-to-r from-indigo-500/20 to-purple-500/20 text-white font-medium border border-indigo-500/30"
-                                  : "text-white/50 hover:bg-white/5 hover:text-white/80"
-                              )}
-                            >
-                              <Icon
-                                icon={isActive(child.href) ? child.iconActive : child.icon}
-                                className="h-4 w-4"
-                              />
-                              {child.name}
-                            </NavigationLink>
-                          </li>
-                        ))}
-                      </ul>
-                    );
-                  })()}
-                </div>
-              ) : (
-                <NavigationLink
-                  href={`${basePath}${item.href}`}
-                  className={cn(
-                    "flex items-center gap-3 rounded-xl px-4 py-2.5 text-sm transition-all",
-                    isActive(item.href)
-                      ? "bg-gradient-to-r from-indigo-500/20 to-purple-500/20 text-white font-medium border border-indigo-500/30"
-                      : "text-white/50 hover:bg-white/5 hover:text-white/80"
-                  )}
-                >
-                  <Icon
-                    icon={isActive(item.href) ? item.iconActive : item.icon}
-                    className="h-5 w-5"
-                  />
-                  {item.name}
-                </NavigationLink>
-              )}
+              <NavigationLink
+                href={`${basePath}${item.href}`}
+                className={cn(
+                  "flex items-center gap-3 rounded-xl px-4 py-2.5 text-sm transition-all",
+                  isActive(item.href)
+                    ? "bg-gradient-to-r from-indigo-500/20 to-purple-500/20 text-white font-medium border border-indigo-500/30"
+                    : "text-white/50 hover:bg-white/5 hover:text-white/80"
+                )}
+              >
+                <Icon
+                  icon={isActive(item.href) ? item.iconActive : item.icon}
+                  className="h-5 w-5"
+                />
+                {item.name}
+              </NavigationLink>
             </li>
           ))}
         </ul>

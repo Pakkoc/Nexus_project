@@ -77,34 +77,33 @@ export default function GuildDashboardPage() {
     { label: "최고 레벨", value: `Lv. ${stats?.maxLevel ?? 0}`, color: "text-amber-400" },
   ];
 
-  const quickActions = [
+  const bots = [
     {
-      title: "XP 설정",
-      description: "텍스트 및 음성 XP 설정 관리",
-      href: `/dashboard/${guildId}/xp/settings`,
-      icon: "solar:bolt-linear",
-      color: "from-yellow-500 to-amber-500",
+      name: "CORE",
+      title: "완벽한 방어",
+      description: "테러와 어뷰징으로부터 서버를 철벽 방어합니다. 검열부터 비정상 유저 차단까지, 서버의 '생존'을 책임집니다.",
+      href: `/dashboard/${guildId}/core`,
+      logo: "/logo/core_logo.png",
+      color: "from-red-500 to-orange-500",
+      available: false,
     },
     {
-      title: "레벨 보상",
-      description: "레벨업 시 지급할 역할 설정",
-      href: `/dashboard/${guildId}/xp/rewards`,
-      icon: "solar:cup-star-linear",
-      color: "from-purple-500 to-pink-500",
-    },
-    {
-      title: "통계",
-      description: "서버 활동 및 XP 통계 확인",
-      href: `/dashboard/${guildId}/xp/stats`,
-      icon: "solar:chart-2-linear",
+      name: "LINKA",
+      title: "스마트한 관리",
+      description: "관리자 실적, 권한 부여, 운영 로그... 흩어진 관리 기능을 하나로 묶어 운영진의 피로도를 0으로 만듭니다.",
+      href: `/dashboard/${guildId}/linka`,
+      logo: "/logo/linka_logo.png",
       color: "from-blue-500 to-cyan-500",
+      available: false,
     },
     {
-      title: "멤버 관리",
-      description: "서버 멤버 XP 및 레벨 관리",
-      href: `/dashboard/${guildId}/members`,
-      icon: "solar:users-group-rounded-linear",
-      color: "from-green-500 to-emerald-500",
+      name: "FORGE",
+      title: "살아있는 커뮤니티",
+      description: "유저가 활동할수록 보상이 쌓이는 경제 시스템. 떠나고 싶지 않은 '재미있는 서버'를 시스템이 알아서 만들어줍니다.",
+      href: `/dashboard/${guildId}/forge`,
+      logo: "/logo/forge_logo.png",
+      color: "from-emerald-500 to-green-500",
+      available: true,
     },
   ];
 
@@ -174,24 +173,49 @@ export default function GuildDashboardPage() {
         </div>
       )}
 
-      {/* Quick Actions */}
+      {/* Bot Selection */}
       <div className="animate-fade-up" style={{ animationDelay: "250ms" }}>
-        <h2 className="text-lg font-semibold text-white mb-4">빠른 설정</h2>
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          {quickActions.map((action, index) => (
-            <Link key={action.title} href={action.href}>
-              <div className="group relative h-full bg-white/5 hover:bg-white/10 backdrop-blur-sm rounded-2xl p-5 border border-white/10 hover:border-indigo-500/30 transition-all duration-300">
-                {/* Hover Glow */}
-                <div className="absolute inset-0 bg-gradient-to-r from-indigo-500/0 to-purple-500/0 group-hover:from-indigo-500/5 group-hover:to-purple-500/5 rounded-2xl transition-all duration-300" />
+        <h2 className="text-lg font-semibold text-white mb-4">봇 설정</h2>
+        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+          {bots.map((bot) => (
+            <Link key={bot.name} href={bot.href}>
+              <div className={`group relative h-full bg-white/5 hover:bg-white/10 backdrop-blur-sm rounded-2xl p-6 border border-white/10 hover:border-white/20 transition-all duration-300 ${!bot.available ? 'opacity-60' : ''}`}>
+                {/* Background gradient */}
+                <div className={`absolute inset-0 bg-gradient-to-br ${bot.color} opacity-0 group-hover:opacity-10 rounded-2xl transition-opacity duration-300`} />
 
                 <div className="relative">
-                  <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${action.color} flex items-center justify-center mb-3 group-hover:scale-110 transition-transform`}>
-                    <Icon icon={action.icon} className="w-5 h-5 text-white" />
+                  {/* Logo */}
+                  <div className="w-16 h-16 rounded-2xl bg-white/10 flex items-center justify-center mb-4 group-hover:scale-105 transition-transform overflow-hidden">
+                    <img src={bot.logo} alt={bot.name} className="w-12 h-12 object-contain" />
                   </div>
-                  <h3 className="font-semibold text-white group-hover:text-indigo-300 transition-colors mb-1">
-                    {action.title}
-                  </h3>
-                  <p className="text-white/40 text-sm">{action.description}</p>
+
+                  {/* Bot Name & Status */}
+                  <div className="flex items-center gap-2 mb-2">
+                    <h3 className="text-xl font-bold text-white group-hover:text-white transition-colors">
+                      {bot.name}
+                    </h3>
+                    {!bot.available && (
+                      <span className="px-2 py-0.5 text-xs rounded-full bg-white/10 text-white/50">
+                        준비 중
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Title */}
+                  <p className={`text-sm font-medium bg-gradient-to-r ${bot.color} bg-clip-text text-transparent mb-2`}>
+                    {bot.title}
+                  </p>
+
+                  {/* Description */}
+                  <p className="text-white/40 text-sm leading-relaxed">
+                    {bot.description}
+                  </p>
+
+                  {/* Arrow */}
+                  <div className="mt-4 flex items-center text-white/30 group-hover:text-white/60 transition-colors">
+                    <span className="text-sm">{bot.available ? '설정하기' : '곧 출시'}</span>
+                    <Icon icon="solar:arrow-right-linear" className="w-4 h-4 ml-1 group-hover:translate-x-1 transition-transform" />
+                  </div>
                 </div>
               </div>
             </Link>
