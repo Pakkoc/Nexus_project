@@ -23,6 +23,7 @@ interface RoleTicketRow extends RowDataPacket {
   remove_previous_role: number;
   fixed_role_id: string | null;
   effect_duration_seconds: string | null; // BIGINT as string
+  instant_purchase: number;
   enabled: number;
   created_at: Date;
 }
@@ -33,6 +34,8 @@ interface TicketRoleOptionRow extends RowDataPacket {
   role_id: string;
   name: string;
   description: string | null;
+  topy_price: string | null; // BIGINT as string
+  ruby_price: string | null; // BIGINT as string
   display_order: number;
   created_at: Date;
 }
@@ -52,6 +55,7 @@ function toRoleTicket(row: RoleTicketRow, roleOptions?: TicketRoleOption[]): Rol
     effectDurationSeconds: row.effect_duration_seconds
       ? Number(row.effect_duration_seconds)
       : null,
+    instantPurchase: row.instant_purchase === 1,
     enabled: row.enabled === 1,
     createdAt: row.created_at,
     roleOptions,
@@ -65,6 +69,8 @@ function toTicketRoleOption(row: TicketRoleOptionRow): TicketRoleOption {
     roleId: row.role_id,
     name: row.name,
     description: row.description,
+    topyPrice: row.topy_price ? BigInt(row.topy_price) : null,
+    rubyPrice: row.ruby_price ? BigInt(row.ruby_price) : null,
     displayOrder: row.display_order,
     createdAt: row.created_at,
   };
@@ -180,8 +186,8 @@ export class RoleTicketRepository implements RoleTicketRepositoryPort {
     try {
       const [result] = await this.pool.execute<ResultSetHeader>(
         `INSERT INTO role_tickets
-         (guild_id, name, description, shop_item_id, consume_quantity, remove_previous_role, fixed_role_id, effect_duration_seconds, enabled)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+         (guild_id, name, description, shop_item_id, consume_quantity, remove_previous_role, fixed_role_id, effect_duration_seconds, instant_purchase, enabled)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [
           input.guildId,
           input.name,
@@ -191,6 +197,7 @@ export class RoleTicketRepository implements RoleTicketRepositoryPort {
           input.removePreviousRole !== false ? 1 : 0,
           input.fixedRoleId ?? null,
           input.effectDurationSeconds ?? null,
+          input.instantPurchase ? 1 : 0,
           input.enabled !== false ? 1 : 0,
         ]
       );
@@ -240,6 +247,10 @@ export class RoleTicketRepository implements RoleTicketRepositoryPort {
       if (input.effectDurationSeconds !== undefined) {
         fields.push('effect_duration_seconds = ?');
         values.push(input.effectDurationSeconds);
+      }
+      if (input.instantPurchase !== undefined) {
+        fields.push('instant_purchase = ?');
+        values.push(input.instantPurchase ? 1 : 0);
       }
       if (input.enabled !== undefined) {
         fields.push('enabled = ?');
@@ -332,13 +343,15 @@ export class RoleTicketRepository implements RoleTicketRepositoryPort {
 
       const [result] = await this.pool.execute<ResultSetHeader>(
         `INSERT INTO ticket_role_options
-         (ticket_id, role_id, name, description, display_order)
-         VALUES (?, ?, ?, ?, ?)`,
+         (ticket_id, role_id, name, description, topy_price, ruby_price, display_order)
+         VALUES (?, ?, ?, ?, ?, ?, ?)`,
         [
           input.ticketId,
           input.roleId,
           input.name,
           input.description ?? null,
+          input.topyPrice?.toString() ?? null,
+          input.rubyPrice?.toString() ?? null,
           displayOrder,
         ]
       );
@@ -379,6 +392,14 @@ export class RoleTicketRepository implements RoleTicketRepositoryPort {
       if (input.description !== undefined) {
         fields.push('description = ?');
         values.push(input.description);
+      }
+      if (input.topyPrice !== undefined) {
+        fields.push('topy_price = ?');
+        values.push(input.topyPrice?.toString() ?? null);
+      }
+      if (input.rubyPrice !== undefined) {
+        fields.push('ruby_price = ?');
+        values.push(input.rubyPrice?.toString() ?? null);
       }
       if (input.displayOrder !== undefined) {
         fields.push('display_order = ?');

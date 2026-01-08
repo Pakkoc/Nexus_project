@@ -101,6 +101,16 @@ export const DEFAULT_SHOP_ITEMS: DefaultShopItemDefinition[] = [
     durationDays: 30,
     isRoleItem: true,
   },
+
+  // === 역할선택권 (즉시구매) ===
+  {
+    name: '역할선택권',
+    description: '원하는 역할을 선택하여 즉시 구매할 수 있습니다. 역할별로 가격이 다릅니다.',
+    itemType: 'role_ticket',
+    currencyType: 'both',  // 토피/루비 모두 가능
+    durationDays: 0,  // 즉시 부여 (영구)
+    isRoleItem: true,
+  },
 ];
 
 /**
@@ -125,4 +135,5 @@ export const ITEM_TYPE_LABELS: Record<ShopItemType, string> = {
   dito_gold: '디토골드',
   color_basic: '색상선택권(기본)',
   color_premium: '색상선택권(프리미엄)',
+  role_ticket: '역할선택권',
 };

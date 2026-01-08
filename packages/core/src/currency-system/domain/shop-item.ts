@@ -19,6 +19,7 @@ export type ShopItemCurrencyType = 'topy' | 'ruby' | 'both';
  * - dito_gold: 디토골드
  * - color_basic: 색상선택권(기본)
  * - color_premium: 색상선택권(프리미엄)
+ * - role_ticket: 역할선택권(즉시구매)
  */
 export type ShopItemType =
   | 'custom'
@@ -31,7 +32,8 @@ export type ShopItemType =
   | 'dito_silver'
   | 'dito_gold'
   | 'color_basic'
-  | 'color_premium';
+  | 'color_premium'
+  | 'role_ticket';
 
 /**
  * 상점 아이템 - 티켓 판매

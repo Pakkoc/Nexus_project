@@ -6,6 +6,7 @@ import type { RubyWalletRepositoryPort } from '../port/ruby-wallet-repository.po
 import type { CurrencyTransactionRepositoryPort } from '../port/currency-transaction-repository.port';
 import type { CurrencySettingsRepositoryPort } from '../port/currency-settings-repository.port';
 import type { BankSubscriptionRepositoryPort } from '../port/bank-subscription-repository.port';
+import type { RoleTicketRepositoryPort } from '../port/role-ticket-repository.port';
 import type {
   ShopItem,
   ShopItemType,
@@ -14,6 +15,7 @@ import type {
 } from '../domain/shop-item';
 import type { UserItemV2 } from '../domain/user-item-v2';
 import type { BankTier } from '../domain/bank-subscription';
+import type { TicketRoleOption } from '../domain/ticket-role-option';
 import { Result } from '../../shared/types/result';
 import { isPeriodItem, getItemPrice } from '../domain/shop-item';
 import { createTransaction, type CurrencyType } from '../domain/currency-transaction';
@@ -26,6 +28,13 @@ export interface PurchaseResult {
   fee: bigint;
 }
 
+export interface DirectRolePurchaseResult {
+  roleId: string;
+  roleOption: TicketRoleOption;
+  paidAmount: bigint;
+  currencyType: CurrencyType;
+}
+
 export class ShopService {
   constructor(
     private readonly shopRepo: ShopRepositoryPort,
@@ -34,7 +43,8 @@ export class ShopService {
     private readonly transactionRepo: CurrencyTransactionRepositoryPort,
     private readonly currencySettingsRepo: CurrencySettingsRepositoryPort,
     private readonly clock: ClockPort,
-    private readonly bankSubscriptionRepo?: BankSubscriptionRepositoryPort
+    private readonly bankSubscriptionRepo?: BankSubscriptionRepositoryPort,
+    private readonly roleTicketRepo?: RoleTicketRepositoryPort
   ) {}
 
   // ========== 상점 아이템 CRUD ==========
@@ -502,6 +512,101 @@ export class ShopService {
       return { success: false, error: { type: 'REPOSITORY_ERROR', cause: result.error } };
     }
     return { success: true, data: undefined };
+  }
+
+  // ========== 역할선택권 즉시구매 ==========
+
+  /**
+   * 역할선택권에서 역할을 즉시 구매
+   * - 역할별 개별 가격 적용
+   * - 인벤토리를 거치지 않고 바로 역할 부여
+   */
+  async purchaseRoleDirectly(
+    guildId: string,
+    userId: string,
+    ticketId: number,
+    roleOptionId: number,
+    paymentCurrency: CurrencyType
+  ): Promise<Result<DirectRolePurchaseResult, CurrencyError>> {
+    if (!this.roleTicketRepo) {
+      return { success: false, error: { type: 'REPOSITORY_ERROR', cause: { type: 'QUERY_ERROR', message: 'RoleTicketRepository not available' } } };
+    }
+
+    // 1. 티켓 조회 (역할 옵션 포함)
+    const ticketResult = await this.roleTicketRepo.findWithOptions(ticketId);
+    if (!ticketResult.success) {
+      return { success: false, error: { type: 'REPOSITORY_ERROR', cause: ticketResult.error } };
+    }
+    const ticket = ticketResult.data;
+    if (!ticket) {
+      return { success: false, error: { type: 'TICKET_NOT_FOUND' } };
+    }
+    if (!ticket.enabled) {
+      return { success: false, error: { type: 'TICKET_NOT_FOUND' } };
+    }
+    if (!ticket.instantPurchase) {
+      return { success: false, error: { type: 'TICKET_NOT_FOUND' } }; // 즉시구매가 아닌 티켓
+    }
+
+    // 2. 역할 옵션 확인
+    const roleOption = ticket.roleOptions?.find((o) => o.id === roleOptionId);
+    if (!roleOption) {
+      return { success: false, error: { type: 'ROLE_OPTION_NOT_FOUND' } };
+    }
+
+    // 3. 가격 확인
+    const price = paymentCurrency === 'topy' ? roleOption.topyPrice : roleOption.rubyPrice;
+    if (price === null || price === undefined) {
+      return { success: false, error: { type: 'ITEM_NOT_FOUND' } }; // 해당 화폐로 가격이 설정되지 않음
+    }
+
+    // 4. 잔액 확인 및 차감
+    let newBalance: bigint;
+
+    if (paymentCurrency === 'topy') {
+      const walletResult = await this.topyWalletRepo.findByUser(guildId, userId);
+      if (!walletResult.success) {
+        return { success: false, error: { type: 'REPOSITORY_ERROR', cause: walletResult.error } };
+      }
+      const balance = walletResult.data?.balance ?? BigInt(0);
+      if (balance < price) {
+        return {
+          success: false,
+          error: { type: 'INSUFFICIENT_BALANCE', required: price, available: balance },
+        };
+      }
+      newBalance = balance - price;
+      await this.topyWalletRepo.updateBalance(guildId, userId, price, 'subtract');
+    } else {
+      const walletResult = await this.rubyWalletRepo.findByUser(guildId, userId);
+      if (!walletResult.success) {
+        return { success: false, error: { type: 'REPOSITORY_ERROR', cause: walletResult.error } };
+      }
+      const balance = walletResult.data?.balance ?? BigInt(0);
+      if (balance < price) {
+        return {
+          success: false,
+          error: { type: 'INSUFFICIENT_BALANCE', required: price, available: balance },
+        };
+      }
+      newBalance = balance - price;
+      await this.rubyWalletRepo.updateBalance(guildId, userId, price, 'subtract');
+    }
+
+    // 5. 거래 기록
+    await this.transactionRepo.save(
+      createTransaction(guildId, userId, paymentCurrency, 'shop_purchase', -price, newBalance)
+    );
+
+    return {
+      success: true,
+      data: {
+        roleId: roleOption.roleId,
+        roleOption,
+        paidAmount: price,
+        currencyType: paymentCurrency,
+      },
+    };
   }
 }
 

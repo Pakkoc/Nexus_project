@@ -14,7 +14,7 @@ import {
   type StringSelectMenuInteraction,
   type APIContainerComponent,
 } from 'discord.js';
-import type { ShopItemV2, ShopService, CurrencyService, CurrencyType } from '@topia/core';
+import type { ShopItemV2, ShopService, CurrencyService, CurrencyType, RoleTicketService, RoleTicket, TicketRoleOption } from '@topia/core';
 import { getItemPrice } from '@topia/core';
 
 const ITEMS_PER_PAGE = 5;
@@ -25,6 +25,7 @@ const IS_COMPONENTS_V2 = 32768;
 interface Container {
   shopV2Service: ShopService;
   currencyService: CurrencyService;
+  roleTicketService: RoleTicketService;
 }
 
 /** 상점 아이템을 Components v2 Container로 변환 */
@@ -522,6 +523,164 @@ function calculateMaxQuantity(item: ShopItemV2, currentOwned: number): number {
   return Math.max(0, max);
 }
 
+/** 역할선택권 역할 목록 Container 생성 */
+function createRoleSelectContainer(
+  ticket: RoleTicket,
+  roleOptions: TicketRoleOption[],
+  currencyType: CurrencyType,
+  currencyName: string,
+  balance: bigint
+): APIContainerComponent {
+  const container = new ContainerBuilder();
+
+  container.addTextDisplayComponents(
+    new TextDisplayBuilder().setContent(`# 🎭 ${ticket.name}`)
+  );
+
+  container.addSeparatorComponents(
+    new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small)
+  );
+
+  if (ticket.description) {
+    container.addTextDisplayComponents(
+      new TextDisplayBuilder().setContent(`> ${ticket.description}`)
+    );
+  }
+
+  container.addTextDisplayComponents(
+    new TextDisplayBuilder().setContent('아래에서 구매할 역할을 선택하세요.')
+  );
+
+  container.addSeparatorComponents(
+    new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small)
+  );
+
+  // 역할별 가격 목록
+  let rolesText = '';
+  roleOptions.forEach((opt, idx) => {
+    const price = currencyType === 'topy' ? opt.topyPrice : opt.rubyPrice;
+    const priceStr = price !== null ? `${price.toLocaleString()} ${currencyName}` : '판매 안 함';
+    rolesText += `**${idx + 1}. ${opt.name}** - ${priceStr}`;
+    if (opt.description) {
+      rolesText += `\n> ${opt.description}`;
+    }
+    rolesText += '\n';
+  });
+
+  container.addTextDisplayComponents(
+    new TextDisplayBuilder().setContent(rolesText.trim())
+  );
+
+  container.addSeparatorComponents(
+    new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small)
+  );
+
+  // 잔액 정보
+  const emoji = currencyType === 'topy' ? '💰' : '💎';
+  container.addTextDisplayComponents(
+    new TextDisplayBuilder().setContent(`${emoji} **보유 잔액**: ${balance.toLocaleString()} ${currencyName}`)
+  );
+
+  return container.toJSON();
+}
+
+/** 역할 선택 메뉴 생성 */
+function createRoleSelectMenu(
+  roleOptions: TicketRoleOption[],
+  currencyType: CurrencyType,
+  currencyName: string,
+  ticketId: number,
+  userId: string
+): StringSelectMenuBuilder {
+  const options = roleOptions
+    .filter((opt) => {
+      const price = currencyType === 'topy' ? opt.topyPrice : opt.rubyPrice;
+      return price !== null;
+    })
+    .slice(0, 25)
+    .map((opt) => {
+      const price = currencyType === 'topy' ? opt.topyPrice : opt.rubyPrice;
+      return {
+        label: opt.name,
+        description: `${price!.toLocaleString()} ${currencyName}`,
+        value: opt.id.toString(),
+        emoji: '🎭',
+      };
+    });
+
+  if (options.length === 0) {
+    options.push({
+      label: '구매 가능한 역할이 없습니다',
+      description: '해당 화폐로 구매 가능한 역할이 없습니다',
+      value: 'none',
+      emoji: '❌',
+    });
+  }
+
+  return new StringSelectMenuBuilder()
+    .setCustomId(`shop_role_select_${ticketId}_${userId}`)
+    .setPlaceholder('구매할 역할을 선택하세요')
+    .addOptions(options);
+}
+
+/** 역할 구매 확인 Container 생성 */
+function createRoleConfirmContainer(
+  roleOption: TicketRoleOption,
+  currencyType: CurrencyType,
+  currencyName: string,
+  balance: bigint
+): APIContainerComponent {
+  const price = currencyType === 'topy' ? roleOption.topyPrice : roleOption.rubyPrice;
+  const container = new ContainerBuilder();
+
+  container.addTextDisplayComponents(
+    new TextDisplayBuilder().setContent('# 🎭 역할 구매 확인')
+  );
+
+  container.addSeparatorComponents(
+    new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small)
+  );
+
+  let infoText = `**${roleOption.name}** 역할을 구매하시겠습니까?\n\n`;
+  infoText += `💰 **가격**: ${price!.toLocaleString()} ${currencyName}\n`;
+  infoText += `💳 **보유 잔액**: ${balance.toLocaleString()} ${currencyName}\n`;
+  infoText += `💵 **구매 후 잔액**: ${(balance - price!).toLocaleString()} ${currencyName}`;
+
+  container.addTextDisplayComponents(
+    new TextDisplayBuilder().setContent(infoText)
+  );
+
+  container.addSeparatorComponents(
+    new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small)
+  );
+
+  container.addTextDisplayComponents(
+    new TextDisplayBuilder().setContent('⚠️ 구매 즉시 역할이 부여됩니다.')
+  );
+
+  return container.toJSON();
+}
+
+/** 역할 구매 확인 버튼 생성 */
+function createRoleConfirmButtons(
+  ticketId: number,
+  roleOptionId: number,
+  userId: string
+): ActionRowBuilder<ButtonBuilder> {
+  return new ActionRowBuilder<ButtonBuilder>().addComponents(
+    new ButtonBuilder()
+      .setCustomId(`shop_role_confirm_${ticketId}_${roleOptionId}_${userId}`)
+      .setLabel('구매하기')
+      .setStyle(ButtonStyle.Success)
+      .setEmoji('✅'),
+    new ButtonBuilder()
+      .setCustomId(`shop_role_cancel_${userId}`)
+      .setLabel('취소')
+      .setStyle(ButtonStyle.Secondary)
+      .setEmoji('❌')
+  );
+}
+
 /** 아이템 선택 처리 */
 async function handleItemSelection(
   interaction: StringSelectMenuInteraction,
@@ -546,6 +705,19 @@ async function handleItemSelection(
       flags: IS_COMPONENTS_V2,
     });
     scheduleMessageDelete(interaction);
+    return;
+  }
+
+  // 역할선택권(즉시구매) 처리
+  if (selectedItem.itemType === 'role_ticket') {
+    await handleRoleTicketSelection(
+      interaction,
+      container,
+      selectedItem,
+      currencyType,
+      currencyName,
+      currencyType === 'topy' ? topyBalance : rubyBalance
+    );
     return;
   }
 
@@ -771,6 +943,261 @@ async function handleItemSelection(
     });
   } catch {
     // 초기 collector 오류
+    await interaction.editReply({
+      components: [createMessageContainer('⏰ 시간 초과', '구매 시간이 초과되었습니다.')],
+      flags: IS_COMPONENTS_V2,
+    });
+    scheduleMessageDelete(interaction, 3000);
+  }
+}
+
+/** 역할선택권(즉시구매) 처리 */
+async function handleRoleTicketSelection(
+  interaction: StringSelectMenuInteraction,
+  container: Container,
+  item: ShopItemV2,
+  currencyType: CurrencyType,
+  currencyName: string,
+  balance: bigint
+) {
+  const guildId = interaction.guildId!;
+  const userId = interaction.user.id;
+
+  // 해당 상점 아이템에 연결된 역할선택권 조회
+  const ticketResult = await container.roleTicketService.getTicketByShopItem(item.id);
+  if (!ticketResult.success || !ticketResult.data) {
+    await interaction.update({
+      components: [createMessageContainer('❌ 오류', '역할선택권 정보를 찾을 수 없습니다.')],
+      flags: IS_COMPONENTS_V2,
+    });
+    scheduleMessageDelete(interaction);
+    return;
+  }
+
+  const ticket = ticketResult.data;
+
+  // 즉시구매가 아닌 경우 안내
+  if (!ticket.instantPurchase) {
+    await interaction.update({
+      components: [createMessageContainer('❌ 오류', '이 선택권은 즉시구매 방식이 아닙니다.')],
+      flags: IS_COMPONENTS_V2,
+    });
+    scheduleMessageDelete(interaction);
+    return;
+  }
+
+  // 역할 옵션 조회
+  const optionsResult = await container.roleTicketService.getRoleOptions(ticket.id);
+  if (!optionsResult.success || !optionsResult.data || optionsResult.data.length === 0) {
+    await interaction.update({
+      components: [createMessageContainer('❌ 오류', '구매 가능한 역할이 없습니다.')],
+      flags: IS_COMPONENTS_V2,
+    });
+    scheduleMessageDelete(interaction);
+    return;
+  }
+
+  const roleOptions = optionsResult.data;
+
+  // 역할 선택 화면 표시
+  await interaction.update({
+    components: [
+      createRoleSelectContainer(ticket, roleOptions, currencyType, currencyName, balance),
+      new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(
+        createRoleSelectMenu(roleOptions, currencyType, currencyName, ticket.id, userId)
+      ),
+      new ActionRowBuilder<ButtonBuilder>().addComponents(
+        new ButtonBuilder()
+          .setCustomId(`shop_role_cancel_${userId}`)
+          .setLabel('취소')
+          .setStyle(ButtonStyle.Secondary)
+          .setEmoji('❌')
+      ),
+    ],
+    flags: IS_COMPONENTS_V2,
+  });
+
+  // 역할 선택 및 구매 확인 처리
+  try {
+    const collector = interaction.message.createMessageComponentCollector({
+      filter: (i) => i.user.id === userId,
+      time: 60000, // 1분
+    });
+
+    let selectedRoleOption: TicketRoleOption | null = null;
+
+    collector.on('collect', async (componentInteraction) => {
+      const customId = componentInteraction.customId;
+
+      // 취소
+      if (customId === `shop_role_cancel_${userId}`) {
+        collector.stop('cancelled');
+        await componentInteraction.update({
+          components: [createMessageContainer('❌ 구매 취소', '역할 구매가 취소되었습니다.')],
+          flags: IS_COMPONENTS_V2,
+        });
+        scheduleMessageDelete(interaction);
+        return;
+      }
+
+      // 역할 선택
+      if (customId === `shop_role_select_${ticket.id}_${userId}` && componentInteraction.isStringSelectMenu()) {
+        const roleOptionId = parseInt(componentInteraction.values[0]!, 10);
+
+        if (isNaN(roleOptionId) || roleOptionId === 0) {
+          await componentInteraction.deferUpdate();
+          return;
+        }
+
+        selectedRoleOption = roleOptions.find((opt) => opt.id === roleOptionId) ?? null;
+        if (!selectedRoleOption) {
+          await componentInteraction.update({
+            components: [createMessageContainer('❌ 오류', '역할을 찾을 수 없습니다.')],
+            flags: IS_COMPONENTS_V2,
+          });
+          scheduleMessageDelete(interaction);
+          return;
+        }
+
+        const price = currencyType === 'topy' ? selectedRoleOption.topyPrice : selectedRoleOption.rubyPrice;
+        if (price === null) {
+          await componentInteraction.update({
+            components: [createMessageContainer('❌ 오류', '해당 화폐로 구매할 수 없는 역할입니다.')],
+            flags: IS_COMPONENTS_V2,
+          });
+          scheduleMessageDelete(interaction);
+          return;
+        }
+
+        // 잔액 확인
+        if (balance < price) {
+          await componentInteraction.update({
+            components: [createMessageContainer('❌ 잔액 부족', `잔액이 부족합니다.\n필요: ${price.toLocaleString()} ${currencyName}\n보유: ${balance.toLocaleString()} ${currencyName}`)],
+            flags: IS_COMPONENTS_V2,
+          });
+          scheduleMessageDelete(interaction, 5000);
+          return;
+        }
+
+        // 구매 확인 화면 표시
+        await componentInteraction.update({
+          components: [
+            createRoleConfirmContainer(selectedRoleOption, currencyType, currencyName, balance),
+            createRoleConfirmButtons(ticket.id, selectedRoleOption.id, userId),
+          ],
+          flags: IS_COMPONENTS_V2,
+        });
+        return;
+      }
+
+      // 구매 확인
+      if (customId.startsWith(`shop_role_confirm_${ticket.id}_`) && selectedRoleOption) {
+        collector.stop('confirmed');
+        await componentInteraction.deferUpdate();
+
+        // 구매 처리
+        const purchaseResult = await container.shopV2Service.purchaseRoleDirectly(
+          guildId,
+          userId,
+          ticket.id,
+          selectedRoleOption.id,
+          currencyType
+        );
+
+        if (!purchaseResult.success) {
+          let errorMessage = '구매 처리 중 오류가 발생했습니다.';
+
+          switch (purchaseResult.error.type) {
+            case 'TICKET_NOT_FOUND':
+              errorMessage = '역할선택권을 찾을 수 없습니다.';
+              break;
+            case 'ROLE_OPTION_NOT_FOUND':
+              errorMessage = '역할을 찾을 수 없습니다.';
+              break;
+            case 'INSUFFICIENT_BALANCE':
+              const required = purchaseResult.error.required;
+              const available = purchaseResult.error.available;
+              errorMessage = `잔액이 부족합니다.\n필요: ${required.toLocaleString()} ${currencyName}\n보유: ${available.toLocaleString()} ${currencyName}`;
+              break;
+          }
+
+          await componentInteraction.editReply({
+            components: [createMessageContainer('❌ 구매 실패', errorMessage)],
+            flags: IS_COMPONENTS_V2,
+          });
+          scheduleMessageDelete(interaction, 5000);
+          return;
+        }
+
+        const { roleId, paidAmount } = purchaseResult.data;
+
+        // Discord 역할 부여
+        try {
+          const member = await interaction.guild?.members.fetch(userId);
+          if (member) {
+            const role = interaction.guild?.roles.cache.get(roleId);
+            if (role) {
+              await member.roles.add(role);
+            }
+          }
+        } catch (roleError) {
+          console.error('역할 부여 실패:', roleError);
+          // 역할 부여 실패해도 구매는 완료된 것으로 처리
+        }
+
+        // 성공 메시지
+        const successContainer = new ContainerBuilder();
+
+        successContainer.addTextDisplayComponents(
+          new TextDisplayBuilder().setContent('# ✅ 역할 구매 완료!')
+        );
+
+        successContainer.addSeparatorComponents(
+          new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small)
+        );
+
+        successContainer.addTextDisplayComponents(
+          new TextDisplayBuilder().setContent(`**${selectedRoleOption.name}** 역할을 구매했습니다!`)
+        );
+
+        successContainer.addSeparatorComponents(
+          new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small)
+        );
+
+        successContainer.addTextDisplayComponents(
+          new TextDisplayBuilder().setContent(`💰 **지불 금액**: ${paidAmount.toLocaleString()} ${currencyName}`)
+        );
+
+        successContainer.addSeparatorComponents(
+          new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small)
+        );
+
+        successContainer.addTextDisplayComponents(
+          new TextDisplayBuilder().setContent('🎭 역할이 즉시 부여되었습니다!')
+        );
+
+        await componentInteraction.editReply({
+          components: [successContainer.toJSON()],
+          flags: IS_COMPONENTS_V2,
+        });
+        scheduleMessageDelete(interaction, 5000);
+      }
+    });
+
+    collector.on('end', async (_, reason) => {
+      if (reason === 'time') {
+        try {
+          await interaction.editReply({
+            components: [createMessageContainer('⏰ 시간 초과', '구매 시간이 초과되었습니다.')],
+            flags: IS_COMPONENTS_V2,
+          });
+          scheduleMessageDelete(interaction, 3000);
+        } catch {
+          // 이미 삭제됨
+        }
+      }
+    });
+  } catch {
     await interaction.editReply({
       components: [createMessageContainer('⏰ 시간 초과', '구매 시간이 초과되었습니다.')],
       flags: IS_COMPONENTS_V2,
