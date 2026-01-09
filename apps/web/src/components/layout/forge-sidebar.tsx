@@ -206,7 +206,7 @@ export function ForgeSidebar({ guildId }: SidebarProps) {
       {/* Footer */}
       <div className="p-4 border-t border-white/5">
         <div className="flex items-center justify-center px-4 py-3 rounded-xl bg-gradient-to-r from-emerald-500/10 to-green-500/10 border border-emerald-500/20">
-          <Image src="/logo.png" alt="Nexus" width={100} height={32} className="h-8 w-auto" />
+          <Image src="/logo/main.png" alt="Nexus" width={100} height={32} className="h-8 w-auto" />
         </div>
       </div>
     </aside>

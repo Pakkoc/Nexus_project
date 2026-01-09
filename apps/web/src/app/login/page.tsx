@@ -29,7 +29,7 @@ export default function LoginPage() {
       {/* Navigation */}
       <nav className="relative z-10 flex items-center justify-between px-6 lg:px-12 py-4 max-w-7xl mx-auto">
         <Link href="/" className="flex items-center">
-          <Image src="/logo.png" alt="Nexus" width={140} height={48} className="h-12 w-auto" />
+          <Image src="/logo/main.png" alt="Nexus" width={140} height={48} className="h-12 w-auto" />
         </Link>
       </nav>
 
