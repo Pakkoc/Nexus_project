@@ -82,9 +82,12 @@ export function SidebarHeatmap({
                 return (
                   <div
                     key={hour}
-                    className={`w-[30px] h-[15px] ${bgClass} rounded-sm`}
-                    title={`${DAYS[displayIndex]} ${hour}시: ${percent}%`}
-                  />
+                    className={`group/cell relative w-[30px] h-[15px] ${bgClass} rounded-sm`}
+                  >
+                    <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 px-2 py-1 bg-slate-900 text-white text-[10px] rounded whitespace-nowrap opacity-0 group-hover/cell:opacity-100 pointer-events-none z-50 transition-opacity">
+                      {DAYS[displayIndex]} {hour}시: {percent}%
+                    </div>
+                  </div>
                 );
               })}
             </div>
