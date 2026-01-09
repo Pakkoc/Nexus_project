@@ -42,8 +42,10 @@ export default function ForgePage() {
       color: "from-yellow-500 to-amber-500",
       enabled: stats?.xpEnabled ?? false,
       stats: [
-        { label: "총 XP", value: stats?.totalXp?.toLocaleString() ?? "0" },
-        { label: "평균 레벨", value: `Lv. ${stats?.avgLevel ?? 0}` },
+        { label: "인당 평균 XP", value: stats?.avgXpPerMember?.toLocaleString() ?? "0" },
+        { label: "평균 레벨", value: `Lv. ${stats?.avgLevelExcludeZero ?? 0}` },
+        { label: "평균 텍스트 XP", value: stats?.avgTextXp?.toLocaleString() ?? "0" },
+        { label: "평균 음성 XP", value: stats?.avgVoiceXp?.toLocaleString() ?? "0" },
       ],
     },
     {
@@ -110,7 +112,7 @@ export default function ForgePage() {
                 </p>
 
                 {/* Stats */}
-                <div className="flex gap-6">
+                <div className="grid grid-cols-2 gap-4">
                   {system.stats.map((stat) => (
                     <div key={stat.label}>
                       <p className="text-white/40 text-xs mb-1">{stat.label}</p>
@@ -129,37 +131,6 @@ export default function ForgePage() {
         ))}
       </div>
 
-      {/* Quick Stats */}
-      <div className="animate-fade-up" style={{ animationDelay: "200ms" }}>
-        <h2 className="text-lg font-semibold text-white mb-4">XP 통계</h2>
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          {[
-            { label: "인당 평균 XP", value: stats?.avgXpPerMember?.toLocaleString() ?? "0", unit: "XP", icon: "solar:chart-2-linear", color: "from-indigo-500 to-purple-500" },
-            { label: "평균 레벨", value: `Lv. ${stats?.avgLevelExcludeZero ?? 0}`, unit: "", icon: "solar:ranking-linear", color: "from-amber-500 to-orange-500" },
-            { label: "평균 텍스트 XP", value: stats?.avgTextXp?.toLocaleString() ?? "0", unit: "XP", icon: "solar:chat-line-linear", color: "from-blue-500 to-cyan-500" },
-            { label: "평균 음성 XP", value: stats?.avgVoiceXp?.toLocaleString() ?? "0", unit: "XP", icon: "solar:microphone-linear", color: "from-purple-500 to-pink-500" },
-          ].map((stat, index) => (
-            <div
-              key={stat.label}
-              className="group relative bg-white/5 hover:bg-white/10 backdrop-blur-sm rounded-2xl p-5 border border-white/10 transition-all duration-300"
-            >
-              <div className={`absolute inset-0 bg-gradient-to-br ${stat.color} opacity-0 group-hover:opacity-5 rounded-2xl transition-opacity duration-300`} />
-              <div className="relative">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-white/50 text-sm">{stat.label}</span>
-                  <div className={`w-8 h-8 rounded-lg bg-gradient-to-br ${stat.color} flex items-center justify-center`}>
-                    <Icon icon={stat.icon} className="w-4 h-4 text-white" />
-                  </div>
-                </div>
-                <p className="text-2xl font-bold text-white">
-                  {stat.value}
-                  {stat.unit && <span className="text-sm text-white/40 ml-1">{stat.unit}</span>}
-                </p>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
     </div>
   );
 }
