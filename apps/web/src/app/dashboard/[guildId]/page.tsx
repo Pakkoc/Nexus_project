@@ -1,7 +1,8 @@
 "use client";
 
 import { useParams } from "next/navigation";
-import { useGuilds, useGuildStats } from "@/hooks/queries";
+import { useGuilds, useGuildStats, useActivityHeatmap } from "@/hooks/queries";
+import { ActivityHeatmap } from "@/components/charts/activity-heatmap";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { Icon } from "@iconify/react";
@@ -13,6 +14,7 @@ export default function GuildDashboardPage() {
   const guildId = params["guildId"] as string;
   const { data: guilds, isLoading: guildsLoading } = useGuilds();
   const { data: stats, isLoading: statsLoading } = useGuildStats(guildId);
+  const { data: heatmapData, isLoading: isHeatmapLoading } = useActivityHeatmap(guildId);
 
   const guild = guilds?.find((g) => g.id === guildId);
   const isLoading = guildsLoading || statsLoading;
@@ -172,6 +174,16 @@ export default function GuildDashboardPage() {
           ))}
         </div>
       )}
+
+      {/* Activity Heatmap */}
+      <div className="animate-fade-up" style={{ animationDelay: "225ms" }}>
+        <ActivityHeatmap
+          cells={heatmapData?.cells ?? []}
+          maxCount={heatmapData?.maxCount ?? 0}
+          totalActivities={heatmapData?.totalActivities ?? 0}
+          isLoading={isHeatmapLoading}
+        />
+      </div>
 
       {/* Bot Selection */}
       <div className="animate-fade-up" style={{ animationDelay: "250ms" }}>

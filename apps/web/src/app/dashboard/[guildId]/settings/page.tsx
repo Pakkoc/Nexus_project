@@ -1,8 +1,7 @@
 "use client";
 
 import { useParams } from "next/navigation";
-import { useDataRetentionSettings, useUpdateDataRetentionSettings, useActivityHeatmap } from "@/hooks/queries";
-import { ActivityHeatmap } from "@/components/charts/activity-heatmap";
+import { useDataRetentionSettings, useUpdateDataRetentionSettings } from "@/hooks/queries";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -38,9 +37,6 @@ export default function GuildSettingsPage() {
   const { data: dataRetentionSettings, isLoading } = useDataRetentionSettings(guildId);
   const updateDataRetention = useUpdateDataRetentionSettings(guildId);
   const [retentionDays, setRetentionDays] = useState<number>(3);
-
-  // 활동 히트맵
-  const { data: heatmapData, isLoading: isHeatmapLoading } = useActivityHeatmap(guildId);
 
   useEffect(() => {
     if (dataRetentionSettings) {
@@ -114,14 +110,6 @@ export default function GuildSettingsPage() {
           </div>
         </CardContent>
       </Card>
-
-      {/* Activity Heatmap */}
-      <ActivityHeatmap
-        cells={heatmapData?.cells ?? []}
-        maxCount={heatmapData?.maxCount ?? 0}
-        totalActivities={heatmapData?.totalActivities ?? 0}
-        isLoading={isHeatmapLoading}
-      />
 
       {/* Data Retention Settings */}
       <Card className="border-slate-700 bg-slate-800/50">
