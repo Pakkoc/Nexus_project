@@ -57,43 +57,39 @@ export function SidebarHeatmap({
   }
 
   return (
-    <div className="space-y-2">
-      <p className="text-xs font-medium text-white/60">활동 시간대</p>
-      <div className="overflow-hidden rounded-lg bg-slate-900/50 p-2">
-        <table className="w-full border-collapse">
-          <thead>
-            <tr>
-              <th className="w-5" />
-              {DAYS.map((day) => (
-                <th key={day} className="text-[8px] text-white/40 font-normal p-0.5">
-                  {day}
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
+    <div className="space-y-1.5">
+      <p className="text-[10px] font-medium text-white/60">활동 시간대</p>
+      <div className="overflow-hidden rounded-md bg-slate-900/50 p-1.5">
+        <div className="flex gap-[1px]">
+          {/* 시간 라벨 */}
+          <div className="flex flex-col gap-[1px] pr-0.5">
+            <div className="h-[10px]" /> {/* 요일 헤더 공간 */}
             {HOURS.map((hour) => (
-              <tr key={hour}>
-                <td className="text-[8px] text-white/30 pr-1 text-right">
-                  {hour.toString().padStart(2, "0")}
-                </td>
-                {DAY_INDEX_MAP.map((apiDayIndex, displayIndex) => {
-                  const percent = getPercent(apiDayIndex, hour);
-                  const bgClass = getCellColor(percent);
-                  return (
-                    <td
-                      key={`${displayIndex}-${hour}`}
-                      className={`p-0`}
-                      title={`${DAYS[displayIndex]} ${hour}시: ${percent}%`}
-                    >
-                      <div className={`w-full aspect-square ${bgClass} rounded-[1px]`} />
-                    </td>
-                  );
-                })}
-              </tr>
+              <div key={hour} className="h-[6px] text-[6px] text-white/30 leading-[6px] text-right">
+                {hour % 6 === 0 ? hour.toString().padStart(2, "0") : ""}
+              </div>
             ))}
-          </tbody>
-        </table>
+          </div>
+          {/* 히트맵 그리드 */}
+          {DAY_INDEX_MAP.map((apiDayIndex, displayIndex) => (
+            <div key={displayIndex} className="flex flex-col gap-[1px]">
+              <div className="h-[10px] text-[7px] text-white/40 text-center leading-[10px]">
+                {DAYS[displayIndex]}
+              </div>
+              {HOURS.map((hour) => {
+                const percent = getPercent(apiDayIndex, hour);
+                const bgClass = getCellColor(percent);
+                return (
+                  <div
+                    key={hour}
+                    className={`w-[26px] h-[6px] ${bgClass} rounded-[1px]`}
+                    title={`${DAYS[displayIndex]} ${hour}시: ${percent}%`}
+                  />
+                );
+              })}
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   );
