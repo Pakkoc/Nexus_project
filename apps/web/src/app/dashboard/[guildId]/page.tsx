@@ -79,6 +79,15 @@ export default function GuildDashboardPage() {
 
   const bots = [
     {
+      name: "FORGE",
+      title: "살아있는 커뮤니티",
+      description: "유저가 활동할수록 보상이 쌓이는 경제 시스템. 떠나고 싶지 않은 '재미있는 서버'를 시스템이 알아서 만들어줍니다.",
+      href: `/dashboard/${guildId}/forge`,
+      logo: "/logo/forge_logo.png",
+      color: "from-emerald-500 to-green-500",
+      available: true,
+    },
+    {
       name: "CORE",
       title: "완벽한 방어",
       description: "테러와 어뷰징으로부터 서버를 철벽 방어합니다. 검열부터 비정상 유저 차단까지, 서버의 '생존'을 책임집니다.",
@@ -95,15 +104,6 @@ export default function GuildDashboardPage() {
       logo: "/logo/linka_logo.png",
       color: "from-blue-500 to-cyan-500",
       available: false,
-    },
-    {
-      name: "FORGE",
-      title: "살아있는 커뮤니티",
-      description: "유저가 활동할수록 보상이 쌓이는 경제 시스템. 떠나고 싶지 않은 '재미있는 서버'를 시스템이 알아서 만들어줍니다.",
-      href: `/dashboard/${guildId}/forge`,
-      logo: "/logo/forge_logo.png",
-      color: "from-emerald-500 to-green-500",
-      available: true,
     },
   ];
 
@@ -185,8 +185,8 @@ export default function GuildDashboardPage() {
 
                 <div className="relative">
                   {/* Logo */}
-                  <div className="w-16 h-16 rounded-2xl bg-white/10 flex items-center justify-center mb-4 group-hover:scale-105 transition-transform overflow-hidden">
-                    <img src={bot.logo} alt={bot.name} className="w-12 h-12 object-contain" />
+                  <div className="w-full h-40 mb-4 group-hover:scale-105 transition-transform">
+                    <img src={bot.logo} alt={bot.name} className="w-full h-full object-contain" />
                   </div>
 
                   {/* Bot Name & Status */}
