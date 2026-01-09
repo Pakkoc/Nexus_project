@@ -63,9 +63,9 @@ export function SidebarHeatmap({
         <div className="flex gap-[2px]">
           {/* 시간 라벨 */}
           <div className="flex flex-col gap-[2px] pr-1">
-            <div className="h-[14px]" /> {/* 요일 헤더 공간 */}
+            <div className="h-[16px]" /> {/* 요일 헤더 공간 */}
             {HOURS.map((hour) => (
-              <div key={hour} className="h-[10px] text-[8px] text-white/30 leading-[10px] text-right">
+              <div key={hour} className="h-[12px] text-[9px] text-white/30 leading-[12px] text-right">
                 {hour % 4 === 0 ? hour.toString().padStart(2, "0") : ""}
               </div>
             ))}
@@ -73,7 +73,7 @@ export function SidebarHeatmap({
           {/* 히트맵 그리드 */}
           {DAY_INDEX_MAP.map((apiDayIndex, displayIndex) => (
             <div key={displayIndex} className="flex flex-col gap-[2px]">
-              <div className="h-[14px] text-[9px] text-white/40 text-center leading-[14px]">
+              <div className="h-[16px] text-[10px] text-white/40 text-center leading-[16px]">
                 {DAYS[displayIndex]}
               </div>
               {HOURS.map((hour) => {
@@ -82,7 +82,7 @@ export function SidebarHeatmap({
                 return (
                   <div
                     key={hour}
-                    className={`w-[28px] h-[10px] ${bgClass} rounded-sm`}
+                    className={`w-[30px] h-[12px] ${bgClass} rounded-sm`}
                     title={`${DAYS[displayIndex]} ${hour}시: ${percent}%`}
                   />
                 );
