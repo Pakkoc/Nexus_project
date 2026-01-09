@@ -5,6 +5,8 @@ export interface UserXp {
   guildId: string;
   userId: string;
   xp: number;
+  textXp: number;
+  voiceXp: number;
   level: number;
   lastTextXpAt: Date | null;
   textCountInCooldown: number;
@@ -20,6 +22,8 @@ export function createUserXp(guildId: string, userId: string): UserXp {
     guildId,
     userId,
     xp: 0,
+    textXp: 0,
+    voiceXp: 0,
     level: 0,
     lastTextXpAt: null,
     textCountInCooldown: 0,

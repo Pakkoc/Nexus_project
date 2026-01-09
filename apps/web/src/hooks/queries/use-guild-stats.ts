@@ -7,6 +7,10 @@ export interface GuildStats {
   totalXp: number;
   avgLevel: number;
   maxLevel: number;
+  avgXpPerMember: number;
+  avgLevelExcludeZero: number;
+  avgTextXp: number;
+  avgVoiceXp: number;
   xpEnabled: boolean;
   textXpEnabled: boolean;
   voiceXpEnabled: boolean;

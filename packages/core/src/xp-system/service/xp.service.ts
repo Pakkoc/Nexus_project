@@ -154,6 +154,7 @@ export class XpService {
     const updatedUserXp: UserXp = {
       ...userXp,
       xp: newTotalXp,
+      textXp: userXp.textXp + earnedXp,
       level: newLevel,
       lastTextXpAt: now,
       textCountInCooldown: cooldownResult.isNewCooldownPeriod ? 1 : cooldownResult.countInCooldown + 1,
@@ -323,6 +324,7 @@ export class XpService {
     const updatedUserXp: UserXp = {
       ...userXp,
       xp: newTotalXp,
+      voiceXp: userXp.voiceXp + earnedXp,
       level: newLevel,
       lastVoiceXpAt: now,
       voiceCountInCooldown: cooldownResult.isNewCooldownPeriod ? 1 : cooldownResult.countInCooldown + 1,

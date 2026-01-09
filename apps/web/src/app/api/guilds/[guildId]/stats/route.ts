@@ -9,6 +9,10 @@ interface StatsRow extends RowDataPacket {
   total_xp: number;
   avg_level: number;
   max_level: number;
+  avg_xp_per_member: number;
+  avg_level_exclude_zero: number;
+  avg_text_xp: number;
+  avg_voice_xp: number;
 }
 
 interface SettingsRow extends RowDataPacket {
@@ -63,10 +67,14 @@ export async function GET(
         COUNT(*) as total_members,
         COALESCE(SUM(xp), 0) as total_xp,
         COALESCE(AVG(level), 0) as avg_level,
-        COALESCE(MAX(level), 0) as max_level
+        COALESCE(MAX(level), 0) as max_level,
+        COALESCE((SELECT AVG(xp) FROM xp_users WHERE guild_id = ? AND xp > 0), 0) as avg_xp_per_member,
+        COALESCE((SELECT AVG(level) FROM xp_users WHERE guild_id = ? AND level >= 1), 0) as avg_level_exclude_zero,
+        COALESCE((SELECT AVG(text_xp) FROM xp_users WHERE guild_id = ? AND text_xp > 0), 0) as avg_text_xp,
+        COALESCE((SELECT AVG(voice_xp) FROM xp_users WHERE guild_id = ? AND voice_xp > 0), 0) as avg_voice_xp
        FROM xp_users
        WHERE guild_id = ?`,
-      [guildId]
+      [guildId, guildId, guildId, guildId, guildId]
     );
 
     // Get XP settings
@@ -91,7 +99,7 @@ export async function GET(
       [guildId]
     );
 
-    const stats = userStats[0] ?? { total_members: 0, total_xp: 0, avg_level: 0, max_level: 0 };
+    const stats = userStats[0] ?? { total_members: 0, total_xp: 0, avg_level: 0, max_level: 0, avg_xp_per_member: 0, avg_level_exclude_zero: 0, avg_text_xp: 0, avg_voice_xp: 0 };
     const xpSettings = settings[0] ?? { enabled: false, text_xp_enabled: false, voice_xp_enabled: false };
     const activity = todayActivity[0] ?? { text_active: 0, voice_active: 0 };
 
@@ -101,6 +109,10 @@ export async function GET(
       totalXp: Number(stats.total_xp),
       avgLevel: Math.round(Number(stats.avg_level) * 10) / 10,
       maxLevel: Number(stats.max_level),
+      avgXpPerMember: Math.round(Number(stats.avg_xp_per_member)),
+      avgLevelExcludeZero: Math.round(Number(stats.avg_level_exclude_zero) * 10) / 10,
+      avgTextXp: Math.round(Number(stats.avg_text_xp)),
+      avgVoiceXp: Math.round(Number(stats.avg_voice_xp)),
       xpEnabled: xpSettings.enabled,
       textXpEnabled: xpSettings.text_xp_enabled,
       voiceXpEnabled: xpSettings.voice_xp_enabled,

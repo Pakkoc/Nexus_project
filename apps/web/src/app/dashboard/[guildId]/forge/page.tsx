@@ -131,13 +131,13 @@ export default function ForgePage() {
 
       {/* Quick Stats */}
       <div className="animate-fade-up" style={{ animationDelay: "200ms" }}>
-        <h2 className="text-lg font-semibold text-white mb-4">오늘의 활동</h2>
+        <h2 className="text-lg font-semibold text-white mb-4">XP 통계</h2>
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {[
-            { label: "텍스트 활동", value: stats?.todayTextActive?.toLocaleString() ?? "0", unit: "명", icon: "solar:chat-line-linear", color: "from-blue-500 to-cyan-500" },
-            { label: "음성 활동", value: stats?.todayVoiceActive?.toLocaleString() ?? "0", unit: "명", icon: "solar:microphone-linear", color: "from-purple-500 to-pink-500" },
-            { label: "XP 보유 멤버", value: stats?.membersWithXp?.toLocaleString() ?? "0", unit: "명", icon: "solar:users-group-rounded-linear", color: "from-green-500 to-emerald-500" },
-            { label: "최고 레벨", value: `Lv. ${stats?.maxLevel ?? 0}`, unit: "", icon: "solar:crown-linear", color: "from-yellow-500 to-amber-500" },
+            { label: "인당 평균 XP", value: stats?.avgXpPerMember?.toLocaleString() ?? "0", unit: "XP", icon: "solar:chart-2-linear", color: "from-indigo-500 to-purple-500" },
+            { label: "평균 레벨", value: `Lv. ${stats?.avgLevelExcludeZero ?? 0}`, unit: "", icon: "solar:ranking-linear", color: "from-amber-500 to-orange-500" },
+            { label: "평균 텍스트 XP", value: stats?.avgTextXp?.toLocaleString() ?? "0", unit: "XP", icon: "solar:chat-line-linear", color: "from-blue-500 to-cyan-500" },
+            { label: "평균 음성 XP", value: stats?.avgVoiceXp?.toLocaleString() ?? "0", unit: "XP", icon: "solar:microphone-linear", color: "from-purple-500 to-pink-500" },
           ].map((stat, index) => (
             <div
               key={stat.label}

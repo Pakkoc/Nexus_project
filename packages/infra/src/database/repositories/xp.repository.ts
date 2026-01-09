@@ -6,6 +6,8 @@ interface UserXpRow extends RowDataPacket {
   guild_id: string;
   user_id: string;
   xp: number;
+  text_xp: number;
+  voice_xp: number;
   level: number;
   last_text_xp_at: Date | null;
   text_count_in_cooldown: number;
@@ -20,6 +22,8 @@ function toUserXp(row: UserXpRow): UserXp {
     guildId: row.guild_id,
     userId: row.user_id,
     xp: row.xp,
+    textXp: row.text_xp ?? 0,
+    voiceXp: row.voice_xp ?? 0,
     level: row.level,
     lastTextXpAt: row.last_text_xp_at,
     textCountInCooldown: row.text_count_in_cooldown,
@@ -58,11 +62,13 @@ export class XpRepository implements XpRepositoryPort {
     try {
       await this.pool.execute(
         `INSERT INTO xp_users
-         (guild_id, user_id, xp, level, last_text_xp_at, text_count_in_cooldown,
+         (guild_id, user_id, xp, text_xp, voice_xp, level, last_text_xp_at, text_count_in_cooldown,
           last_voice_xp_at, voice_count_in_cooldown, created_at, updated_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
          ON DUPLICATE KEY UPDATE
          xp = VALUES(xp),
+         text_xp = VALUES(text_xp),
+         voice_xp = VALUES(voice_xp),
          level = VALUES(level),
          last_text_xp_at = VALUES(last_text_xp_at),
          text_count_in_cooldown = VALUES(text_count_in_cooldown),
@@ -73,6 +79,8 @@ export class XpRepository implements XpRepositoryPort {
           userXp.guildId,
           userXp.userId,
           userXp.xp,
+          userXp.textXp,
+          userXp.voiceXp,
           userXp.level,
           userXp.lastTextXpAt,
           userXp.textCountInCooldown,
@@ -160,6 +168,8 @@ export class XpRepository implements XpRepositoryPort {
         u.guildId,
         u.userId,
         u.xp,
+        u.textXp,
+        u.voiceXp,
         u.level,
         u.lastTextXpAt,
         u.textCountInCooldown,
@@ -171,11 +181,13 @@ export class XpRepository implements XpRepositoryPort {
 
       await this.pool.query(
         `INSERT INTO xp_users
-         (guild_id, user_id, xp, level, last_text_xp_at, text_count_in_cooldown,
+         (guild_id, user_id, xp, text_xp, voice_xp, level, last_text_xp_at, text_count_in_cooldown,
           last_voice_xp_at, voice_count_in_cooldown, created_at, updated_at)
          VALUES ?
          ON DUPLICATE KEY UPDATE
          xp = VALUES(xp),
+         text_xp = VALUES(text_xp),
+         voice_xp = VALUES(voice_xp),
          level = VALUES(level),
          updated_at = VALUES(updated_at)`,
         [values]
@@ -195,13 +207,15 @@ export class XpRepository implements XpRepositoryPort {
       // INSERT IGNORE: 이미 존재하면 무시
       await this.pool.execute(
         `INSERT IGNORE INTO xp_users
-         (guild_id, user_id, xp, level, last_text_xp_at, text_count_in_cooldown,
+         (guild_id, user_id, xp, text_xp, voice_xp, level, last_text_xp_at, text_count_in_cooldown,
           last_voice_xp_at, voice_count_in_cooldown, created_at, updated_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [
           userXp.guildId,
           userXp.userId,
           userXp.xp,
+          userXp.textXp,
+          userXp.voiceXp,
           userXp.level,
           userXp.lastTextXpAt,
           userXp.textCountInCooldown,
