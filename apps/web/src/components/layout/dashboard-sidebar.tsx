@@ -7,6 +7,8 @@ import { cn } from "@/lib/utils";
 import { NavigationLink } from "@/components/navigation-link";
 import { Icon } from "@iconify/react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { SidebarHeatmap } from "@/components/charts/sidebar-heatmap";
+import { useActivityHeatmap } from "@/hooks/queries/use-activity-heatmap";
 
 interface SidebarProps {
   guildId: string;
@@ -48,6 +50,9 @@ export function DashboardSidebar({ guildId, guildName, guildIcon }: SidebarProps
 
   // 네비게이션 생성
   const navigation = useMemo(() => createNavigation(), []);
+
+  // 활동 히트맵 데이터
+  const { data: heatmapData, isLoading: isHeatmapLoading } = useActivityHeatmap(guildId);
 
   const isActive = (href: string) => {
     const fullPath = `${basePath}${href}`;
@@ -109,6 +114,15 @@ export function DashboardSidebar({ guildId, guildName, guildIcon }: SidebarProps
           ))}
         </ul>
       </nav>
+
+      {/* Activity Heatmap */}
+      <div className="px-4 py-3 border-t border-white/5">
+        <SidebarHeatmap
+          cells={heatmapData?.cells ?? []}
+          maxCount={heatmapData?.maxCount ?? 0}
+          isLoading={isHeatmapLoading}
+        />
+      </div>
 
       {/* Footer */}
       <div className="p-4 border-t border-white/5">
