@@ -57,23 +57,23 @@ export function SidebarHeatmap({
   }
 
   return (
-    <div className="space-y-1.5">
-      <p className="text-[10px] font-medium text-white/60">활동 시간대</p>
-      <div className="overflow-hidden rounded-md bg-slate-900/50 p-1.5">
-        <div className="flex gap-[1px]">
+    <div className="space-y-2">
+      <p className="text-xs font-medium text-white/60">활동 시간대</p>
+      <div className="overflow-hidden rounded-lg bg-slate-900/50 p-2">
+        <div className="flex gap-[2px]">
           {/* 시간 라벨 */}
-          <div className="flex flex-col gap-[1px] pr-0.5">
-            <div className="h-[10px]" /> {/* 요일 헤더 공간 */}
+          <div className="flex flex-col gap-[2px] pr-1">
+            <div className="h-[14px]" /> {/* 요일 헤더 공간 */}
             {HOURS.map((hour) => (
-              <div key={hour} className="h-[6px] text-[6px] text-white/30 leading-[6px] text-right">
-                {hour % 6 === 0 ? hour.toString().padStart(2, "0") : ""}
+              <div key={hour} className="h-[10px] text-[8px] text-white/30 leading-[10px] text-right">
+                {hour % 4 === 0 ? hour.toString().padStart(2, "0") : ""}
               </div>
             ))}
           </div>
           {/* 히트맵 그리드 */}
           {DAY_INDEX_MAP.map((apiDayIndex, displayIndex) => (
-            <div key={displayIndex} className="flex flex-col gap-[1px]">
-              <div className="h-[10px] text-[7px] text-white/40 text-center leading-[10px]">
+            <div key={displayIndex} className="flex flex-col gap-[2px]">
+              <div className="h-[14px] text-[9px] text-white/40 text-center leading-[14px]">
                 {DAYS[displayIndex]}
               </div>
               {HOURS.map((hour) => {
@@ -82,7 +82,7 @@ export function SidebarHeatmap({
                 return (
                   <div
                     key={hour}
-                    className={`w-[26px] h-[6px] ${bgClass} rounded-[1px]`}
+                    className={`w-[28px] h-[10px] ${bgClass} rounded-sm`}
                     title={`${DAYS[displayIndex]} ${hour}시: ${percent}%`}
                   />
                 );
