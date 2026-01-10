@@ -6,8 +6,10 @@ import type { RowDataPacket } from "mysql2";
 
 interface XpUserRow extends RowDataPacket {
   user_id: string;
-  xp: number;
-  level: number;
+  text_xp: number;
+  voice_xp: number;
+  text_level: number;
+  voice_level: number;
   last_text_xp_at: Date | null;
   last_voice_xp_at: Date | null;
   created_at: Date;
@@ -54,13 +56,20 @@ export async function GET(
     const pool = db();
 
     // For XP/level sorting, use DB-first approach (leaderboard)
-    if ((sortBy === "xp" || sortBy === "level") && !search) {
+    if ((sortBy === "xp" || sortBy === "level" || sortBy === "textXp" || sortBy === "voiceXp" || sortBy === "textLevel" || sortBy === "voiceLevel") && !search) {
+      // Determine ORDER BY clause
+      let orderByColumn = "(text_xp + voice_xp)";
+      if (sortBy === "textXp") orderByColumn = "text_xp";
+      else if (sortBy === "voiceXp") orderByColumn = "voice_xp";
+      else if (sortBy === "level" || sortBy === "textLevel") orderByColumn = "text_level";
+      else if (sortBy === "voiceLevel") orderByColumn = "voice_level";
+
       // Get XP users from DB first
       const [xpRows] = await pool.query<XpUserRow[]>(
-        `SELECT user_id, xp, level, last_text_xp_at, last_voice_xp_at, created_at, updated_at
+        `SELECT user_id, text_xp, voice_xp, text_level, voice_level, last_text_xp_at, last_voice_xp_at, created_at, updated_at
          FROM xp_users
-         WHERE guild_id = ? AND xp > 0
-         ORDER BY ${sortBy === "level" ? "level" : "xp"} ${sortOrder === "asc" ? "ASC" : "DESC"}`,
+         WHERE guild_id = ? AND (text_xp > 0 OR voice_xp > 0)
+         ORDER BY ${orderByColumn} ${sortOrder === "asc" ? "ASC" : "DESC"}`,
         [guildId]
       );
 
@@ -96,8 +105,11 @@ export async function GET(
             displayName,
             avatar,
             joinedAt,
-            xp: xpData.xp,
-            level: xpData.level,
+            textXp: xpData.text_xp,
+            voiceXp: xpData.voice_xp,
+            totalXp: xpData.text_xp + xpData.voice_xp,
+            textLevel: xpData.text_level,
+            voiceLevel: xpData.voice_level,
             lastTextXpAt: xpData.last_text_xp_at,
             lastVoiceXpAt: xpData.last_voice_xp_at,
             hasXpData: true,
@@ -154,7 +166,7 @@ export async function GET(
 
     // Get XP data for all members
     const [xpRows] = await pool.query<XpUserRow[]>(
-      `SELECT user_id, xp, level, last_text_xp_at, last_voice_xp_at, created_at, updated_at
+      `SELECT user_id, text_xp, voice_xp, text_level, voice_level, last_text_xp_at, last_voice_xp_at, created_at, updated_at
        FROM xp_users WHERE guild_id = ?`,
       [guildId]
     );
@@ -180,8 +192,11 @@ export async function GET(
         displayName: member.nick || member.user.global_name || member.user.username,
         avatar: memberAvatar,
         joinedAt: member.joined_at,
-        xp: xpData?.xp ?? 0,
-        level: xpData?.level ?? 0,
+        textXp: xpData?.text_xp ?? 0,
+        voiceXp: xpData?.voice_xp ?? 0,
+        totalXp: (xpData?.text_xp ?? 0) + (xpData?.voice_xp ?? 0),
+        textLevel: xpData?.text_level ?? 0,
+        voiceLevel: xpData?.voice_level ?? 0,
         lastTextXpAt: xpData?.last_text_xp_at ?? null,
         lastVoiceXpAt: xpData?.last_voice_xp_at ?? null,
         hasXpData: !!xpData,
@@ -204,15 +219,23 @@ export async function GET(
     mergedMembers.sort((a, b) => {
       switch (sortBy) {
         case "xp":
-          return (a.xp - b.xp) * sortMultiplier;
+        case "totalXp":
+          return (a.totalXp - b.totalXp) * sortMultiplier;
+        case "textXp":
+          return (a.textXp - b.textXp) * sortMultiplier;
+        case "voiceXp":
+          return (a.voiceXp - b.voiceXp) * sortMultiplier;
         case "level":
-          return (a.level - b.level) * sortMultiplier;
+        case "textLevel":
+          return (a.textLevel - b.textLevel) * sortMultiplier;
+        case "voiceLevel":
+          return (a.voiceLevel - b.voiceLevel) * sortMultiplier;
         case "joinedAt":
           return (new Date(a.joinedAt).getTime() - new Date(b.joinedAt).getTime()) * sortMultiplier;
         case "name":
           return a.displayName.localeCompare(b.displayName) * sortMultiplier;
         default:
-          return (a.xp - b.xp) * sortMultiplier;
+          return (a.totalXp - b.totalXp) * sortMultiplier;
       }
     });
 

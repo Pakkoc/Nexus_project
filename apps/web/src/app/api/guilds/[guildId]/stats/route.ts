@@ -6,13 +6,16 @@ import type { RowDataPacket } from "mysql2";
 
 interface StatsRow extends RowDataPacket {
   total_members: number;
-  total_xp: number;
-  avg_level: number;
-  max_level: number;
-  avg_xp_per_member: number;
-  avg_level_exclude_zero: number;
-  avg_text_xp: number;
-  avg_voice_xp: number;
+  total_text_xp: number;
+  total_voice_xp: number;
+  avg_text_level: number;
+  avg_voice_level: number;
+  max_text_level: number;
+  max_voice_level: number;
+  avg_text_xp_per_member: number;
+  avg_voice_xp_per_member: number;
+  avg_text_level_exclude_zero: number;
+  avg_voice_level_exclude_zero: number;
 }
 
 interface SettingsRow extends RowDataPacket {
@@ -65,13 +68,16 @@ export async function GET(
     const [userStats] = await pool.query<StatsRow[]>(
       `SELECT
         COUNT(*) as total_members,
-        COALESCE(SUM(xp), 0) as total_xp,
-        COALESCE(AVG(level), 0) as avg_level,
-        COALESCE(MAX(level), 0) as max_level,
-        COALESCE((SELECT AVG(xp) FROM xp_users WHERE guild_id = ? AND xp > 0), 0) as avg_xp_per_member,
-        COALESCE((SELECT AVG(level) FROM xp_users WHERE guild_id = ? AND level >= 1), 0) as avg_level_exclude_zero,
-        COALESCE((SELECT AVG(text_xp) FROM xp_users WHERE guild_id = ? AND text_xp > 0), 0) as avg_text_xp,
-        COALESCE((SELECT AVG(voice_xp) FROM xp_users WHERE guild_id = ? AND voice_xp > 0), 0) as avg_voice_xp
+        COALESCE(SUM(text_xp), 0) as total_text_xp,
+        COALESCE(SUM(voice_xp), 0) as total_voice_xp,
+        COALESCE(AVG(text_level), 0) as avg_text_level,
+        COALESCE(AVG(voice_level), 0) as avg_voice_level,
+        COALESCE(MAX(text_level), 0) as max_text_level,
+        COALESCE(MAX(voice_level), 0) as max_voice_level,
+        COALESCE((SELECT AVG(text_xp) FROM xp_users WHERE guild_id = ? AND text_xp > 0), 0) as avg_text_xp_per_member,
+        COALESCE((SELECT AVG(voice_xp) FROM xp_users WHERE guild_id = ? AND voice_xp > 0), 0) as avg_voice_xp_per_member,
+        COALESCE((SELECT AVG(text_level) FROM xp_users WHERE guild_id = ? AND text_level >= 1), 0) as avg_text_level_exclude_zero,
+        COALESCE((SELECT AVG(voice_level) FROM xp_users WHERE guild_id = ? AND voice_level >= 1), 0) as avg_voice_level_exclude_zero
        FROM xp_users
        WHERE guild_id = ?`,
       [guildId, guildId, guildId, guildId, guildId]
@@ -93,26 +99,46 @@ export async function GET(
       [guildId]
     );
 
-    // Get top 5 users
+    // Get top 5 users (by total XP = text_xp + voice_xp)
     const [topUsers] = await pool.query<RowDataPacket[]>(
-      `SELECT user_id, xp, level FROM xp_users WHERE guild_id = ? ORDER BY xp DESC LIMIT 5`,
+      `SELECT user_id, text_xp, voice_xp, text_level, voice_level
+       FROM xp_users
+       WHERE guild_id = ?
+       ORDER BY (text_xp + voice_xp) DESC
+       LIMIT 5`,
       [guildId]
     );
 
-    const stats = userStats[0] ?? { total_members: 0, total_xp: 0, avg_level: 0, max_level: 0, avg_xp_per_member: 0, avg_level_exclude_zero: 0, avg_text_xp: 0, avg_voice_xp: 0 };
+    const stats = userStats[0] ?? {
+      total_members: 0,
+      total_text_xp: 0,
+      total_voice_xp: 0,
+      avg_text_level: 0,
+      avg_voice_level: 0,
+      max_text_level: 0,
+      max_voice_level: 0,
+      avg_text_xp_per_member: 0,
+      avg_voice_xp_per_member: 0,
+      avg_text_level_exclude_zero: 0,
+      avg_voice_level_exclude_zero: 0,
+    };
     const xpSettings = settings[0] ?? { enabled: false, text_xp_enabled: false, voice_xp_enabled: false };
     const activity = todayActivity[0] ?? { text_active: 0, voice_active: 0 };
 
     return NextResponse.json({
       totalMembers: totalMembers,
       membersWithXp: Number(stats.total_members),
-      totalXp: Number(stats.total_xp),
-      avgLevel: Math.round(Number(stats.avg_level) * 10) / 10,
-      maxLevel: Number(stats.max_level),
-      avgXpPerMember: Math.round(Number(stats.avg_xp_per_member)),
-      avgLevelExcludeZero: Math.round(Number(stats.avg_level_exclude_zero) * 10) / 10,
-      avgTextXp: Math.round(Number(stats.avg_text_xp)),
-      avgVoiceXp: Math.round(Number(stats.avg_voice_xp)),
+      totalTextXp: Number(stats.total_text_xp),
+      totalVoiceXp: Number(stats.total_voice_xp),
+      totalXp: Number(stats.total_text_xp) + Number(stats.total_voice_xp),
+      avgTextLevel: Math.round(Number(stats.avg_text_level) * 10) / 10,
+      avgVoiceLevel: Math.round(Number(stats.avg_voice_level) * 10) / 10,
+      maxTextLevel: Number(stats.max_text_level),
+      maxVoiceLevel: Number(stats.max_voice_level),
+      avgTextXpPerMember: Math.round(Number(stats.avg_text_xp_per_member)),
+      avgVoiceXpPerMember: Math.round(Number(stats.avg_voice_xp_per_member)),
+      avgTextLevelExcludeZero: Math.round(Number(stats.avg_text_level_exclude_zero) * 10) / 10,
+      avgVoiceLevelExcludeZero: Math.round(Number(stats.avg_voice_level_exclude_zero) * 10) / 10,
       xpEnabled: xpSettings.enabled,
       textXpEnabled: xpSettings.text_xp_enabled,
       voiceXpEnabled: xpSettings.voice_xp_enabled,
@@ -120,8 +146,11 @@ export async function GET(
       todayVoiceActive: Number(activity.voice_active),
       topUsers: topUsers.map((u) => ({
         userId: u.user_id,
-        xp: u.xp,
-        level: u.level,
+        textXp: Number(u.text_xp),
+        voiceXp: Number(u.voice_xp),
+        totalXp: Number(u.text_xp) + Number(u.voice_xp),
+        textLevel: Number(u.text_level),
+        voiceLevel: Number(u.voice_level),
       })),
     });
   } catch (error) {

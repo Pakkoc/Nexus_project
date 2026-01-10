@@ -25,7 +25,7 @@ export default function MembersPage() {
   const [page, setPage] = useState(1);
   const [searchInput, setSearchInput] = useState("");
   const [search, setSearch] = useState("");
-  const [sortBy, setSortBy] = useState<"xp" | "level" | "joinedAt" | "name">("xp");
+  const [sortBy, setSortBy] = useState<"totalXp" | "textXp" | "voiceXp" | "textLevel" | "voiceLevel" | "joinedAt" | "name">("totalXp");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
 
   useDebounce(
@@ -69,12 +69,15 @@ export default function MembersPage() {
         </div>
         <div className="flex items-center gap-2">
           <Select value={sortBy} onValueChange={(v) => setSortBy(v as typeof sortBy)}>
-            <SelectTrigger className="w-32 border-slate-700 bg-slate-800/50">
+            <SelectTrigger className="w-36 border-slate-700 bg-slate-800/50">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="xp">XP</SelectItem>
-              <SelectItem value="level">레벨</SelectItem>
+              <SelectItem value="totalXp">총 XP</SelectItem>
+              <SelectItem value="textXp">텍스트 XP</SelectItem>
+              <SelectItem value="voiceXp">음성 XP</SelectItem>
+              <SelectItem value="textLevel">텍스트 레벨</SelectItem>
+              <SelectItem value="voiceLevel">음성 레벨</SelectItem>
               <SelectItem value="joinedAt">가입일</SelectItem>
               <SelectItem value="name">이름</SelectItem>
             </SelectContent>
@@ -164,17 +167,23 @@ export default function MembersPage() {
                     </p>
                     <p className="text-xs text-slate-500">{member.userId}</p>
                   </div>
-                  <div className="flex items-center gap-4 text-right">
+                  <div className="flex items-center gap-3 text-right">
                     <div>
-                      <p className="text-sm text-slate-400">레벨</p>
-                      <p className={`font-bold ${member.hasXpData ? "text-indigo-400" : "text-slate-600"}`}>
-                        {member.level}
+                      <p className="text-xs text-slate-500">텍스트</p>
+                      <p className={`text-sm font-bold ${member.hasXpData ? "text-blue-400" : "text-slate-600"}`}>
+                        Lv. {member.textLevel}
                       </p>
                     </div>
                     <div>
-                      <p className="text-sm text-slate-400">XP</p>
-                      <p className={`font-bold ${member.hasXpData ? "text-green-400" : "text-slate-600"}`}>
-                        {member.xp.toLocaleString()}
+                      <p className="text-xs text-slate-500">음성</p>
+                      <p className={`text-sm font-bold ${member.hasXpData ? "text-green-400" : "text-slate-600"}`}>
+                        Lv. {member.voiceLevel}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-slate-500">총 XP</p>
+                      <p className={`text-sm font-bold ${member.hasXpData ? "text-amber-400" : "text-slate-600"}`}>
+                        {member.totalXp.toLocaleString()}
                       </p>
                     </div>
                   </div>
@@ -227,7 +236,7 @@ export default function MembersPage() {
               서버의 모든 멤버를 표시합니다. XP 데이터는 활동 후 업데이트됩니다.
             </p>
             <p className="mt-1 text-sm text-slate-400">
-              이름, XP, 레벨, 가입일 순으로 정렬할 수 있습니다.
+              이름, 총 XP, 텍스트/음성 XP, 텍스트/음성 레벨, 가입일 순으로 정렬할 수 있습니다.
             </p>
           </div>
         </CardContent>

@@ -7,8 +7,11 @@ export interface Member {
   displayName: string;
   avatar: string | null;
   joinedAt: string;
-  xp: number;
-  level: number;
+  textXp: number;
+  voiceXp: number;
+  totalXp: number;
+  textLevel: number;
+  voiceLevel: number;
   lastTextXpAt: string | null;
   lastVoiceXpAt: string | null;
   hasXpData: boolean;
@@ -28,12 +31,12 @@ export interface UseMembersParams {
   page?: number;
   limit?: number;
   search?: string;
-  sortBy?: "xp" | "level" | "joinedAt" | "name";
+  sortBy?: "totalXp" | "textXp" | "voiceXp" | "textLevel" | "voiceLevel" | "joinedAt" | "name" | "xp" | "level";
   sortOrder?: "asc" | "desc";
 }
 
 export function useMembers(guildId: string, params: UseMembersParams = {}) {
-  const { page = 1, limit = 20, search = "", sortBy = "xp", sortOrder = "desc" } = params;
+  const { page = 1, limit = 20, search = "", sortBy = "totalXp", sortOrder = "desc" } = params;
 
   return useQuery({
     queryKey: ["members", guildId, { page, limit, search, sortBy, sortOrder }],

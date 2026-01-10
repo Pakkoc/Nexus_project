@@ -4,13 +4,17 @@ import axios from "axios";
 export interface GuildStats {
   totalMembers: number;
   membersWithXp: number;
+  totalTextXp: number;
+  totalVoiceXp: number;
   totalXp: number;
-  avgLevel: number;
-  maxLevel: number;
-  avgXpPerMember: number;
-  avgLevelExcludeZero: number;
-  avgTextXp: number;
-  avgVoiceXp: number;
+  avgTextLevel: number;
+  avgVoiceLevel: number;
+  maxTextLevel: number;
+  maxVoiceLevel: number;
+  avgTextXpPerMember: number;
+  avgVoiceXpPerMember: number;
+  avgTextLevelExcludeZero: number;
+  avgVoiceLevelExcludeZero: number;
   xpEnabled: boolean;
   textXpEnabled: boolean;
   voiceXpEnabled: boolean;
@@ -18,8 +22,11 @@ export interface GuildStats {
   todayVoiceActive: number;
   topUsers: {
     userId: string;
-    xp: number;
-    level: number;
+    textXp: number;
+    voiceXp: number;
+    totalXp: number;
+    textLevel: number;
+    voiceLevel: number;
   }[];
 }
 

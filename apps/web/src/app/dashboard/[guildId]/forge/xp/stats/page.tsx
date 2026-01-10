@@ -13,7 +13,7 @@ export default function XpStatsPage() {
   const { data: stats, isLoading: statsLoading } = useGuildStats(guildId);
   const { data: membersData, isLoading: membersLoading } = useMembers(guildId, {
     limit: 10,
-    sortBy: "xp",
+    sortBy: "totalXp",
     sortOrder: "desc",
   });
 
@@ -66,7 +66,7 @@ export default function XpStatsPage() {
               {stats?.totalMembers.toLocaleString() ?? 0}
             </p>
             <p className="text-sm text-white/40 mt-1">
-              XP 보유: {stats?.membersWithXp.toLocaleString() ?? 0}명 · 평균 레벨: Lv. {stats?.avgLevel ?? 0}
+              XP 보유: {stats?.membersWithXp.toLocaleString() ?? 0}명
             </p>
           </div>
         </div>
@@ -87,7 +87,7 @@ export default function XpStatsPage() {
               {stats?.totalXp.toLocaleString() ?? 0}
             </p>
             <p className="text-sm text-white/40 mt-1">
-              최고 레벨: Lv. {stats?.maxLevel ?? 0}
+              최고 레벨: 텍스트 Lv. {stats?.maxTextLevel ?? 0} · 음성 Lv. {stats?.maxVoiceLevel ?? 0}
             </p>
           </div>
         </div>
@@ -229,15 +229,19 @@ export default function XpStatsPage() {
                       {member.displayName ?? member.username ?? member.userId}
                     </p>
                   </div>
-                  <div className="flex items-center gap-6 text-right">
+                  <div className="flex items-center gap-4 text-right">
                     <div>
-                      <p className="text-xs text-white/40">레벨</p>
-                      <p className="font-bold text-indigo-400">{member.level}</p>
+                      <p className="text-xs text-white/40">텍스트</p>
+                      <p className="font-bold text-blue-400">Lv. {member.textLevel}</p>
                     </div>
                     <div>
-                      <p className="text-xs text-white/40">XP</p>
-                      <p className="font-bold text-green-400">
-                        {member.xp.toLocaleString()}
+                      <p className="text-xs text-white/40">음성</p>
+                      <p className="font-bold text-green-400">Lv. {member.voiceLevel}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-white/40">총 XP</p>
+                      <p className="font-bold text-amber-400">
+                        {member.totalXp.toLocaleString()}
                       </p>
                     </div>
                   </div>
