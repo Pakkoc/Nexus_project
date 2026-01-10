@@ -1,20 +1,24 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiClient } from "@/lib/remote/api-client";
 
+export type CurrencyType = "topy" | "ruby";
+
 export interface CurrencyManager {
   id: number;
   guildId: string;
   userId: string;
+  currencyType: CurrencyType;
   createdAt: string;
 }
 
-export function useCurrencyManagers(guildId: string) {
+export function useCurrencyManagers(guildId: string, currencyType?: CurrencyType) {
   return useQuery({
-    queryKey: ["currency-managers", guildId],
+    queryKey: ["currency-managers", guildId, currencyType],
     queryFn: async () => {
-      const response = await apiClient.get<CurrencyManager[]>(
-        `/api/guilds/${guildId}/currency/managers`
-      );
+      const url = currencyType
+        ? `/api/guilds/${guildId}/currency/managers?type=${currencyType}`
+        : `/api/guilds/${guildId}/currency/managers`;
+      const response = await apiClient.get<CurrencyManager[]>(url);
       return response.data;
     },
     enabled: !!guildId,
@@ -25,10 +29,10 @@ export function useAddCurrencyManager(guildId: string) {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (userId: string) => {
+    mutationFn: async ({ userId, currencyType }: { userId: string; currencyType: CurrencyType }) => {
       const response = await apiClient.post<CurrencyManager>(
         `/api/guilds/${guildId}/currency/managers`,
-        { userId }
+        { userId, currencyType }
       );
       return response.data;
     },
@@ -44,9 +48,9 @@ export function useRemoveCurrencyManager(guildId: string) {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (userId: string) => {
+    mutationFn: async ({ userId, currencyType }: { userId: string; currencyType: CurrencyType }) => {
       await apiClient.delete(`/api/guilds/${guildId}/currency/managers`, {
-        data: { userId },
+        data: { userId, currencyType },
       });
     },
     onSuccess: () => {

@@ -1,21 +1,6 @@
 "use client";
 
-import { useParams } from "next/navigation";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
-import { useEffect, useState } from "react";
-import {
-  useCurrencySettings,
-  useUpdateCurrencySettings,
-  useCurrencyManagers,
-  useAddCurrencyManager,
-  useRemoveCurrencyManager,
-  useMembers,
-} from "@/hooks/queries";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Switch } from "@/components/ui/switch";
 import {
   Form,
   FormControl,
@@ -25,6 +10,7 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
@@ -32,9 +18,23 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { useToast } from "@/hooks/use-toast";
+import { Switch } from "@/components/ui/switch";
 import { useUnsavedChanges } from "@/contexts/unsaved-changes-context";
+import {
+  useAddCurrencyManager,
+  useCurrencyManagers,
+  useCurrencySettings,
+  useMembers,
+  useRemoveCurrencyManager,
+  useUpdateCurrencySettings,
+} from "@/hooks/queries";
+import { useToast } from "@/hooks/use-toast";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { Icon } from "@iconify/react";
+import { useParams } from "next/navigation";
+import { useEffect, useState } from "react";
+import { useForm } from "react-hook-form";
+import { z } from "zod";
 
 const currencySettingsFormSchema = z.object({
   enabled: z.boolean(),
@@ -72,13 +72,17 @@ export default function CurrencySettingsPage() {
   const { data: settings, isLoading } = useCurrencySettings(guildId);
   const updateSettings = useUpdateCurrencySettings(guildId);
 
-  // Currency managers
-  const { data: managers = [], isLoading: managersLoading } = useCurrencyManagers(guildId);
+  // Currency managers - separate for Topy and Ruby
+  const { data: topyManagers = [], isLoading: topyManagersLoading } =
+    useCurrencyManagers(guildId, "topy");
+  const { data: rubyManagers = [], isLoading: rubyManagersLoading } =
+    useCurrencyManagers(guildId, "ruby");
   const addManager = useAddCurrencyManager(guildId);
   const removeManager = useRemoveCurrencyManager(guildId);
   const { data: membersData } = useMembers(guildId, { limit: 100 });
   const members = membersData?.members ?? [];
-  const [selectedUserId, setSelectedUserId] = useState<string>("");
+  const [selectedTopyUserId, setSelectedTopyUserId] = useState<string>("");
+  const [selectedRubyUserId, setSelectedRubyUserId] = useState<string>("");
 
   const form = useForm<CurrencySettingsFormValues>({
     resolver: zodResolver(currencySettingsFormSchema),
@@ -167,7 +171,10 @@ export default function CurrencySettingsPage() {
         </div>
         <div className="grid gap-6 lg:grid-cols-2">
           {[...Array(2)].map((_, i) => (
-            <div key={i} className="animate-pulse bg-white/5 rounded-2xl p-6 border border-white/5">
+            <div
+              key={i}
+              className="animate-pulse bg-white/5 rounded-2xl p-6 border border-white/5"
+            >
               <div className="space-y-4">
                 {[...Array(4)].map((_, j) => (
                   <div key={j} className="h-12 rounded-lg bg-white/10" />
@@ -198,7 +205,9 @@ export default function CurrencySettingsPage() {
               render={({ field }) => (
                 <FormItem className="flex items-center justify-between">
                   <div className="space-y-0.5">
-                    <FormLabel className="text-white font-medium text-lg">화폐 시스템 활성화</FormLabel>
+                    <FormLabel className="text-white font-medium text-lg">
+                      화폐 시스템 활성화
+                    </FormLabel>
                     <FormDescription className="text-white/40">
                       활동 보상으로 토피를 획득할 수 있습니다
                     </FormDescription>
@@ -214,145 +223,314 @@ export default function CurrencySettingsPage() {
             />
           </div>
 
-          {/* 화폐 관리자 설정 */}
+          {/* 화폐 관리자 설정 - 토피 */}
           <div className="bg-white/5 backdrop-blur-sm rounded-2xl border border-white/10">
-        <div className="p-6 border-b border-white/10">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-500 to-purple-500 flex items-center justify-center">
-              <Icon icon="solar:shield-user-linear" className="h-5 w-5 text-white" />
-            </div>
-            <div>
-              <h3 className="font-semibold text-white">화폐 관리자</h3>
-              <p className="text-white/50 text-sm">지정된 유저가 다른 유저에게 무제한 화폐 지급 가능</p>
-            </div>
-          </div>
-        </div>
-        <div className="p-6 space-y-4">
-          {/* Add manager */}
-          <div className="flex gap-3">
-            <Select
-              value={selectedUserId}
-              onValueChange={setSelectedUserId}
-            >
-              <SelectTrigger className="flex-1 bg-white/5 border-white/10 text-white focus:ring-violet-500">
-                <SelectValue placeholder="유저를 선택하세요" />
-              </SelectTrigger>
-              <SelectContent className="bg-slate-900 border-white/10">
-                {members
-                  .filter((m) => !managers.some((mgr) => mgr.userId === m.userId))
-                  .map((m) => (
-                    <SelectItem
-                      key={m.userId}
-                      value={m.userId}
-                      className="text-white focus:bg-white/10"
-                    >
-                      {m.displayName}
-                    </SelectItem>
-                  ))}
-              </SelectContent>
-            </Select>
-            <Button
-              type="button"
-              disabled={!selectedUserId || addManager.isPending}
-              onClick={async () => {
-                if (!selectedUserId) return;
-                try {
-                  await addManager.mutateAsync(selectedUserId);
-                  setSelectedUserId("");
-                  toast({
-                    title: "화폐 관리자 추가",
-                    description: "화폐 관리자가 추가되었습니다.",
-                  });
-                } catch {
-                  toast({
-                    title: "추가 실패",
-                    description: "화폐 관리자를 추가하는 중 오류가 발생했습니다.",
-                    variant: "destructive",
-                  });
-                }
-              }}
-              className="bg-violet-600 hover:bg-violet-500 text-white"
-            >
-              <Icon icon="solar:add-circle-linear" className="mr-2 h-4 w-4" />
-              추가
-            </Button>
-          </div>
-
-          {/* Manager list */}
-          {managersLoading ? (
-            <div className="space-y-2">
-              {[...Array(2)].map((_, i) => (
-                <div key={i} className="h-14 rounded-xl bg-white/5 animate-pulse" />
-              ))}
-            </div>
-          ) : managers.length > 0 ? (
-            <div className="space-y-2">
-              {managers.map((manager) => {
-                const member = members.find((m) => m.userId === manager.userId);
-                return (
-                  <div
-                    key={manager.id}
-                    className="flex items-center justify-between rounded-xl border border-white/10 bg-white/5 p-4"
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-full bg-violet-500/20 flex items-center justify-center">
-                        <Icon icon="solar:user-linear" className="h-4 w-4 text-violet-400" />
-                      </div>
-                      <div>
-                        <p className="font-medium text-white">{member?.displayName ?? "알 수 없음"}</p>
-                        <p className="text-xs text-white/40">ID: {manager.userId}</p>
-                      </div>
-                    </div>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={async () => {
-                        try {
-                          await removeManager.mutateAsync(manager.userId);
-                          toast({
-                            title: "화폐 관리자 제거",
-                            description: "화폐 관리자가 제거되었습니다.",
-                          });
-                        } catch {
-                          toast({
-                            title: "제거 실패",
-                            description: "화폐 관리자를 제거하는 중 오류가 발생했습니다.",
-                            variant: "destructive",
-                          });
-                        }
-                      }}
-                      disabled={removeManager.isPending}
-                      className="text-red-400 hover:text-red-300 hover:bg-red-500/10"
-                    >
-                      <Icon icon="solar:trash-bin-trash-linear" className="h-4 w-4" />
-                    </Button>
-                  </div>
-                );
-              })}
-            </div>
-          ) : (
-            <div className="text-center py-8">
-              <div className="w-12 h-12 rounded-xl bg-white/5 flex items-center justify-center mx-auto mb-3">
-                <Icon icon="solar:shield-user-linear" className="h-6 w-6 text-white/20" />
+            <div className="p-6 border-b border-white/10">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500 to-orange-500 flex items-center justify-center">
+                  <Icon
+                    icon="solar:shield-user-linear"
+                    className="h-5 w-5 text-white"
+                  />
+                </div>
+                <div>
+                  <h3 className="font-semibold text-white">{settings?.topyName ?? "토피"} 관리자</h3>
+                  <p className="text-white/50 text-sm">
+                    활동형 화폐를 무제한 지급할 수 있는 유저
+                  </p>
+                </div>
               </div>
-              <p className="text-white/50">등록된 화폐 관리자가 없습니다</p>
-              <p className="text-xs text-white/30 mt-1">유저를 선택하여 추가해주세요</p>
             </div>
-          )}
+            <div className="p-6 space-y-4">
+              {/* Add topy manager */}
+              <div className="flex gap-3">
+                <Select
+                  value={selectedTopyUserId}
+                  onValueChange={setSelectedTopyUserId}
+                >
+                  <SelectTrigger className="flex-1 bg-white/5 border-white/10 text-white focus:ring-amber-500">
+                    <SelectValue placeholder="유저를 선택하세요" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-slate-900 border-white/10">
+                    {members
+                      .filter(
+                        (m) => !topyManagers.some((mgr) => mgr.userId === m.userId)
+                      )
+                      .map((m) => (
+                        <SelectItem
+                          key={m.userId}
+                          value={m.userId}
+                          className="text-white focus:bg-white/10"
+                        >
+                          {m.displayName}
+                        </SelectItem>
+                      ))}
+                  </SelectContent>
+                </Select>
+                <Button
+                  type="button"
+                  disabled={!selectedTopyUserId || addManager.isPending}
+                  onClick={async () => {
+                    if (!selectedTopyUserId) return;
+                    try {
+                      await addManager.mutateAsync({ userId: selectedTopyUserId, currencyType: "topy" });
+                      setSelectedTopyUserId("");
+                      toast({
+                        title: `${settings?.topyName ?? "토피"} 관리자 추가`,
+                        description: "관리자가 추가되었습니다.",
+                      });
+                    } catch {
+                      toast({
+                        title: "추가 실패",
+                        description: "관리자를 추가하는 중 오류가 발생했습니다.",
+                        variant: "destructive",
+                      });
+                    }
+                  }}
+                  className="bg-amber-600 hover:bg-amber-500 text-white"
+                >
+                  <Icon icon="solar:add-circle-linear" className="mr-2 h-4 w-4" />
+                  추가
+                </Button>
+              </div>
 
-          {/* Info */}
+              {/* Topy manager list */}
+              {topyManagersLoading ? (
+                <div className="space-y-2">
+                  {[...Array(2)].map((_, i) => (
+                    <div key={i} className="h-14 rounded-xl bg-white/5 animate-pulse" />
+                  ))}
+                </div>
+              ) : topyManagers.length > 0 ? (
+                <div className="space-y-2">
+                  {topyManagers.map((manager) => {
+                    const member = members.find((m) => m.userId === manager.userId);
+                    return (
+                      <div
+                        key={manager.id}
+                        className="flex items-center justify-between rounded-xl border border-white/10 bg-white/5 p-4"
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className="w-8 h-8 rounded-full bg-amber-500/20 flex items-center justify-center">
+                            <Icon icon="solar:user-linear" className="h-4 w-4 text-amber-400" />
+                          </div>
+                          <div>
+                            <p className="font-medium text-white">
+                              {member?.displayName ?? "알 수 없음"}
+                            </p>
+                            <p className="text-xs text-white/40">ID: {manager.userId}</p>
+                          </div>
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={async () => {
+                            try {
+                              await removeManager.mutateAsync({ userId: manager.userId, currencyType: "topy" });
+                              toast({
+                                title: `${settings?.topyName ?? "토피"} 관리자 제거`,
+                                description: "관리자가 제거되었습니다.",
+                              });
+                            } catch {
+                              toast({
+                                title: "제거 실패",
+                                description: "관리자를 제거하는 중 오류가 발생했습니다.",
+                                variant: "destructive",
+                              });
+                            }
+                          }}
+                          disabled={removeManager.isPending}
+                          className="text-red-400 hover:text-red-300 hover:bg-red-500/10"
+                        >
+                          <Icon icon="solar:trash-bin-trash-linear" className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className="text-center py-6">
+                  <div className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center mx-auto mb-2">
+                    <Icon icon="solar:shield-user-linear" className="h-5 w-5 text-white/20" />
+                  </div>
+                  <p className="text-sm text-white/50">등록된 관리자가 없습니다</p>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* 화폐 관리자 설정 - 루비 */}
+          <div className="bg-white/5 backdrop-blur-sm rounded-2xl border border-white/10">
+            <div className="p-6 border-b border-white/10">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-pink-500 to-rose-500 flex items-center justify-center">
+                  <Icon
+                    icon="solar:shield-user-linear"
+                    className="h-5 w-5 text-white"
+                  />
+                </div>
+                <div>
+                  <h3 className="font-semibold text-white">{settings?.rubyName ?? "루비"} 관리자</h3>
+                  <p className="text-white/50 text-sm">
+                    유료 화폐를 무제한 지급할 수 있는 유저
+                  </p>
+                </div>
+              </div>
+            </div>
+            <div className="p-6 space-y-4">
+              {/* Add ruby manager */}
+              <div className="flex gap-3">
+                <Select
+                  value={selectedRubyUserId}
+                  onValueChange={setSelectedRubyUserId}
+                >
+                  <SelectTrigger className="flex-1 bg-white/5 border-white/10 text-white focus:ring-pink-500">
+                    <SelectValue placeholder="유저를 선택하세요" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-slate-900 border-white/10">
+                    {members
+                      .filter(
+                        (m) => !rubyManagers.some((mgr) => mgr.userId === m.userId)
+                      )
+                      .map((m) => (
+                        <SelectItem
+                          key={m.userId}
+                          value={m.userId}
+                          className="text-white focus:bg-white/10"
+                        >
+                          {m.displayName}
+                        </SelectItem>
+                      ))}
+                  </SelectContent>
+                </Select>
+                <Button
+                  type="button"
+                  disabled={!selectedRubyUserId || addManager.isPending}
+                  onClick={async () => {
+                    if (!selectedRubyUserId) return;
+                    try {
+                      await addManager.mutateAsync({ userId: selectedRubyUserId, currencyType: "ruby" });
+                      setSelectedRubyUserId("");
+                      toast({
+                        title: `${settings?.rubyName ?? "루비"} 관리자 추가`,
+                        description: "관리자가 추가되었습니다.",
+                      });
+                    } catch {
+                      toast({
+                        title: "추가 실패",
+                        description: "관리자를 추가하는 중 오류가 발생했습니다.",
+                        variant: "destructive",
+                      });
+                    }
+                  }}
+                  className="bg-pink-600 hover:bg-pink-500 text-white"
+                >
+                  <Icon icon="solar:add-circle-linear" className="mr-2 h-4 w-4" />
+                  추가
+                </Button>
+              </div>
+
+              {/* Ruby manager list */}
+              {rubyManagersLoading ? (
+                <div className="space-y-2">
+                  {[...Array(2)].map((_, i) => (
+                    <div key={i} className="h-14 rounded-xl bg-white/5 animate-pulse" />
+                  ))}
+                </div>
+              ) : rubyManagers.length > 0 ? (
+                <div className="space-y-2">
+                  {rubyManagers.map((manager) => {
+                    const member = members.find((m) => m.userId === manager.userId);
+                    return (
+                      <div
+                        key={manager.id}
+                        className="flex items-center justify-between rounded-xl border border-white/10 bg-white/5 p-4"
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className="w-8 h-8 rounded-full bg-pink-500/20 flex items-center justify-center">
+                            <Icon icon="solar:user-linear" className="h-4 w-4 text-pink-400" />
+                          </div>
+                          <div>
+                            <p className="font-medium text-white">
+                              {member?.displayName ?? "알 수 없음"}
+                            </p>
+                            <p className="text-xs text-white/40">ID: {manager.userId}</p>
+                          </div>
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={async () => {
+                            try {
+                              await removeManager.mutateAsync({ userId: manager.userId, currencyType: "ruby" });
+                              toast({
+                                title: `${settings?.rubyName ?? "루비"} 관리자 제거`,
+                                description: "관리자가 제거되었습니다.",
+                              });
+                            } catch {
+                              toast({
+                                title: "제거 실패",
+                                description: "관리자를 제거하는 중 오류가 발생했습니다.",
+                                variant: "destructive",
+                              });
+                            }
+                          }}
+                          disabled={removeManager.isPending}
+                          className="text-red-400 hover:text-red-300 hover:bg-red-500/10"
+                        >
+                          <Icon icon="solar:trash-bin-trash-linear" className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className="text-center py-6">
+                  <div className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center mx-auto mb-2">
+                    <Icon icon="solar:shield-user-linear" className="h-5 w-5 text-white/20" />
+                  </div>
+                  <p className="text-sm text-white/50">등록된 관리자가 없습니다</p>
+                </div>
+              )}
+
+              {/* Warning for ruby managers */}
+              <div className="bg-rose-500/10 border border-rose-500/20 rounded-xl p-4">
+                <div className="flex items-start gap-3">
+                  <Icon
+                    icon="solar:shield-warning-linear"
+                    className="w-5 h-5 text-rose-400 mt-0.5"
+                  />
+                  <div>
+                    <p className="text-sm text-rose-300 font-medium">
+                      유료 화폐 관리 주의
+                    </p>
+                    <p className="text-xs text-rose-300/70 mt-1">
+                      {settings?.rubyName ?? "루비"}는 유료 화폐이므로 신뢰할 수 있는 관리자만 지정하세요.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* 화폐 관리자 안내 */}
           <div className="bg-violet-500/10 border border-violet-500/20 rounded-xl p-4">
             <div className="flex items-start gap-3">
-              <Icon icon="solar:info-circle-linear" className="w-5 h-5 text-violet-400 mt-0.5" />
+              <Icon
+                icon="solar:info-circle-linear"
+                className="w-5 h-5 text-violet-400 mt-0.5"
+              />
               <div>
-                <p className="text-sm text-violet-300 font-medium">화폐 관리자 안내</p>
+                <p className="text-sm text-violet-300 font-medium">
+                  화폐 관리자 안내
+                </p>
                 <p className="text-xs text-violet-300/70 mt-1">
-                  화폐 관리자는 <code className="bg-violet-500/20 px-1 rounded">/지급</code> 명령어로 다른 유저에게 토피/루비를 무제한 지급할 수 있습니다.
+                  화폐 관리자는{" "}
+                  <code className="bg-violet-500/20 px-1 rounded">/지급</code>{" "}
+                  명령어로 다른 유저에게 해당 화폐를 무제한 지급할 수 있습니다.
                 </p>
               </div>
             </div>
-          </div>
-        </div>
           </div>
 
           {/* 화폐 이름 설정 */}
@@ -363,7 +541,9 @@ export default function CurrencySettingsPage() {
               </div>
               <div>
                 <h3 className="font-semibold text-white">화폐 이름</h3>
-                <p className="text-white/50 text-sm">서버에서 사용할 화폐 이름을 설정합니다</p>
+                <p className="text-white/50 text-sm">
+                  서버에서 사용할 화폐 이름을 설정합니다
+                </p>
               </div>
             </div>
             <div className="grid gap-4 sm:grid-cols-2">
@@ -372,7 +552,9 @@ export default function CurrencySettingsPage() {
                 name="topyName"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="text-white/70 text-sm">무상 화폐 이름</FormLabel>
+                    <FormLabel className="text-white/70 text-sm">
+                      무상 화폐 이름
+                    </FormLabel>
                     <FormControl>
                       <Input
                         {...field}
@@ -393,7 +575,9 @@ export default function CurrencySettingsPage() {
                 name="rubyName"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="text-white/70 text-sm">유상 화폐 이름</FormLabel>
+                    <FormLabel className="text-white/70 text-sm">
+                      유상 화폐 이름
+                    </FormLabel>
                     <FormControl>
                       <Input
                         {...field}
@@ -417,11 +601,16 @@ export default function CurrencySettingsPage() {
               <div className="p-6 border-b border-white/10">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500 to-orange-500 flex items-center justify-center">
-                    <Icon icon="solar:chat-line-linear" className="h-5 w-5 text-white" />
+                    <Icon
+                      icon="solar:chat-line-linear"
+                      className="h-5 w-5 text-white"
+                    />
                   </div>
                   <div>
                     <h3 className="font-semibold text-white">텍스트 보상</h3>
-                    <p className="text-white/50 text-sm">채팅 메시지 기반 토피 지급</p>
+                    <p className="text-white/50 text-sm">
+                      채팅 메시지 기반 토피 지급
+                    </p>
                   </div>
                 </div>
               </div>
@@ -432,7 +621,9 @@ export default function CurrencySettingsPage() {
                   render={({ field }) => (
                     <FormItem className="flex items-center justify-between rounded-xl bg-white/5 border border-white/10 p-4">
                       <div className="space-y-0.5">
-                        <FormLabel className="text-white font-medium">활성화</FormLabel>
+                        <FormLabel className="text-white font-medium">
+                          활성화
+                        </FormLabel>
                         <FormDescription className="text-xs text-white/40">
                           채팅으로 토피 획득
                         </FormDescription>
@@ -453,7 +644,9 @@ export default function CurrencySettingsPage() {
                     name="textEarnMin"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel className="text-white/70 text-sm">최소 토피</FormLabel>
+                        <FormLabel className="text-white/70 text-sm">
+                          최소 토피
+                        </FormLabel>
                         <FormControl>
                           <Input
                             type="number"
@@ -471,7 +664,9 @@ export default function CurrencySettingsPage() {
                     name="textEarnMax"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel className="text-white/70 text-sm">최대 토피</FormLabel>
+                        <FormLabel className="text-white/70 text-sm">
+                          최대 토피
+                        </FormLabel>
                         <FormControl>
                           <Input
                             type="number"
@@ -490,7 +685,9 @@ export default function CurrencySettingsPage() {
                   name="textMinLength"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="text-white/70 text-sm">최소 메시지 길이</FormLabel>
+                      <FormLabel className="text-white/70 text-sm">
+                        최소 메시지 글자수
+                      </FormLabel>
                       <FormControl>
                         <Input
                           type="number"
@@ -512,7 +709,9 @@ export default function CurrencySettingsPage() {
                     name="textCooldownSeconds"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel className="text-white/70 text-sm">쿨다운 (초)</FormLabel>
+                        <FormLabel className="text-white/70 text-sm">
+                          쿨다운 (초)
+                        </FormLabel>
                         <FormControl>
                           <Input
                             type="number"
@@ -530,7 +729,9 @@ export default function CurrencySettingsPage() {
                     name="textMaxPerCooldown"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel className="text-white/70 text-sm">쿨다운당 횟수</FormLabel>
+                        <FormLabel className="text-white/70 text-sm">
+                          쿨다운당 횟수
+                        </FormLabel>
                         <FormControl>
                           <Input
                             type="number"
@@ -549,7 +750,9 @@ export default function CurrencySettingsPage() {
                   name="textDailyLimit"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="text-white/70 text-sm">일일 제한</FormLabel>
+                      <FormLabel className="text-white/70 text-sm">
+                        일일 제한
+                      </FormLabel>
                       <FormControl>
                         <Input
                           type="number"
@@ -572,11 +775,16 @@ export default function CurrencySettingsPage() {
               <div className="p-6 border-b border-white/10">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-green-500 to-emerald-500 flex items-center justify-center">
-                    <Icon icon="solar:microphone-linear" className="h-5 w-5 text-white" />
+                    <Icon
+                      icon="solar:microphone-linear"
+                      className="h-5 w-5 text-white"
+                    />
                   </div>
                   <div>
                     <h3 className="font-semibold text-white">음성 보상</h3>
-                    <p className="text-white/50 text-sm">음성 채널 활동 기반 토피 지급</p>
+                    <p className="text-white/50 text-sm">
+                      음성 채널 활동 기반 토피 지급
+                    </p>
                   </div>
                 </div>
               </div>
@@ -587,7 +795,9 @@ export default function CurrencySettingsPage() {
                   render={({ field }) => (
                     <FormItem className="flex items-center justify-between rounded-xl bg-white/5 border border-white/10 p-4">
                       <div className="space-y-0.5">
-                        <FormLabel className="text-white font-medium">활성화</FormLabel>
+                        <FormLabel className="text-white font-medium">
+                          활성화
+                        </FormLabel>
                         <FormDescription className="text-xs text-white/40">
                           음성 참여로 토피 획득
                         </FormDescription>
@@ -608,7 +818,9 @@ export default function CurrencySettingsPage() {
                     name="voiceEarnMin"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel className="text-white/70 text-sm">최소 토피</FormLabel>
+                        <FormLabel className="text-white/70 text-sm">
+                          최소 토피
+                        </FormLabel>
                         <FormControl>
                           <Input
                             type="number"
@@ -626,7 +838,9 @@ export default function CurrencySettingsPage() {
                     name="voiceEarnMax"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel className="text-white/70 text-sm">최대 토피</FormLabel>
+                        <FormLabel className="text-white/70 text-sm">
+                          최대 토피
+                        </FormLabel>
                         <FormControl>
                           <Input
                             type="number"
@@ -645,7 +859,9 @@ export default function CurrencySettingsPage() {
                   name="voiceCooldownSeconds"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="text-white/70 text-sm">쿨다운 (초)</FormLabel>
+                      <FormLabel className="text-white/70 text-sm">
+                        쿨다운 (초)
+                      </FormLabel>
                       <FormControl>
                         <Input
                           type="number"
@@ -666,7 +882,9 @@ export default function CurrencySettingsPage() {
                   name="voiceDailyLimit"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="text-white/70 text-sm">일일 제한</FormLabel>
+                      <FormLabel className="text-white/70 text-sm">
+                        일일 제한
+                      </FormLabel>
                       <FormControl>
                         <Input
                           type="number"
@@ -685,11 +903,17 @@ export default function CurrencySettingsPage() {
                 {/* Info about channel categories */}
                 <div className="bg-blue-500/10 border border-blue-500/20 rounded-xl p-4">
                   <div className="flex items-start gap-3">
-                    <Icon icon="solar:info-circle-linear" className="w-5 h-5 text-blue-400 mt-0.5" />
+                    <Icon
+                      icon="solar:info-circle-linear"
+                      className="w-5 h-5 text-blue-400 mt-0.5"
+                    />
                     <div>
-                      <p className="text-sm text-blue-300 font-medium">채널 카테고리</p>
+                      <p className="text-sm text-blue-300 font-medium">
+                        채널 카테고리
+                      </p>
                       <p className="text-xs text-blue-300/70 mt-1">
-                        음성 채널 유형별 배율은 화폐 규칙에서 설정할 수 있습니다.
+                        음성 채널 유형별 배율은 화폐 규칙에서 설정할 수
+                        있습니다.
                       </p>
                     </div>
                   </div>
@@ -703,11 +927,16 @@ export default function CurrencySettingsPage() {
             <div className="p-6 border-b border-white/10">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-cyan-500 to-blue-500 flex items-center justify-center">
-                  <Icon icon="solar:transfer-horizontal-linear" className="h-5 w-5 text-white" />
+                  <Icon
+                    icon="solar:transfer-horizontal-linear"
+                    className="h-5 w-5 text-white"
+                  />
                 </div>
                 <div>
                   <h3 className="font-semibold text-white">이체 설정</h3>
-                  <p className="text-white/50 text-sm">유저 간 화폐 이체 최소 금액</p>
+                  <p className="text-white/50 text-sm">
+                    유저 간 화폐 이체 최소 금액
+                  </p>
                 </div>
               </div>
             </div>
@@ -718,7 +947,9 @@ export default function CurrencySettingsPage() {
                   name="minTransferTopy"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="text-white/70 text-sm">토피 최소 이체 금액</FormLabel>
+                      <FormLabel className="text-white/70 text-sm">
+                        토피 최소 이체 금액
+                      </FormLabel>
                       <FormControl>
                         <Input
                           type="number"
@@ -739,7 +970,9 @@ export default function CurrencySettingsPage() {
                   name="minTransferRuby"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="text-white/70 text-sm">루비 최소 이체 금액</FormLabel>
+                      <FormLabel className="text-white/70 text-sm">
+                        루비 최소 이체 금액
+                      </FormLabel>
                       <FormControl>
                         <Input
                           type="number"
@@ -762,7 +995,9 @@ export default function CurrencySettingsPage() {
                   name="transferFeeTopyPercent"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="text-white/70 text-sm">토피 이체 수수료 (%)</FormLabel>
+                      <FormLabel className="text-white/70 text-sm">
+                        토피 이체 수수료 (%)
+                      </FormLabel>
                       <FormControl>
                         <Input
                           type="number"
@@ -784,7 +1019,9 @@ export default function CurrencySettingsPage() {
                   name="transferFeeRubyPercent"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="text-white/70 text-sm">루비 이체 수수료 (%)</FormLabel>
+                      <FormLabel className="text-white/70 text-sm">
+                        루비 이체 수수료 (%)
+                      </FormLabel>
                       <FormControl>
                         <Input
                           type="number"
@@ -805,11 +1042,17 @@ export default function CurrencySettingsPage() {
               {/* Info about transfer */}
               <div className="bg-cyan-500/10 border border-cyan-500/20 rounded-xl p-4">
                 <div className="flex items-start gap-3">
-                  <Icon icon="solar:info-circle-linear" className="w-5 h-5 text-cyan-400 mt-0.5" />
+                  <Icon
+                    icon="solar:info-circle-linear"
+                    className="w-5 h-5 text-cyan-400 mt-0.5"
+                  />
                   <div>
-                    <p className="text-sm text-cyan-300 font-medium">이체 안내</p>
+                    <p className="text-sm text-cyan-300 font-medium">
+                      이체 안내
+                    </p>
                     <p className="text-xs text-cyan-300/70 mt-1">
-                      수수료는 이체 금액에서 별도로 차감됩니다. 0%로 설정하면 수수료가 부과되지 않습니다.
+                      수수료는 이체 금액에서 별도로 차감됩니다. 0%로 설정하면
+                      수수료가 부과되지 않습니다.
                     </p>
                   </div>
                 </div>
@@ -822,11 +1065,16 @@ export default function CurrencySettingsPage() {
             <div className="p-6 border-b border-white/10">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-red-500 to-rose-500 flex items-center justify-center">
-                  <Icon icon="solar:document-text-linear" className="h-5 w-5 text-white" />
+                  <Icon
+                    icon="solar:document-text-linear"
+                    className="h-5 w-5 text-white"
+                  />
                 </div>
                 <div>
                   <h3 className="font-semibold text-white">월말 세금</h3>
-                  <p className="text-white/50 text-sm">매월 말일 23시에 토피 잔액에서 자동 차감</p>
+                  <p className="text-white/50 text-sm">
+                    매월 말일 23시에 토피 잔액에서 자동 차감
+                  </p>
                 </div>
               </div>
             </div>
@@ -837,7 +1085,9 @@ export default function CurrencySettingsPage() {
                 render={({ field }) => (
                   <FormItem className="flex items-center justify-between rounded-xl bg-white/5 border border-white/10 p-4">
                     <div className="space-y-0.5">
-                      <FormLabel className="text-white font-medium">활성화</FormLabel>
+                      <FormLabel className="text-white font-medium">
+                        활성화
+                      </FormLabel>
                       <FormDescription className="text-xs text-white/40">
                         월말 세금 자동 차감 기능
                       </FormDescription>
@@ -857,7 +1107,9 @@ export default function CurrencySettingsPage() {
                 name="monthlyTaxPercent"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="text-white/70 text-sm">세금률 (%)</FormLabel>
+                    <FormLabel className="text-white/70 text-sm">
+                      세금률 (%)
+                    </FormLabel>
                     <FormControl>
                       <Input
                         type="number"
@@ -877,12 +1129,18 @@ export default function CurrencySettingsPage() {
               {/* Info about tax */}
               <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-4">
                 <div className="flex items-start gap-3">
-                  <Icon icon="solar:info-circle-linear" className="w-5 h-5 text-red-400 mt-0.5" />
+                  <Icon
+                    icon="solar:info-circle-linear"
+                    className="w-5 h-5 text-red-400 mt-0.5"
+                  />
                   <div>
-                    <p className="text-sm text-red-300 font-medium">월말 세금 안내</p>
+                    <p className="text-sm text-red-300 font-medium">
+                      월말 세금 안내
+                    </p>
                     <p className="text-xs text-red-300/70 mt-1">
-                      매월 마지막 날 23시에 모든 유저의 토피 잔액에서 세금이 자동으로 차감됩니다.
-                      세금 이력은 거래 기록에서 확인할 수 있습니다.
+                      매월 마지막 날 23시에 모든 유저의 토피 잔액에서 세금이
+                      자동으로 차감됩니다. 세금 이력은 거래 기록에서 확인할 수
+                      있습니다.
                     </p>
                   </div>
                 </div>
