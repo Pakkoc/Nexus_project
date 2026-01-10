@@ -6,7 +6,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useXpSettings, useUpdateXpSettings, useChannels } from "@/hooks/queries";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
@@ -30,6 +30,7 @@ import { useEffect } from "react";
 import { Icon } from "@iconify/react";
 
 const notificationFormSchema = z.object({
+  levelUpNotificationEnabled: z.boolean(),
   levelUpChannelId: z.string().nullable(),
   levelUpMessage: z.string().nullable(),
 });
@@ -65,6 +66,7 @@ export default function NotificationSettingsPage() {
 
   // settings에서 channelId를 문자열로 변환 (API에서 숫자로 반환될 수 있음)
   const formValues: NotificationFormValues = {
+    levelUpNotificationEnabled: settings?.levelUpNotificationEnabled ?? true,
     levelUpChannelId: settings?.levelUpChannelId ? String(settings.levelUpChannelId) : null,
     levelUpMessage: settings?.levelUpMessage ?? defaultMessage,
   };
@@ -84,6 +86,7 @@ export default function NotificationSettingsPage() {
   const onSubmit = async (data: NotificationFormValues) => {
     try {
       await updateSettings.mutateAsync({
+        levelUpNotificationEnabled: data.levelUpNotificationEnabled,
         levelUpChannelId: data.levelUpChannelId || null,
         levelUpMessage: data.levelUpMessage || null,
       });
@@ -132,12 +135,39 @@ export default function NotificationSettingsPage() {
 
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-          {/* 알림 채널 카드 */}
+          {/* 알림 활성화 카드 */}
           <div className="bg-white/5 backdrop-blur-sm rounded-2xl border border-white/10 animate-fade-up">
+            <div className="p-6">
+              <FormField
+                control={form.control}
+                name="levelUpNotificationEnabled"
+                render={({ field }) => (
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500 to-orange-500 flex items-center justify-center">
+                        <Icon icon="solar:bell-bold" className="w-5 h-5 text-white" />
+                      </div>
+                      <div>
+                        <h3 className="font-semibold text-white">레벨업 알림</h3>
+                        <p className="text-sm text-white/50">레벨업 시 알림 메시지를 전송합니다</p>
+                      </div>
+                    </div>
+                    <Switch
+                      checked={field.value}
+                      onCheckedChange={field.onChange}
+                    />
+                  </div>
+                )}
+              />
+            </div>
+          </div>
+
+          {/* 알림 채널 카드 */}
+          <div className={`bg-white/5 backdrop-blur-sm rounded-2xl border border-white/10 animate-fade-up transition-opacity ${!form.watch("levelUpNotificationEnabled") ? "opacity-50 pointer-events-none" : ""}`}>
             <div className="p-6 border-b border-white/10">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center">
-                  <Icon icon="solar:bell-bold" className="w-5 h-5 text-white" />
+                  <Icon icon="solar:hashtag-chat-bold" className="w-5 h-5 text-white" />
                 </div>
                 <div>
                   <h3 className="font-semibold text-white">알림 채널</h3>
@@ -228,7 +258,7 @@ export default function NotificationSettingsPage() {
           </div>
 
           {/* 알림 메시지 카드 */}
-          <div className="bg-white/5 backdrop-blur-sm rounded-2xl border border-white/10 overflow-hidden animate-fade-up" style={{ animationDelay: '50ms' }}>
+          <div className={`bg-white/5 backdrop-blur-sm rounded-2xl border border-white/10 overflow-hidden animate-fade-up transition-opacity ${!form.watch("levelUpNotificationEnabled") ? "opacity-50 pointer-events-none" : ""}`} style={{ animationDelay: '50ms' }}>
             <div className="p-6 border-b border-white/10">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-green-500 to-emerald-500 flex items-center justify-center">
