@@ -91,7 +91,7 @@ export const xpMultiplierSchema = z.object({
   guildId: z.string(),
   targetType: z.enum(["channel", "role"]),
   targetId: z.string(),
-  multiplier: z.number().min(0.1).max(10),
+  multiplier: z.number().gt(1, "배율은 1보다 커야 합니다").max(10, "배율은 10 이하여야 합니다"),
 });
 
 export type XpMultiplier = z.infer<typeof xpMultiplierSchema>;
@@ -100,7 +100,7 @@ export const createXpMultiplierSchema = xpMultiplierSchema.omit({ id: true, guil
 export type CreateXpMultiplier = z.infer<typeof createXpMultiplierSchema>;
 
 export const updateXpMultiplierSchema = z.object({
-  multiplier: z.number().min(0.1).max(10),
+  multiplier: z.number().gt(1, "배율은 1보다 커야 합니다").max(10, "배율은 10 이하여야 합니다"),
 });
 export type UpdateXpMultiplier = z.infer<typeof updateXpMultiplierSchema>;
 

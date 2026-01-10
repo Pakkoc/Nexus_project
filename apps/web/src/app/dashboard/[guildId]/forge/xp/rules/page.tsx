@@ -163,7 +163,7 @@ export default function XpRulesPage() {
   const [isAddingMultiplier, setIsAddingMultiplier] = useState(false);
   const [multiplierTargetType, setMultiplierTargetType] = useState<"channel" | "role">("channel");
   const [multiplierTargetIds, setMultiplierTargetIds] = useState<string[]>([]);
-  const [multiplierValue, setMultiplierValue] = useState<string>("1");
+  const [multiplierValue, setMultiplierValue] = useState<string>("1.5");
   const [editedMultipliers, setEditedMultipliers] = useState<Record<number, string>>({});
 
   const { data: multipliers, isLoading: multipliersLoading } = useXpMultipliers(guildId);
@@ -385,11 +385,11 @@ export default function XpRulesPage() {
       return;
     }
 
-    const numValue = parseInt(multiplierValue);
-    if (multiplierValue.trim() === "" || isNaN(numValue)) {
+    const numValue = parseFloat(multiplierValue);
+    if (multiplierValue.trim() === "" || isNaN(numValue) || numValue <= 1 || numValue > 10) {
       toast({
-        title: "입력 필요",
-        description: "배율 값을 입력해주세요.",
+        title: "입력 오류",
+        description: "배율은 1초과 10이하의 숫자여야 합니다.",
         variant: "destructive",
       });
       return;
@@ -410,7 +410,7 @@ export default function XpRulesPage() {
       });
       setIsAddingMultiplier(false);
       setMultiplierTargetIds([]);
-      setMultiplierValue("1");
+      setMultiplierValue("1.5");
     } catch {
       toast({
         title: "추가 실패",
@@ -421,11 +421,11 @@ export default function XpRulesPage() {
   };
 
   const handleUpdateMultiplier = async (multiplier: XpMultiplier, newValueStr: string) => {
-    const numValue = parseInt(newValueStr);
-    if (newValueStr.trim() === "" || isNaN(numValue)) {
+    const numValue = parseFloat(newValueStr);
+    if (newValueStr.trim() === "" || isNaN(numValue) || numValue <= 1 || numValue > 10) {
       toast({
-        title: "입력 필요",
-        description: "배율 값을 입력해주세요.",
+        title: "입력 오류",
+        description: "배율은 1초과 10이하의 숫자여야 합니다.",
         variant: "destructive",
       });
       return;
@@ -795,13 +795,23 @@ export default function XpRulesPage() {
 
         {/* 배율 탭 */}
         <TabsContent value="multipliers" className="space-y-6 animate-fade-up">
-          <div className="flex items-center gap-4 rounded-xl border border-amber-500/30 bg-gradient-to-r from-amber-500/10 to-orange-500/10 p-4">
-            <div className="w-8 h-8 rounded-lg bg-amber-500/20 flex items-center justify-center shrink-0">
-              <Icon icon="solar:info-circle-linear" className="w-4 h-4 text-amber-400" />
+          <div className="space-y-3">
+            <div className="flex items-center gap-4 rounded-xl border border-amber-500/30 bg-gradient-to-r from-amber-500/10 to-orange-500/10 p-4">
+              <div className="w-8 h-8 rounded-lg bg-amber-500/20 flex items-center justify-center shrink-0">
+                <Icon icon="solar:info-circle-linear" className="w-4 h-4 text-amber-400" />
+              </div>
+              <p className="text-sm text-amber-200/80">
+                <strong className="text-amber-200">배율 적용:</strong> 역할/채널 구분 없이 가장 높은 배율이 적용됩니다. (1초과~10배)
+              </p>
             </div>
-            <p className="text-sm text-amber-200/80">
-              <strong className="text-amber-200">배율 적용:</strong> 역할/채널 구분 없이 가장 높은 배율이 적용됩니다.
-            </p>
+            <div className="flex items-center gap-4 rounded-xl border border-blue-500/30 bg-gradient-to-r from-blue-500/10 to-indigo-500/10 p-4">
+              <div className="w-8 h-8 rounded-lg bg-blue-500/20 flex items-center justify-center shrink-0">
+                <Icon icon="solar:lightbulb-linear" className="w-4 h-4 text-blue-400" />
+              </div>
+              <p className="text-sm text-blue-200/80">
+                <strong className="text-blue-200">활용 팁:</strong> 상점에서 VIP 라운지 이용권과 같은 아이템 구매 시, 해당 역할에 배율을 설정하여 혜택을 제공할 수 있습니다.
+              </p>
+            </div>
           </div>
 
           {/* Add Multiplier Form */}
@@ -860,11 +870,12 @@ export default function XpRulesPage() {
                     <label className="text-sm font-medium text-white/70 flex items-center gap-1">
                       <Icon icon="solar:chart-2-linear" className="w-4 h-4" />
                       배율
+                      <span className="text-white/40 text-xs">(1초과~10)</span>
                     </label>
                     <Input
                       type="number"
-                      step="1"
-                      min="0"
+                      step="0.1"
+                      min="1.1"
                       max="10"
                       value={multiplierValue}
                       onChange={(e) => setMultiplierValue(e.target.value)}
@@ -942,8 +953,8 @@ export default function XpRulesPage() {
                           <div className="flex items-center gap-2">
                             <Input
                               type="number"
-                              step="1"
-                              min="0"
+                              step="0.1"
+                              min="1.1"
                               max="10"
                               value={editedMultipliers[multiplier.id] ?? String(multiplier.multiplier)}
                               className="w-20 border-white/10 bg-white/5"
@@ -1069,6 +1080,16 @@ export default function XpRulesPage() {
 
         {/* XP 차단 탭 */}
         <TabsContent value="exclusions" className="space-y-6 animate-fade-up">
+          {/* Info Notice */}
+          <div className="flex items-center gap-4 rounded-xl border border-blue-500/30 bg-gradient-to-r from-blue-500/10 to-indigo-500/10 p-4">
+            <div className="w-8 h-8 rounded-lg bg-blue-500/20 flex items-center justify-center shrink-0">
+              <Icon icon="solar:lightbulb-linear" className="w-4 h-4 text-blue-400" />
+            </div>
+            <p className="text-sm text-blue-200/80">
+              <strong className="text-blue-200">활용 예시:</strong> &quot;경고자&quot; 역할을 차단하면 경고를 받은 유저가 XP를 획득할 수 없어 패널티로 활용할 수 있습니다.
+            </p>
+          </div>
+
           {/* Add Exclusion Form */}
           {isAddingExclusion && (
             <div className="relative z-20 bg-white/5 backdrop-blur-sm rounded-2xl p-6 border border-indigo-500/30 animate-fade-up">
