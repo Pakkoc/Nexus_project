@@ -11,6 +11,8 @@ interface CurrencySettingsRow extends RowDataPacket {
   enabled: number;
   topy_name: string;
   ruby_name: string;
+  topy_manager_enabled: number;
+  ruby_manager_enabled: number;
   text_earn_enabled: number;
   text_earn_min: number;
   text_earn_max: number;
@@ -41,6 +43,8 @@ function rowToSettings(row: CurrencySettingsRow) {
     enabled: row.enabled === 1,
     topyName: row.topy_name ?? '토피',
     rubyName: row.ruby_name ?? '루비',
+    topyManagerEnabled: row.topy_manager_enabled !== 0,
+    rubyManagerEnabled: row.ruby_manager_enabled !== 0,
     textEarnEnabled: row.text_earn_enabled === 1,
     textEarnMin: row.text_earn_min,
     textEarnMax: row.text_earn_max,
@@ -121,6 +125,8 @@ export async function PATCH(
       enabled: "enabled",
       topyName: "topy_name",
       rubyName: "ruby_name",
+      topyManagerEnabled: "topy_manager_enabled",
+      rubyManagerEnabled: "ruby_manager_enabled",
       textEarnEnabled: "text_earn_enabled",
       textEarnMin: "text_earn_min",
       textEarnMax: "text_earn_max",

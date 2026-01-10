@@ -40,6 +40,8 @@ const currencySettingsFormSchema = z.object({
   enabled: z.boolean(),
   topyName: z.string().min(1).max(20),
   rubyName: z.string().min(1).max(20),
+  topyManagerEnabled: z.boolean(),
+  rubyManagerEnabled: z.boolean(),
   textEarnEnabled: z.boolean(),
   textEarnMin: z.coerce.number().min(0).max(10000),
   textEarnMax: z.coerce.number().min(0).max(10000),
@@ -90,6 +92,8 @@ export default function CurrencySettingsPage() {
       enabled: true,
       topyName: "토피",
       rubyName: "루비",
+      topyManagerEnabled: true,
+      rubyManagerEnabled: true,
       textEarnEnabled: true,
       textEarnMin: 1,
       textEarnMax: 1,
@@ -123,6 +127,8 @@ export default function CurrencySettingsPage() {
         enabled: Boolean(settings.enabled),
         topyName: settings.topyName ?? "토피",
         rubyName: settings.rubyName ?? "루비",
+        topyManagerEnabled: settings.topyManagerEnabled !== false,
+        rubyManagerEnabled: settings.rubyManagerEnabled !== false,
         textEarnEnabled: Boolean(settings.textEarnEnabled),
         textEarnMin: settings.textEarnMin ?? 1,
         textEarnMax: settings.textEarnMax ?? 1,
@@ -226,24 +232,40 @@ export default function CurrencySettingsPage() {
           {/* 화폐 관리자 설정 - 2열 그리드 */}
           <div className="grid gap-6 lg:grid-cols-2">
             {/* 토피 관리자 */}
-            <div className="bg-white/5 backdrop-blur-sm rounded-2xl border border-white/10">
+            <div className={`bg-white/5 backdrop-blur-sm rounded-2xl border border-white/10 transition-opacity ${!form.watch("topyManagerEnabled") ? "opacity-50" : ""}`}>
               <div className="p-6 border-b border-white/10">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500 to-orange-500 flex items-center justify-center">
-                    <Icon
-                      icon="solar:shield-user-linear"
-                      className="h-5 w-5 text-white"
-                    />
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500 to-orange-500 flex items-center justify-center">
+                      <Icon
+                        icon="solar:shield-user-linear"
+                        className="h-5 w-5 text-white"
+                      />
+                    </div>
+                    <div>
+                      <h3 className="font-semibold text-white">{settings?.topyName ?? "토피"} 관리자</h3>
+                      <p className="text-white/50 text-sm">
+                        활동형 화폐 지급 권한
+                      </p>
+                    </div>
                   </div>
-                  <div>
-                    <h3 className="font-semibold text-white">{settings?.topyName ?? "토피"} 관리자</h3>
-                    <p className="text-white/50 text-sm">
-                      활동형 화폐 지급 권한
-                    </p>
-                  </div>
+                  <FormField
+                    control={form.control}
+                    name="topyManagerEnabled"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormControl>
+                          <Switch
+                            checked={field.value}
+                            onCheckedChange={field.onChange}
+                          />
+                        </FormControl>
+                      </FormItem>
+                    )}
+                  />
                 </div>
               </div>
-            <div className="p-6 space-y-4">
+            <div className={`p-6 space-y-4 ${!form.watch("topyManagerEnabled") ? "pointer-events-none" : ""}`}>
               {/* Add topy manager */}
               <div className="flex gap-3">
                 <Select
@@ -362,24 +384,40 @@ export default function CurrencySettingsPage() {
             </div>
 
             {/* 루비 관리자 */}
-            <div className="bg-white/5 backdrop-blur-sm rounded-2xl border border-white/10">
+            <div className={`bg-white/5 backdrop-blur-sm rounded-2xl border border-white/10 transition-opacity ${!form.watch("rubyManagerEnabled") ? "opacity-50" : ""}`}>
               <div className="p-6 border-b border-white/10">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-pink-500 to-rose-500 flex items-center justify-center">
-                    <Icon
-                      icon="solar:shield-user-linear"
-                      className="h-5 w-5 text-white"
-                    />
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-pink-500 to-rose-500 flex items-center justify-center">
+                      <Icon
+                        icon="solar:shield-user-linear"
+                        className="h-5 w-5 text-white"
+                      />
+                    </div>
+                    <div>
+                      <h3 className="font-semibold text-white">{settings?.rubyName ?? "루비"} 관리자</h3>
+                      <p className="text-white/50 text-sm">
+                        유료 화폐 지급 권한
+                      </p>
+                    </div>
                   </div>
-                  <div>
-                    <h3 className="font-semibold text-white">{settings?.rubyName ?? "루비"} 관리자</h3>
-                    <p className="text-white/50 text-sm">
-                      유료 화폐 지급 권한
-                    </p>
-                  </div>
+                  <FormField
+                    control={form.control}
+                    name="rubyManagerEnabled"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormControl>
+                          <Switch
+                            checked={field.value}
+                            onCheckedChange={field.onChange}
+                          />
+                        </FormControl>
+                      </FormItem>
+                    )}
+                  />
                 </div>
               </div>
-            <div className="p-6 space-y-4">
+            <div className={`p-6 space-y-4 ${!form.watch("rubyManagerEnabled") ? "pointer-events-none" : ""}`}>
               {/* Add ruby manager */}
               <div className="flex gap-3">
                 <Select
