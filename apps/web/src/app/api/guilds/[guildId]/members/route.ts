@@ -48,7 +48,7 @@ export async function GET(
   const sortOrder = searchParams.get("sortOrder") || "desc";
 
   try {
-    const botToken = process.env.DISCORD_TOKEN;
+    const botToken = process.env["DISCORD_TOKEN"];
     if (!botToken) {
       return NextResponse.json({ error: "Bot token not configured" }, { status: 500 });
     }

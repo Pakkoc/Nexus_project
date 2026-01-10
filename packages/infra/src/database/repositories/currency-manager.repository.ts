@@ -3,6 +3,7 @@ import type {
   CurrencyManagerRepositoryPort,
   CurrencyManager,
   CreateCurrencyManagerInput,
+  CurrencyType,
 } from '@topia/core';
 import { Result } from '@topia/core';
 import type { RepositoryError } from '@topia/core';
@@ -11,6 +12,7 @@ interface CurrencyManagerRow extends RowDataPacket {
   id: number;
   guild_id: string;
   user_id: string;
+  currency_type: CurrencyType;
   created_at: Date;
 }
 
@@ -19,6 +21,7 @@ function rowToCurrencyManager(row: CurrencyManagerRow): CurrencyManager {
     id: row.id,
     guildId: row.guild_id,
     userId: row.user_id,
+    currencyType: row.currency_type,
     createdAt: row.created_at,
   };
 }
@@ -26,12 +29,19 @@ function rowToCurrencyManager(row: CurrencyManagerRow): CurrencyManager {
 export class CurrencyManagerRepository implements CurrencyManagerRepositoryPort {
   constructor(private readonly pool: Pool) {}
 
-  async findByGuild(guildId: string): Promise<Result<CurrencyManager[], RepositoryError>> {
+  async findByGuild(guildId: string, currencyType?: CurrencyType): Promise<Result<CurrencyManager[], RepositoryError>> {
     try {
-      const [rows] = await this.pool.query<CurrencyManagerRow[]>(
-        'SELECT * FROM currency_managers WHERE guild_id = ? ORDER BY created_at ASC',
-        [guildId]
-      );
+      let query = 'SELECT * FROM currency_managers WHERE guild_id = ?';
+      const params: string[] = [guildId];
+
+      if (currencyType) {
+        query += ' AND currency_type = ?';
+        params.push(currencyType);
+      }
+
+      query += ' ORDER BY created_at ASC';
+
+      const [rows] = await this.pool.query<CurrencyManagerRow[]>(query, params);
       return Result.ok(rows.map(rowToCurrencyManager));
     } catch (error) {
       return Result.err({
@@ -41,11 +51,11 @@ export class CurrencyManagerRepository implements CurrencyManagerRepositoryPort 
     }
   }
 
-  async isManager(guildId: string, userId: string): Promise<Result<boolean, RepositoryError>> {
+  async isManager(guildId: string, userId: string, currencyType: CurrencyType): Promise<Result<boolean, RepositoryError>> {
     try {
       const [rows] = await this.pool.query<CurrencyManagerRow[]>(
-        'SELECT id FROM currency_managers WHERE guild_id = ? AND user_id = ? LIMIT 1',
-        [guildId, userId]
+        'SELECT id FROM currency_managers WHERE guild_id = ? AND user_id = ? AND currency_type = ? LIMIT 1',
+        [guildId, userId, currencyType]
       );
       return Result.ok(rows.length > 0);
     } catch (error) {
@@ -59,8 +69,8 @@ export class CurrencyManagerRepository implements CurrencyManagerRepositoryPort 
   async add(input: CreateCurrencyManagerInput): Promise<Result<CurrencyManager, RepositoryError>> {
     try {
       const [result] = await this.pool.execute<ResultSetHeader>(
-        'INSERT INTO currency_managers (guild_id, user_id) VALUES (?, ?) ON DUPLICATE KEY UPDATE id = id',
-        [input.guildId, input.userId]
+        'INSERT INTO currency_managers (guild_id, user_id, currency_type) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE id = id',
+        [input.guildId, input.userId, input.currencyType]
       );
 
       // 새로 추가된 경우 insertId 사용, 이미 존재하는 경우 조회
@@ -76,8 +86,8 @@ export class CurrencyManagerRepository implements CurrencyManagerRepositoryPort 
 
       // 이미 존재하는 경우 조회
       const [rows] = await this.pool.query<CurrencyManagerRow[]>(
-        'SELECT * FROM currency_managers WHERE guild_id = ? AND user_id = ?',
-        [input.guildId, input.userId]
+        'SELECT * FROM currency_managers WHERE guild_id = ? AND user_id = ? AND currency_type = ?',
+        [input.guildId, input.userId, input.currencyType]
       );
       if (rows.length > 0) {
         return Result.ok(rowToCurrencyManager(rows[0]!));
@@ -95,11 +105,11 @@ export class CurrencyManagerRepository implements CurrencyManagerRepositoryPort 
     }
   }
 
-  async remove(guildId: string, userId: string): Promise<Result<void, RepositoryError>> {
+  async remove(guildId: string, userId: string, currencyType: CurrencyType): Promise<Result<void, RepositoryError>> {
     try {
       await this.pool.execute(
-        'DELETE FROM currency_managers WHERE guild_id = ? AND user_id = ?',
-        [guildId, userId]
+        'DELETE FROM currency_managers WHERE guild_id = ? AND user_id = ? AND currency_type = ?',
+        [guildId, userId, currencyType]
       );
       return Result.ok(undefined);
     } catch (error) {

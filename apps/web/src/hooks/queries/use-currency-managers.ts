@@ -1,7 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiClient } from "@/lib/remote/api-client";
-
-export type CurrencyType = "topy" | "ruby";
+import type { CurrencyType } from "./use-currency-transactions";
 
 export interface CurrencyManager {
   id: number;

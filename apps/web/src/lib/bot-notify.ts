@@ -2,7 +2,7 @@
  * 봇 API에 설정 변경 알림을 보내는 유틸리티 함수
  */
 
-const BOT_API_URL = process.env.BOT_API_URL || 'http://localhost:3001';
+const BOT_API_URL = process.env["BOT_API_URL"] || 'http://localhost:3001';
 
 export type SettingType =
   | 'xp-settings'
@@ -10,6 +10,7 @@ export type SettingType =
   | 'xp-voice'
   | 'xp-exclusion'
   | 'xp-hottime'
+  | 'xp-multiplier'
   | 'xp-reward'
   | 'xp-notification'
   | 'xp-level-requirement'

@@ -55,7 +55,7 @@ function rowToShopItemV2(row: ShopItemV2Row, roleOptions?: RoleOptionRow[]) {
 
   // Include role ticket info if exists
   if (row.ticket_id) {
-    item.roleTicket = {
+    item["roleTicket"] = {
       id: row.ticket_id,
       consumeQuantity: row.ticket_consume_quantity ?? 1,
       removePreviousRole: row.ticket_remove_previous_role === 1,

@@ -46,7 +46,7 @@ export async function GET(
 
     // Get actual guild member count from Discord API
     let totalMembers = 0;
-    const botToken = process.env.DISCORD_TOKEN;
+    const botToken = process.env["DISCORD_TOKEN"];
     if (botToken) {
       try {
         const guildRes = await fetch(
@@ -145,12 +145,12 @@ export async function GET(
       todayTextActive: Number(activity.text_active),
       todayVoiceActive: Number(activity.voice_active),
       topUsers: topUsers.map((u) => ({
-        userId: u.user_id,
-        textXp: Number(u.text_xp),
-        voiceXp: Number(u.voice_xp),
-        totalXp: Number(u.text_xp) + Number(u.voice_xp),
-        textLevel: Number(u.text_level),
-        voiceLevel: Number(u.voice_level),
+        userId: u["user_id"],
+        textXp: Number(u["text_xp"]),
+        voiceXp: Number(u["voice_xp"]),
+        totalXp: Number(u["text_xp"]) + Number(u["voice_xp"]),
+        textLevel: Number(u["text_level"]),
+        voiceLevel: Number(u["voice_level"]),
       })),
     });
   } catch (error) {

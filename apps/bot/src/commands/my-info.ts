@@ -67,8 +67,8 @@ export const myInfoCommand: Command = {
         joinedAt: member.joinedAt ?? new Date(),
         attendanceCount: 0, // TODO: 출석 시스템 구현 후 연동
         statusMessage: member.presence?.activities[0]?.name,
-        voiceLevel: userXp?.level ?? 0, // TODO: voice/chat 분리 시 수정
-        chatLevel: userXp?.level ?? 0,
+        voiceLevel: userXp?.voiceLevel ?? 0,
+        chatLevel: userXp?.textLevel ?? 0,
         isPremium: member.premiumSince !== null,
         topyBalance: wallets.topy?.balance ?? BigInt(0),
         rubyBalance: wallets.ruby?.balance ?? BigInt(0),

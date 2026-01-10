@@ -897,15 +897,17 @@ export class CurrencyService {
 
   /**
    * 화폐 관리자 목록 조회
+   * @param currencyType - 특정 화폐 타입만 조회 (없으면 전체)
    */
   async getCurrencyManagers(
-    guildId: string
+    guildId: string,
+    currencyType?: CurrencyType
   ): Promise<Result<CurrencyManager[], CurrencyError>> {
     if (!this.currencyManagerRepo) {
       return Result.ok([]);
     }
 
-    const result = await this.currencyManagerRepo.findByGuild(guildId);
+    const result = await this.currencyManagerRepo.findByGuild(guildId, currencyType);
     if (!result.success) {
       return Result.err({ type: 'REPOSITORY_ERROR', cause: result.error });
     }
@@ -914,16 +916,18 @@ export class CurrencyService {
 
   /**
    * 화폐 관리자 여부 확인
+   * @param currencyType - 특정 화폐 타입의 관리자인지 확인
    */
   async isCurrencyManager(
     guildId: string,
-    userId: string
+    userId: string,
+    currencyType: CurrencyType
   ): Promise<Result<boolean, CurrencyError>> {
     if (!this.currencyManagerRepo) {
       return Result.ok(false);
     }
 
-    const result = await this.currencyManagerRepo.isManager(guildId, userId);
+    const result = await this.currencyManagerRepo.isManager(guildId, userId, currencyType);
     if (!result.success) {
       return Result.err({ type: 'REPOSITORY_ERROR', cause: result.error });
     }
@@ -935,13 +939,14 @@ export class CurrencyService {
    */
   async addCurrencyManager(
     guildId: string,
-    userId: string
+    userId: string,
+    currencyType: CurrencyType
   ): Promise<Result<CurrencyManager, CurrencyError>> {
     if (!this.currencyManagerRepo) {
       return Result.err({ type: 'SETTINGS_NOT_FOUND', guildId });
     }
 
-    const result = await this.currencyManagerRepo.add({ guildId, userId });
+    const result = await this.currencyManagerRepo.add({ guildId, userId, currencyType });
     if (!result.success) {
       return Result.err({ type: 'REPOSITORY_ERROR', cause: result.error });
     }
@@ -953,13 +958,14 @@ export class CurrencyService {
    */
   async removeCurrencyManager(
     guildId: string,
-    userId: string
+    userId: string,
+    currencyType: CurrencyType
   ): Promise<Result<void, CurrencyError>> {
     if (!this.currencyManagerRepo) {
       return Result.err({ type: 'SETTINGS_NOT_FOUND', guildId });
     }
 
-    const result = await this.currencyManagerRepo.remove(guildId, userId);
+    const result = await this.currencyManagerRepo.remove(guildId, userId, currencyType);
     if (!result.success) {
       return Result.err({ type: 'REPOSITORY_ERROR', cause: result.error });
     }
@@ -977,8 +983,24 @@ export class CurrencyService {
     currencyType: CurrencyType,
     description?: string
   ): Promise<Result<AdminGrantResult, CurrencyError>> {
-    // 1. 화폐 관리자 여부 확인
-    const isManagerResult = await this.isCurrencyManager(guildId, managerUserId);
+    // 1. 설정 조회 및 해당 화폐 타입의 관리자 기능 활성화 확인
+    const settingsResult = await this.settingsRepo.findByGuild(guildId);
+    if (!settingsResult.success) {
+      return Result.err({ type: 'REPOSITORY_ERROR', cause: settingsResult.error });
+    }
+    const settings = settingsResult.data;
+
+    // 해당 화폐 타입의 관리자 기능이 활성화되어 있는지 확인
+    const isManagerFeatureEnabled = currencyType === 'topy'
+      ? settings?.topyManagerEnabled ?? true
+      : settings?.rubyManagerEnabled ?? true;
+
+    if (!isManagerFeatureEnabled) {
+      return Result.err({ type: 'MANAGER_FEATURE_DISABLED', currencyType });
+    }
+
+    // 2. 화폐 관리자 여부 확인 (해당 화폐 타입의 관리자인지)
+    const isManagerResult = await this.isCurrencyManager(guildId, managerUserId, currencyType);
     if (!isManagerResult.success) {
       return Result.err(isManagerResult.error);
     }
@@ -986,7 +1008,7 @@ export class CurrencyService {
       return Result.err({ type: 'NOT_CURRENCY_MANAGER' });
     }
 
-    // 2. 금액 검증
+    // 3. 금액 검증
     if (amount <= BigInt(0)) {
       return Result.err({ type: 'INVALID_AMOUNT', message: '지급 금액은 0보다 커야 합니다.' });
     }
@@ -1040,8 +1062,24 @@ export class CurrencyService {
     currencyType: CurrencyType,
     description?: string
   ): Promise<Result<AdminGrantResult, CurrencyError>> {
-    // 1. 화폐 관리자 여부 확인
-    const isManagerResult = await this.isCurrencyManager(guildId, managerUserId);
+    // 1. 설정 조회 및 해당 화폐 타입의 관리자 기능 활성화 확인
+    const settingsResult = await this.settingsRepo.findByGuild(guildId);
+    if (!settingsResult.success) {
+      return Result.err({ type: 'REPOSITORY_ERROR', cause: settingsResult.error });
+    }
+    const settings = settingsResult.data;
+
+    // 해당 화폐 타입의 관리자 기능이 활성화되어 있는지 확인
+    const isManagerFeatureEnabled = currencyType === 'topy'
+      ? settings?.topyManagerEnabled ?? true
+      : settings?.rubyManagerEnabled ?? true;
+
+    if (!isManagerFeatureEnabled) {
+      return Result.err({ type: 'MANAGER_FEATURE_DISABLED', currencyType });
+    }
+
+    // 2. 화폐 관리자 여부 확인 (해당 화폐 타입의 관리자인지)
+    const isManagerResult = await this.isCurrencyManager(guildId, managerUserId, currencyType);
     if (!isManagerResult.success) {
       return Result.err(isManagerResult.error);
     }
@@ -1049,7 +1087,7 @@ export class CurrencyService {
       return Result.err({ type: 'NOT_CURRENCY_MANAGER' });
     }
 
-    // 2. 금액 검증
+    // 3. 금액 검증
     if (amount <= BigInt(0)) {
       return Result.err({ type: 'INVALID_AMOUNT', message: '차감 금액은 0보다 커야 합니다.' });
     }

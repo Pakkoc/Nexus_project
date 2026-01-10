@@ -862,7 +862,7 @@ export default function CurrencyRulesPage() {
                               <Button
                                 variant="ghost"
                                 size="icon"
-                                onClick={() => handleUpdateMultiplier(multiplier, editedMultipliers[multiplier.id])}
+                                onClick={() => handleUpdateMultiplier(multiplier, editedMultipliers[multiplier.id]!)}
                                 disabled={updateMultiplier.isPending}
                                 className="text-green-400 hover:text-green-300 hover:bg-green-500/10"
                               >
@@ -938,7 +938,7 @@ export default function CurrencyRulesPage() {
                             <Button
                               variant="ghost"
                               size="icon"
-                              onClick={() => handleUpdateMultiplier(multiplier, editedMultipliers[multiplier.id])}
+                              onClick={() => handleUpdateMultiplier(multiplier, editedMultipliers[multiplier.id]!)}
                               disabled={updateMultiplier.isPending}
                               className="text-green-400 hover:text-green-300 hover:bg-green-500/10"
                             >

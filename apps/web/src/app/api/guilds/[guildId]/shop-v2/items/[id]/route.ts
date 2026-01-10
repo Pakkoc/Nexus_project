@@ -170,7 +170,7 @@ export async function PATCH(
         if (validatedData.roleTicket === null) {
           // Remove role ticket
           if (existingTickets.length > 0) {
-            const ticketId = existingTickets[0]!.id;
+            const ticketId = existingTickets[0]!["id"];
             await connection.execute(
               "DELETE FROM ticket_role_options WHERE ticket_id = ?",
               [ticketId]
@@ -192,7 +192,7 @@ export async function PATCH(
 
           if (existingTickets.length > 0) {
             // Update existing role ticket
-            const ticketId = existingTickets[0]!.id;
+            const ticketId = existingTickets[0]!["id"];
             await connection.execute(
               `UPDATE role_tickets
                SET name = ?, description = ?, consume_quantity = ?, remove_previous_role = ?, fixed_role_id = ?, effect_duration_seconds = ?, enabled = ?

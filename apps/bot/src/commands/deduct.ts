@@ -118,7 +118,10 @@ export const deductCommand: Command = {
 
         switch (result.error.type) {
           case 'NOT_CURRENCY_MANAGER':
-            errorMessage = '화폐 관리자만 이 명령어를 사용할 수 있습니다.';
+            errorMessage = `${currencyName} 관리자만 이 명령어를 사용할 수 있습니다.`;
+            break;
+          case 'MANAGER_FEATURE_DISABLED':
+            errorMessage = `${currencyName} 관리자 기능이 비활성화되어 있습니다.`;
             break;
           case 'INVALID_AMOUNT':
             errorMessage = result.error.message;

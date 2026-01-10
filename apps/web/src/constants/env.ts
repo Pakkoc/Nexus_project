@@ -5,7 +5,7 @@ const clientEnvSchema = z.object({
 });
 
 const _clientEnv = clientEnvSchema.safeParse({
-  NEXT_PUBLIC_APP_URL: process.env.NEXT_PUBLIC_APP_URL,
+  NEXT_PUBLIC_APP_URL: process.env["NEXT_PUBLIC_APP_URL"],
 });
 
 export type ClientEnv = z.infer<typeof clientEnvSchema>;

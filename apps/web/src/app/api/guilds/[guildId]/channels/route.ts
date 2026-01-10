@@ -35,7 +35,7 @@ export async function GET(
   const type = searchParams.get("type"); // "text", "voice", "category", or null for all
 
   try {
-    const botToken = process.env.DISCORD_TOKEN;
+    const botToken = process.env["DISCORD_TOKEN"];
     if (!botToken) {
       return NextResponse.json(
         { error: "Bot token not configured" },

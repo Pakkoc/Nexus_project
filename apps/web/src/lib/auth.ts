@@ -4,8 +4,8 @@ import DiscordProvider from "next-auth/providers/discord";
 export const authOptions: NextAuthOptions = {
   providers: [
     DiscordProvider({
-      clientId: process.env.DISCORD_CLIENT_ID!,
-      clientSecret: process.env.DISCORD_CLIENT_SECRET!,
+      clientId: process.env["DISCORD_CLIENT_ID"]!,
+      clientSecret: process.env["DISCORD_CLIENT_SECRET"]!,
       authorization: {
         url: "https://discord.com/api/oauth2/authorize",
         params: {
@@ -44,8 +44,8 @@ export const authOptions: NextAuthOptions = {
             },
             body: new URLSearchParams({
               token: token.accessToken as string,
-              client_id: process.env.DISCORD_CLIENT_ID!,
-              client_secret: process.env.DISCORD_CLIENT_SECRET!,
+              client_id: process.env["DISCORD_CLIENT_ID"]!,
+              client_secret: process.env["DISCORD_CLIENT_SECRET"]!,
             }),
           });
           console.log("[Auth] Discord token revoke response:", response.status);

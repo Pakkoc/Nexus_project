@@ -11,6 +11,10 @@ export interface CurrencySettings {
   topyName: string;
   rubyName: string;
 
+  // 화폐 관리자 활성화
+  topyManagerEnabled: boolean;
+  rubyManagerEnabled: boolean;
+
   // 텍스트 보상 설정
   textEarnEnabled: boolean;
   textEarnMin: number;
@@ -57,6 +61,9 @@ export function createDefaultCurrencySettings(guildId: string): CurrencySettings
 
     topyName: '토피',
     rubyName: '루비',
+
+    topyManagerEnabled: true,
+    rubyManagerEnabled: true,
 
     textEarnEnabled: true,
     textEarnMin: CURRENCY_DEFAULTS.TEXT_EARN_MIN,

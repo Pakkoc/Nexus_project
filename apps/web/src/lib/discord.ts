@@ -1,5 +1,5 @@
 // Discord Bot Client ID (same as OAuth app)
-const BOT_CLIENT_ID = process.env.NEXT_PUBLIC_DISCORD_CLIENT_ID || "1450932450464108755";
+const BOT_CLIENT_ID = process.env["NEXT_PUBLIC_DISCORD_CLIENT_ID"] || "1450932450464108755";
 
 // Bot permissions - Administrator (8)
 // 모든 기능(채널 관리, 역할 관리, 메시지 등)을 위해 관리자 권한 사용

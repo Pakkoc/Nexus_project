@@ -46,6 +46,7 @@ export type CurrencyError =
   | { type: 'INSUFFICIENT_QUANTITY'; required: number; available: number }
   // 화폐 관리자 에러
   | { type: 'NOT_CURRENCY_MANAGER' }
+  | { type: 'MANAGER_FEATURE_DISABLED'; currencyType: 'topy' | 'ruby' }
   // 내전 시스템 관련 에러
   | { type: 'GAME_NOT_FOUND' }
   | { type: 'GAME_NOT_OPEN' }

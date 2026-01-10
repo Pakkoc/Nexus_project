@@ -727,7 +727,8 @@ async function main() {
     if (type === 'xp-level-requirement' || type === 'xp-reward') {
       console.log(`[SETTINGS] ${typeLabel} 변경 감지 - 역할 동기화 시작...`);
       const syncResult = await xpHandler.syncAllUserLevelsAndRewards(guildId);
-      console.log(`[SETTINGS] 역할 동기화 완료: ${syncResult.updatedCount}/${syncResult.totalUsers}명 업데이트`);
+      const totalUpdated = syncResult.textUpdatedCount + syncResult.voiceUpdatedCount;
+      console.log(`[SETTINGS] 역할 동기화 완료: ${totalUpdated}/${syncResult.totalUsers}명 업데이트 (텍스트: ${syncResult.textUpdatedCount}, 음성: ${syncResult.voiceUpdatedCount})`);
 
       // 레벨 변경에 따른 해금 채널 권한도 동기화
       console.log(`[SETTINGS] 레벨 변경에 따른 채널 권한 동기화 시작...`);

@@ -29,7 +29,7 @@ export async function GET(
   const excludeEveryone = searchParams.get("excludeEveryone") === "true";
 
   try {
-    const botToken = process.env.DISCORD_TOKEN;
+    const botToken = process.env["DISCORD_TOKEN"];
     if (!botToken) {
       return NextResponse.json(
         { error: "Bot token not configured" },

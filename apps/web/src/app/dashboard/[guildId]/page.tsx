@@ -73,8 +73,8 @@ export default function GuildDashboardPage() {
 
   const additionalStats = [
     { label: "총 XP", value: stats?.totalXp.toLocaleString() ?? "0", color: "text-indigo-400" },
-    { label: "평균 레벨", value: `Lv. ${stats?.avgLevel ?? 0}`, color: "text-green-400" },
-    { label: "최고 레벨", value: `Lv. ${stats?.maxLevel ?? 0}`, color: "text-amber-400" },
+    { label: "평균 텍스트 레벨", value: `Lv. ${stats?.avgTextLevelExcludeZero ?? 0}`, color: "text-green-400" },
+    { label: "최고 텍스트 레벨", value: `Lv. ${stats?.maxTextLevel ?? 0}`, color: "text-amber-400" },
   ];
 
   const bots = [

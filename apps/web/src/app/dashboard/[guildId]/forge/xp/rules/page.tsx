@@ -1162,7 +1162,7 @@ export default function XpRulesPage() {
                                   onClick={() =>
                                     handleUpdateMultiplier(
                                       multiplier,
-                                      editedMultipliers[multiplier.id]
+                                      editedMultipliers[multiplier.id]!
                                     )
                                   }
                                   disabled={updateMultiplier.isPending}
@@ -1272,7 +1272,7 @@ export default function XpRulesPage() {
                                 onClick={() =>
                                   handleUpdateMultiplier(
                                     multiplier,
-                                    editedMultipliers[multiplier.id]
+                                    editedMultipliers[multiplier.id]!
                                   )
                                 }
                                 disabled={updateMultiplier.isPending}

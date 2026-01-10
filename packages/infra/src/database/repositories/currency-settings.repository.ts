@@ -16,6 +16,8 @@ interface CurrencySettingsRow extends RowDataPacket {
   enabled: number;
   topy_name: string;
   ruby_name: string;
+  topy_manager_enabled: number;
+  ruby_manager_enabled: number;
   text_earn_enabled: number;
   text_earn_min: number;
   text_earn_max: number;
@@ -88,6 +90,8 @@ function toCurrencySettings(row: CurrencySettingsRow): CurrencySettings {
     enabled: row.enabled === 1,
     topyName: row.topy_name ?? '토피',
     rubyName: row.ruby_name ?? '루비',
+    topyManagerEnabled: row.topy_manager_enabled !== 0,
+    rubyManagerEnabled: row.ruby_manager_enabled !== 0,
     textEarnEnabled: row.text_earn_enabled === 1,
     textEarnMin: row.text_earn_min,
     textEarnMax: row.text_earn_max,
@@ -143,7 +147,7 @@ export class CurrencySettingsRepository implements CurrencySettingsRepositoryPor
     try {
       await this.pool.execute(
         `INSERT INTO currency_settings
-         (guild_id, enabled, topy_name, ruby_name,
+         (guild_id, enabled, topy_name, ruby_name, topy_manager_enabled, ruby_manager_enabled,
           text_earn_enabled, text_earn_min, text_earn_max,
           text_min_length, text_cooldown_seconds, text_max_per_cooldown, text_daily_limit,
           voice_earn_enabled, voice_earn_min, voice_earn_max, voice_cooldown_seconds,
@@ -152,11 +156,13 @@ export class CurrencySettingsRepository implements CurrencySettingsRepositoryPor
           shop_fee_topy_percent, shop_fee_ruby_percent,
           monthly_tax_enabled, monthly_tax_percent,
           shop_channel_id, shop_message_id, created_at, updated_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
          ON DUPLICATE KEY UPDATE
          enabled = VALUES(enabled),
          topy_name = VALUES(topy_name),
          ruby_name = VALUES(ruby_name),
+         topy_manager_enabled = VALUES(topy_manager_enabled),
+         ruby_manager_enabled = VALUES(ruby_manager_enabled),
          text_earn_enabled = VALUES(text_earn_enabled),
          text_earn_min = VALUES(text_earn_min),
          text_earn_max = VALUES(text_earn_max),
@@ -185,6 +191,8 @@ export class CurrencySettingsRepository implements CurrencySettingsRepositoryPor
           settings.enabled ? 1 : 0,
           settings.topyName,
           settings.rubyName,
+          settings.topyManagerEnabled ? 1 : 0,
+          settings.rubyManagerEnabled ? 1 : 0,
           settings.textEarnEnabled ? 1 : 0,
           settings.textEarnMin,
           settings.textEarnMax,

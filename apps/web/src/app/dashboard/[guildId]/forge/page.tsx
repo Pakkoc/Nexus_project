@@ -42,10 +42,10 @@ export default function ForgePage() {
       color: "from-yellow-500 to-amber-500",
       enabled: stats?.xpEnabled ?? false,
       stats: [
-        { label: "인당 평균 XP", value: stats?.avgXpPerMember?.toLocaleString() ?? "0" },
-        { label: "평균 레벨", value: `Lv. ${stats?.avgLevelExcludeZero ?? 0}` },
-        { label: "평균 텍스트 XP", value: stats?.avgTextXp?.toLocaleString() ?? "0" },
-        { label: "평균 음성 XP", value: stats?.avgVoiceXp?.toLocaleString() ?? "0" },
+        { label: "평균 텍스트 XP", value: stats?.avgTextXpPerMember?.toLocaleString() ?? "0" },
+        { label: "평균 텍스트 레벨", value: `Lv. ${stats?.avgTextLevelExcludeZero ?? 0}` },
+        { label: "평균 음성 XP", value: stats?.avgVoiceXpPerMember?.toLocaleString() ?? "0" },
+        { label: "평균 음성 레벨", value: `Lv. ${stats?.avgVoiceLevelExcludeZero ?? 0}` },
       ],
     },
     {
