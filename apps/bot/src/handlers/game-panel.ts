@@ -925,11 +925,28 @@ export async function handleGameTeamAssign(
   const game = gameResult.data;
   const userId = interaction.user.id;
 
+  // 참가자 목록 조회하여 팀별 현황 파악
+  const participantsResult = await container.gameService.getParticipants(gameId);
+  const participants = participantsResult.success ? participantsResult.data : [];
+
+  // 팀별 인원수 계산
+  const teamCounts: Record<number, number> = {};
+  let unassignedCount = 0;
+  for (const p of participants) {
+    if (p.teamNumber === null) {
+      unassignedCount++;
+    } else {
+      teamCounts[p.teamNumber] = (teamCounts[p.teamNumber] || 0) + 1;
+    }
+  }
+
   // 팀 선택 메뉴
   const selectOptions = [];
   for (let i = 1; i <= game.teamCount; i++) {
+    const currentCount = teamCounts[i] || 0;
+    const maxDisplay = game.maxPlayersPerTeam ? `/${game.maxPlayersPerTeam}` : '';
     selectOptions.push({
-      label: `${i}팀`,
+      label: `${i}팀 (${currentCount}${maxDisplay}명)`,
       value: i.toString(),
       emoji: getTeamEmoji(i),
     });
@@ -942,8 +959,17 @@ export async function handleGameTeamAssign(
 
   const row = new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(teamSelect);
 
+  // 팀 배정 현황 텍스트 생성
+  let statusText = '**📊 현재 팀 배정 현황**\n';
+  for (let i = 1; i <= game.teamCount; i++) {
+    const currentCount = teamCounts[i] || 0;
+    const maxDisplay = game.maxPlayersPerTeam ? `/${game.maxPlayersPerTeam}` : '';
+    statusText += `${getTeamEmoji(i)} ${i}팀: ${currentCount}${maxDisplay}명\n`;
+  }
+  statusText += `\n⏳ 미배정: ${unassignedCount}명`;
+
   await interaction.reply({
-    content: '🎲 배정할 팀을 선택하세요:',
+    content: `🎲 배정할 팀을 선택하세요:\n\n${statusText}`,
     components: [row],
     ephemeral: true,
   });
@@ -972,6 +998,14 @@ export async function handleGameTeamSelect(
 
   const odminUserId = interaction.user.id;
 
+  // 게임 정보 조회
+  const gameResult = await container.gameService.getGameById(gameId);
+  if (!gameResult.success) {
+    await interaction.update({ content: '❌ 게임을 찾을 수 없습니다.', components: [] });
+    return;
+  }
+  const game = gameResult.data;
+
   // 참가자 목록 조회 (아직 팀 배정 안 된 사람만)
   const participantsResult = await container.gameService.getParticipants(gameId);
   if (!participantsResult.success) {
@@ -979,7 +1013,16 @@ export async function handleGameTeamSelect(
     return;
   }
 
-  const unassignedParticipants = participantsResult.data.filter(p => p.teamNumber === null);
+  const participants = participantsResult.data;
+  const unassignedParticipants = participants.filter(p => p.teamNumber === null);
+
+  // 팀별 인원수 계산
+  const teamCounts: Record<number, number> = {};
+  for (const p of participants) {
+    if (p.teamNumber !== null) {
+      teamCounts[p.teamNumber] = (teamCounts[p.teamNumber] || 0) + 1;
+    }
+  }
 
   if (unassignedParticipants.length === 0) {
     await interaction.update({ content: '✅ 모든 참가자가 이미 팀에 배정되었습니다.', components: [] });
@@ -1020,8 +1063,18 @@ export async function handleGameTeamSelect(
 
   const row = new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(userSelect);
 
+  // 팀 배정 현황 텍스트 생성
+  let statusText = '**📊 현재 팀 배정 현황**\n';
+  for (let i = 1; i <= game.teamCount; i++) {
+    const currentCount = teamCounts[i] || 0;
+    const maxDisplay = game.maxPlayersPerTeam ? `/${game.maxPlayersPerTeam}` : '';
+    const isSelected = i === teamNumber ? ' ◀' : '';
+    statusText += `${getTeamEmoji(i)} ${i}팀: ${currentCount}${maxDisplay}명${isSelected}\n`;
+  }
+  statusText += `\n⏳ 미배정: ${unassignedParticipants.length}명`;
+
   await interaction.update({
-    content: `${getTeamEmoji(teamNumber)} **${teamNumber}팀** 팀원을 선택하세요:\n(미배정 참가자 ${unassignedParticipants.length}명)`,
+    content: `${getTeamEmoji(teamNumber)} **${teamNumber}팀** 팀원을 선택하세요:\n\n${statusText}`,
     components: [row],
   });
 }
