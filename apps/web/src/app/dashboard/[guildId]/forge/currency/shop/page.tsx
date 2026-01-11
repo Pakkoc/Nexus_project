@@ -1381,118 +1381,112 @@ export default function ShopV2Page() {
                   </div>
                   {/* 그룹 아이템 목록 */}
                   {group.items.map((item) => (
-              <div
-                key={item.id}
-                className="p-4 flex items-center justify-between hover:bg-white/5 transition-colors"
-              >
-                <div className="flex items-center gap-4">
-                  <div
-                    className={`w-10 h-10 rounded-lg flex items-center justify-center text-xl ${
-                      item.currencyType === "topy"
-                        ? "bg-amber-500/20"
-                        : item.currencyType === "ruby"
-                        ? "bg-pink-500/20"
-                        : "bg-purple-500/20"
-                    }`}
-                  >
-                    {item.currencyType === "topy"
-                      ? "💰"
-                      : item.currencyType === "ruby"
-                      ? "💎"
-                      : "✨"}
-                  </div>
-                  <div>
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className="text-white font-medium">{item.name}</span>
-                      <Badge
-                        variant={item.enabled ? "default" : "secondary"}
-                        className={
-                          item.enabled
-                            ? "bg-green-500/20 text-green-400 border-0"
-                            : "bg-red-500/20 text-red-400 border-0"
-                        }
+                    <div
+                      key={item.id}
+                      className={`p-4 flex items-start gap-4 hover:bg-white/5 transition-colors border-l-4 ${
+                        item.enabled
+                          ? item.currencyType === 'topy'
+                            ? 'border-l-amber-500'
+                            : item.currencyType === 'ruby'
+                            ? 'border-l-pink-500'
+                            : 'border-l-purple-500'
+                          : 'border-l-white/20'
+                      } ${!item.enabled ? 'opacity-50' : ''}`}
+                    >
+                      {/* 아이템 아이콘 */}
+                      <div
+                        className={`w-14 h-14 rounded-xl flex items-center justify-center text-2xl flex-shrink-0 ${
+                          item.currencyType === "topy"
+                            ? "bg-gradient-to-br from-amber-500/30 to-orange-500/30 border border-amber-500/30"
+                            : item.currencyType === "ruby"
+                            ? "bg-gradient-to-br from-pink-500/30 to-rose-500/30 border border-pink-500/30"
+                            : "bg-gradient-to-br from-purple-500/30 to-pink-500/30 border border-purple-500/30"
+                        }`}
                       >
-                        {item.enabled ? "활성" : "비활성"}
-                      </Badge>
-                      {item.itemType && isSystemItemType(item.itemType as ItemType) && (
-                        <Badge
-                          variant="secondary"
-                          className="bg-blue-500/20 text-blue-400 border-0"
-                        >
-                          <Icon icon="solar:box-minimalistic-linear" className="h-3 w-3 mr-1" />
-                          {ITEM_TYPE_LABELS[item.itemType as ItemType] ?? item.itemType}
-                        </Badge>
-                      )}
-                      {item.roleTicket && (
-                        <Badge
-                          variant="secondary"
-                          className="bg-purple-500/20 text-purple-400 border-0"
-                        >
-                          <Icon icon="solar:ticket-linear" className="h-3 w-3 mr-1" />
-                          역할선택권 ({item.roleTicket.roleOptions.length}개 역할)
-                        </Badge>
-                      )}
-                      {item.roleTicket?.fixedRoleId && (
-                        <Badge
-                          variant="secondary"
-                          className="bg-amber-500/20 text-amber-400 border-0"
-                        >
-                          <Icon icon="solar:lock-linear" className="h-3 w-3 mr-1" />
-                          고정 역할
-                        </Badge>
-                      )}
-                    </div>
-                    <div className="flex items-center gap-3 text-sm text-white/50 mt-1">
-                      <span>
-                        {item.currencyType === "topy" && item.topyPrice !== null && (
-                          <>{item.topyPrice.toLocaleString()} {topyName}</>
-                        )}
-                        {item.currencyType === "ruby" && item.rubyPrice !== null && (
-                          <>{item.rubyPrice.toLocaleString()} {rubyName}</>
-                        )}
-                        {item.currencyType === "both" && (
-                          <>
-                            {item.topyPrice?.toLocaleString() ?? 0} {topyName} / {item.rubyPrice?.toLocaleString() ?? 0} {rubyName}
-                          </>
-                        )}
-                      </span>
-                      <span>•</span>
-                      <span>
-                        {item.durationDays === 0 ? "영구" : `${item.durationDays}일`}
-                      </span>
-                      {item.stock !== null && (
-                        <>
-                          <span>•</span>
-                          <span>재고: {item.stock}</span>
-                        </>
-                      )}
-                      {item.roleTicket && (
-                        <>
-                          <span>•</span>
-                          <span>
-                            {item.roleTicket.consumeQuantity === 0
-                              ? "기간제"
-                              : `${item.roleTicket.consumeQuantity}개 소모`}
-                          </span>
-                        </>
-                      )}
-                    </div>
-                  </div>
-                </div>
+                        {item.roleTicket ? "🎫" : item.currencyType === "topy" ? "💰" : item.currencyType === "ruby" ? "💎" : "✨"}
+                      </div>
 
-                <div className="flex items-center gap-2">
-                  <Switch
-                    checked={item.enabled}
-                    onCheckedChange={() => handleToggleEnabled(item)}
-                  />
-                  <Button variant="ghost" size="icon" onClick={() => handleEdit(item)}>
-                    <Icon icon="solar:pen-linear" className="h-4 w-4 text-white/50" />
-                  </Button>
-                  <Button variant="ghost" size="icon" onClick={() => handleDelete(item.id)}>
-                    <Icon icon="solar:trash-bin-2-linear" className="h-4 w-4 text-red-400" />
-                  </Button>
-                </div>
-              </div>
+                      {/* 아이템 정보 */}
+                      <div className="flex-1 min-w-0">
+                        {/* 이름 + 뱃지 */}
+                        <div className="flex items-center gap-2 flex-wrap mb-2">
+                          <span className="text-white font-semibold text-base">{item.name}</span>
+                          <Badge
+                            className={`text-xs px-2 py-0.5 ${
+                              item.enabled
+                                ? "bg-green-500/20 text-green-400 border-0"
+                                : "bg-red-500/20 text-red-400 border-0"
+                            }`}
+                          >
+                            {item.enabled ? "활성" : "비활성"}
+                          </Badge>
+                          {item.itemType && isSystemItemType(item.itemType as ItemType) && (
+                            <Badge className="bg-cyan-500/20 text-cyan-400 border-0 text-xs px-2 py-0.5">
+                              {ITEM_TYPE_LABELS[item.itemType as ItemType] ?? item.itemType}
+                            </Badge>
+                          )}
+                          {item.roleTicket && (
+                            <Badge className="bg-purple-500/20 text-purple-400 border-0 text-xs px-2 py-0.5">
+                              역할선택권 ({item.roleTicket.roleOptions.length}개 역할)
+                            </Badge>
+                          )}
+                          {item.roleTicket?.fixedRoleId && (
+                            <Badge className="bg-amber-500/20 text-amber-400 border-0 text-xs px-2 py-0.5">
+                              고정 역할
+                            </Badge>
+                          )}
+                        </div>
+
+                        {/* 가격 및 상세 정보 */}
+                        <div className="flex items-center gap-2 text-sm text-white/60 flex-wrap">
+                          <span className="font-medium">
+                            {item.currencyType === "topy" && item.topyPrice !== null && (
+                              <span className="text-amber-400">{item.topyPrice.toLocaleString()} {topyName}</span>
+                            )}
+                            {item.currencyType === "ruby" && item.rubyPrice !== null && (
+                              <span className="text-pink-400">{item.rubyPrice.toLocaleString()} {rubyName}</span>
+                            )}
+                            {item.currencyType === "both" && (
+                              <>
+                                <span className="text-amber-400">{item.topyPrice?.toLocaleString() ?? 0} {topyName}</span>
+                                <span className="text-white/40 mx-1">/</span>
+                                <span className="text-pink-400">{item.rubyPrice?.toLocaleString() ?? 0} {rubyName}</span>
+                              </>
+                            )}
+                          </span>
+                          <span className="text-white/30">•</span>
+                          <span>{item.durationDays === 0 ? "영구" : `${item.durationDays}일`}</span>
+                          {item.stock !== null && (
+                            <>
+                              <span className="text-white/30">•</span>
+                              <span>재고 {item.stock}</span>
+                            </>
+                          )}
+                          {item.roleTicket && (
+                            <>
+                              <span className="text-white/30">•</span>
+                              <span>
+                                {item.roleTicket.consumeQuantity === 0 ? "기간제" : `${item.roleTicket.consumeQuantity}개 소모`}
+                              </span>
+                            </>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* 액션 버튼 */}
+                      <div className="flex items-center gap-1 flex-shrink-0">
+                        <Switch
+                          checked={item.enabled}
+                          onCheckedChange={() => handleToggleEnabled(item)}
+                        />
+                        <Button variant="ghost" size="icon" onClick={() => handleEdit(item)} className="h-8 w-8">
+                          <Icon icon="solar:pen-linear" className="h-4 w-4 text-white/50" />
+                        </Button>
+                        <Button variant="ghost" size="icon" onClick={() => handleDelete(item.id)} className="h-8 w-8">
+                          <Icon icon="solar:trash-bin-2-linear" className="h-4 w-4 text-red-400" />
+                        </Button>
+                      </div>
+                    </div>
                   ))}
                 </div>
               ));
