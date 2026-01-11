@@ -71,6 +71,7 @@ export async function GET(
   const userId = searchParams.get("userId");
   const currencyType = searchParams.get("currencyType") as CurrencyType | null;
   const transactionType = searchParams.get("type") as TransactionType | null;
+  const dateStr = searchParams.get("date"); // YYYY-MM-DD 형식
 
   try {
     const pool = db();
@@ -92,6 +93,12 @@ export async function GET(
     if (transactionType) {
       whereClause += " AND transaction_type = ?";
       queryParams.push(transactionType);
+    }
+
+    // 날짜 필터 (특정 날짜의 거래만 조회)
+    if (dateStr) {
+      whereClause += " AND DATE(created_at) = ?";
+      queryParams.push(dateStr);
     }
 
     // 총 개수

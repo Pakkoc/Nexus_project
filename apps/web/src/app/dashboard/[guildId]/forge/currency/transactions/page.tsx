@@ -14,6 +14,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Calendar } from "@/components/ui/calendar";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import { Icon } from "@iconify/react";
 import { useDebounce } from "react-use";
 import { format } from "date-fns";
@@ -88,6 +94,7 @@ export default function TransactionsPage() {
   const [userId, setUserId] = useState("");
   const [currencyType, setCurrencyType] = useState<CurrencyType | "all">("all");
   const [transactionType, setTransactionType] = useState<TransactionType | "all">("all");
+  const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
@@ -107,6 +114,7 @@ export default function TransactionsPage() {
     userId: userId || undefined,
     currencyType: currencyType === "all" ? undefined : currencyType,
     transactionType: transactionType === "all" ? undefined : transactionType,
+    date: selectedDate ? format(selectedDate, "yyyy-MM-dd") : undefined,
   });
   const { data: settings } = useCurrencySettings(guildId);
 
@@ -129,10 +137,11 @@ export default function TransactionsPage() {
     setUserId("");
     setCurrencyType("all");
     setTransactionType("all");
+    setSelectedDate(undefined);
     setPage(1);
   };
 
-  const hasFilters = userId || currencyType !== "all" || transactionType !== "all";
+  const hasFilters = userId || currencyType !== "all" || transactionType !== "all" || selectedDate;
 
   return (
     <div className="space-y-8">
@@ -213,8 +222,56 @@ export default function TransactionsPage() {
             <div className="h-10 bg-white/5 border border-white/10 rounded-lg animate-pulse" />
           )}
 
-          {/* Reset Button */}
-          {hasFilters && (
+          {/* Date Picker */}
+          {mounted ? (
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  className={`bg-white/5 border-white/10 text-white hover:bg-white/10 justify-start ${
+                    !selectedDate && "text-white/50"
+                  }`}
+                >
+                  <Icon icon="solar:calendar-linear" className="h-4 w-4 mr-2" />
+                  {selectedDate ? format(selectedDate, "yyyy년 MM월 dd일", { locale: ko }) : "날짜 선택"}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0 bg-zinc-900 border-white/10" align="start">
+                <Calendar
+                  mode="single"
+                  selected={selectedDate}
+                  onSelect={(date: Date | undefined) => {
+                    setSelectedDate(date);
+                    setPage(1);
+                  }}
+                  locale={ko}
+                  className="rounded-md"
+                />
+                {selectedDate && (
+                  <div className="p-2 border-t border-white/10">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        setSelectedDate(undefined);
+                        setPage(1);
+                      }}
+                      className="w-full text-white/70 hover:text-white hover:bg-white/10"
+                    >
+                      날짜 선택 해제
+                    </Button>
+                  </div>
+                )}
+              </PopoverContent>
+            </Popover>
+          ) : (
+            <div className="h-10 bg-white/5 border border-white/10 rounded-lg animate-pulse" />
+          )}
+        </div>
+
+        {/* Reset Button */}
+        {hasFilters && (
+          <div className="mt-4">
             <Button
               variant="outline"
               onClick={resetFilters}
@@ -223,8 +280,8 @@ export default function TransactionsPage() {
               <Icon icon="solar:restart-linear" className="h-4 w-4 mr-2" />
               필터 초기화
             </Button>
-          )}
-        </div>
+          </div>
+        )}
 
         {data && (
           <p className="text-white/50 text-sm mt-4">

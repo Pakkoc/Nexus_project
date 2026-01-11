@@ -52,6 +52,7 @@ export interface UseCurrencyTransactionsOptions {
   userId?: string;
   currencyType?: CurrencyType;
   transactionType?: TransactionType;
+  date?: string; // YYYY-MM-DD 형식
 }
 
 export function useCurrencyTransactions(
@@ -75,6 +76,9 @@ export function useCurrencyTransactions(
       }
       if (options?.transactionType) {
         params.set("type", options.transactionType);
+      }
+      if (options?.date) {
+        params.set("date", options.date);
       }
       const response = await apiClient.get<TransactionsResponse>(
         `/api/guilds/${guildId}/currency/transactions?${params.toString()}`
