@@ -1339,7 +1339,48 @@ export default function ShopV2Page() {
 
         {items && items.length > 0 ? (
           <div className="divide-y divide-white/10">
-            {items.map((item) => (
+            {/* 정렬: 토피 → 루비 → 둘다, 각 그룹 내에서 활성화 → 비활성화 */}
+            {(() => {
+              const currencyOrder = { topy: 0, ruby: 1, both: 2 };
+              const sortedItems = [...items].sort((a, b) => {
+                // 1. 화폐 종류 순서
+                const currencyDiff = currencyOrder[a.currencyType] - currencyOrder[b.currencyType];
+                if (currencyDiff !== 0) return currencyDiff;
+                // 2. 활성화 상태 (활성화된 것이 먼저)
+                if (a.enabled !== b.enabled) return a.enabled ? -1 : 1;
+                // 3. 이름순
+                return a.name.localeCompare(b.name, 'ko');
+              });
+
+              // 그룹별로 분류
+              type CurrencyType = 'topy' | 'ruby' | 'both';
+              const groupDefs: { type: CurrencyType; label: string; icon: string }[] = [
+                { type: 'topy' as const, label: topyName, icon: '💰' },
+                { type: 'ruby' as const, label: rubyName, icon: '💎' },
+                { type: 'both' as const, label: '공용', icon: '✨' },
+              ];
+              const groups = groupDefs
+                .map(g => ({ ...g, items: sortedItems.filter(i => i.currencyType === g.type) }))
+                .filter(g => g.items.length > 0);
+
+              return groups.map((group) => (
+                <div key={group.type}>
+                  {/* 그룹 헤더 */}
+                  <div className={`px-4 py-2 flex items-center gap-2 ${
+                    group.type === 'topy' ? 'bg-amber-500/10' :
+                    group.type === 'ruby' ? 'bg-pink-500/10' : 'bg-purple-500/10'
+                  }`}>
+                    <span className="text-lg">{group.icon}</span>
+                    <span className={`font-medium text-sm ${
+                      group.type === 'topy' ? 'text-amber-400' :
+                      group.type === 'ruby' ? 'text-pink-400' : 'text-purple-400'
+                    }`}>
+                      {group.label} 상점
+                    </span>
+                    <span className="text-white/40 text-xs">({group.items.length}개)</span>
+                  </div>
+                  {/* 그룹 아이템 목록 */}
+                  {group.items.map((item) => (
               <div
                 key={item.id}
                 className="p-4 flex items-center justify-between hover:bg-white/5 transition-colors"
@@ -1452,7 +1493,10 @@ export default function ShopV2Page() {
                   </Button>
                 </div>
               </div>
-            ))}
+                  ))}
+                </div>
+              ));
+            })()}
           </div>
         ) : (
           <div className="p-12 text-center">
