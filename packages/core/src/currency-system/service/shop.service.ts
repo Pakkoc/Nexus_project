@@ -258,7 +258,9 @@ export class ShopService {
 
     // 8. 거래 기록
     await this.transactionRepo.save(
-      createTransaction(guildId, userId, currency, 'shop_purchase', -totalCost, newBalance)
+      createTransaction(guildId, userId, currency, 'shop_purchase', -totalCost, newBalance, {
+        fee,
+      })
     );
 
     // 수수료가 있으면 별도 거래 기록

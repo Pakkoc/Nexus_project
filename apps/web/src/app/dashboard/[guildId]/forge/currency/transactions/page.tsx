@@ -338,7 +338,7 @@ export default function TransactionsPage() {
                   }`}>
                     {formatAmount(tx.amount, tx.transactionType)}
                   </p>
-                  {tx.transactionType === "transfer_out" && BigInt(tx.fee) > 0 && (
+                  {(tx.transactionType === "transfer_out" || tx.transactionType === "shop_purchase") && BigInt(tx.fee) > 0 && (
                     <p className="text-xs text-yellow-400/70 whitespace-nowrap">
                       (수수료: {BigInt(tx.fee).toLocaleString()})
                     </p>
