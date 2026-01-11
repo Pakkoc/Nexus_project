@@ -337,6 +337,9 @@ export default function TransactionsPage() {
                       : "text-green-400"
                   }`}>
                     {formatAmount(tx.amount, tx.transactionType)}
+                    <span className="text-white/40 text-xs font-normal ml-1">
+                      {tx.currencyType === "topy" ? topyName : rubyName}
+                    </span>
                   </p>
                   {(tx.transactionType === "transfer_out" || tx.transactionType === "shop_purchase") && BigInt(tx.fee) > 0 && (
                     <p className="text-xs text-yellow-400/70 whitespace-nowrap">
@@ -349,6 +352,9 @@ export default function TransactionsPage() {
                 <div className="col-span-2 flex items-center justify-end">
                   <p className="text-white/50 text-sm whitespace-nowrap">
                     {formatBalance(tx.balanceAfter)}
+                    <span className="text-white/30 text-xs ml-1">
+                      {tx.currencyType === "topy" ? topyName : rubyName}
+                    </span>
                   </p>
                 </div>
 
