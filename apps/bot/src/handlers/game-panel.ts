@@ -2216,7 +2216,20 @@ export async function handleGameResultRank(
   const finishResult = await container.gameService.finishGame(guildId, gameId, results);
 
   if (!finishResult.success) {
-    await interaction.editReply({ content: '❌ 결과 처리에 실패했습니다.' });
+    let errorMessage = '❌ 결과 처리에 실패했습니다.';
+    const errorType = finishResult.error.type;
+
+    if (errorType === 'GAME_NOT_FOUND') {
+      errorMessage = '❌ 게임을 찾을 수 없습니다.';
+    } else if (errorType === 'GAME_ALREADY_FINISHED') {
+      errorMessage = '❌ 이미 종료된 게임입니다.';
+    } else if (errorType === 'REPOSITORY_ERROR') {
+      const cause = (finishResult.error as { cause?: { message?: string } }).cause;
+      errorMessage = `❌ DB 오류: ${cause?.message || '알 수 없는 오류'}`;
+      console.error('[GAME] finishGame error:', finishResult.error);
+    }
+
+    await interaction.editReply({ content: errorMessage });
     scheduleEphemeralDelete(interaction);
     return;
   }
