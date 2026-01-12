@@ -272,6 +272,11 @@ function createGameButtons(game: Game, isAdmin: boolean): ActionRowBuilder<Butto
             .setStyle(ButtonStyle.Primary)
             .setEmoji('🎲'),
           new ButtonBuilder()
+            .setCustomId(`game_kick_${game.id}`)
+            .setLabel('퇴장')
+            .setStyle(ButtonStyle.Secondary)
+            .setEmoji('🚪'),
+          new ButtonBuilder()
             .setCustomId(`game_start_${game.id}`)
             .setLabel('경기 시작')
             .setStyle(ButtonStyle.Success)
@@ -1806,6 +1811,226 @@ export async function handleGameStart(
 
   await interaction.editReply({ content: '✅ 경기가 시작되었습니다!' });
   scheduleEphemeralDelete(interaction);
+}
+
+// ============================================================
+// 강제 퇴장 핸들러
+// ============================================================
+
+/**
+ * 강제 퇴장 버튼 핸들러
+ */
+export async function handleGameKick(
+  interaction: ButtonInteraction,
+  container: Container,
+  gameId: bigint
+) {
+  const guildId = interaction.guildId;
+  if (!guildId) {
+    await interaction.reply({ content: '서버에서만 사용할 수 있습니다.', ephemeral: true });
+    scheduleEphemeralDelete(interaction);
+    return;
+  }
+
+  // 권한 확인
+  const settingsResult = await container.gameService.getSettings(guildId);
+  const managerRoleId = settingsResult.success ? settingsResult.data.managerRoleId : null;
+
+  if (!isAdminUser(interaction, managerRoleId)) {
+    await interaction.reply({
+      content: '❌ 관리자만 참가자를 퇴장시킬 수 있습니다.',
+      ephemeral: true,
+    });
+    scheduleEphemeralDelete(interaction);
+    return;
+  }
+
+  // 게임 조회
+  const gameResult = await container.gameService.getGameById(gameId);
+  if (!gameResult.success) {
+    await interaction.reply({ content: '❌ 게임을 찾을 수 없습니다.', ephemeral: true });
+    scheduleEphemeralDelete(interaction);
+    return;
+  }
+
+  const game = gameResult.data;
+
+  // 참가자 목록 조회
+  const participantsResult = await container.gameService.getParticipants(gameId);
+  if (!participantsResult.success || participantsResult.data.length === 0) {
+    await interaction.reply({ content: '❌ 참가자가 없습니다.', ephemeral: true });
+    scheduleEphemeralDelete(interaction);
+    return;
+  }
+
+  const participants = participantsResult.data;
+
+  // 유저 이름 가져오기
+  const guild = interaction.guild;
+  const userOptions: { label: string; value: string; description?: string }[] = [];
+
+  for (const p of participants.slice(0, 25)) {
+    let displayName = p.userId;
+    try {
+      const member = await guild?.members.fetch(p.userId);
+      if (member) {
+        displayName = member.displayName;
+      }
+    } catch {
+      // 멤버를 찾을 수 없는 경우
+    }
+
+    const teamInfo = p.teamNumber ? `${p.teamNumber}팀` : '미배정';
+    userOptions.push({
+      label: displayName,
+      value: p.userId,
+      description: teamInfo,
+    });
+  }
+
+  if (userOptions.length === 0) {
+    await interaction.reply({ content: '❌ 퇴장시킬 참가자가 없습니다.', ephemeral: true });
+    scheduleEphemeralDelete(interaction);
+    return;
+  }
+
+  // Components V2 Container 생성
+  const uiContainer = new ContainerBuilder();
+
+  uiContainer.addTextDisplayComponents(
+    new TextDisplayBuilder().setContent('# 🚪 참가자 퇴장')
+  );
+  uiContainer.addSeparatorComponents(
+    new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small)
+  );
+  uiContainer.addTextDisplayComponents(
+    new TextDisplayBuilder().setContent('퇴장시킬 참가자를 선택하세요.\n선택된 참가자는 참가비가 환불됩니다.')
+  );
+
+  // 유저 선택 메뉴
+  const userSelect = new StringSelectMenuBuilder()
+    .setCustomId(`game_kick_select_${gameId}`)
+    .setPlaceholder('퇴장시킬 참가자 선택...')
+    .setMinValues(1)
+    .setMaxValues(Math.min(userOptions.length, 25))
+    .addOptions(userOptions);
+
+  const selectRow = new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(userSelect);
+
+  // 취소 버튼
+  const cancelButton = new ButtonBuilder()
+    .setCustomId(`game_kick_cancel_${gameId}`)
+    .setLabel('취소')
+    .setStyle(ButtonStyle.Secondary);
+
+  const buttonRow = new ActionRowBuilder<ButtonBuilder>().addComponents(cancelButton);
+
+  await interaction.reply({
+    components: [uiContainer.toJSON(), selectRow, buttonRow],
+    flags: MessageFlags.IsComponentsV2,
+    ephemeral: true,
+  });
+}
+
+/**
+ * 강제 퇴장 유저 선택 핸들러
+ */
+export async function handleGameKickSelect(
+  interaction: StringSelectMenuInteraction,
+  container: Container,
+  gameId: bigint
+) {
+  const guildId = interaction.guildId;
+  if (!guildId) {
+    await interaction.update({ content: '서버에서만 사용할 수 있습니다.', components: [] });
+    return;
+  }
+
+  const selectedUserIds = interaction.values;
+
+  // 강제 퇴장 처리
+  const kickResult = await container.gameService.kickParticipants(guildId, gameId, selectedUserIds);
+
+  if (!kickResult.success) {
+    const errorContainer = new ContainerBuilder();
+    errorContainer.addTextDisplayComponents(
+      new TextDisplayBuilder().setContent('# ❌ 퇴장 처리 실패')
+    );
+    errorContainer.addSeparatorComponents(
+      new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small)
+    );
+    errorContainer.addTextDisplayComponents(
+      new TextDisplayBuilder().setContent('참가자 퇴장 처리 중 오류가 발생했습니다.')
+    );
+    await interaction.update({ components: [errorContainer.toJSON()], flags: MessageFlags.IsComponentsV2 });
+    return;
+  }
+
+  const { kickedCount, refundedAmount } = kickResult.data;
+
+  // 화폐 설정 조회
+  const currencySettingsResult = await container.currencyService.getSettings(guildId);
+  const topyName = (currencySettingsResult.success && currencySettingsResult.data?.topyName) || '토피';
+
+  // 성공 메시지
+  const successContainer = new ContainerBuilder();
+  successContainer.addTextDisplayComponents(
+    new TextDisplayBuilder().setContent('# ✅ 퇴장 완료')
+  );
+  successContainer.addSeparatorComponents(
+    new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small)
+  );
+  successContainer.addTextDisplayComponents(
+    new TextDisplayBuilder().setContent(
+      `${kickedCount}명을 퇴장시켰습니다.\n💰 환불 금액: ${refundedAmount.toLocaleString()} ${topyName}`
+    )
+  );
+
+  await interaction.update({
+    components: [successContainer.toJSON()],
+    flags: MessageFlags.IsComponentsV2,
+  });
+
+  // 게임 패널 업데이트
+  try {
+    const gameResult = await container.gameService.getGameById(gameId);
+    if (gameResult.success) {
+      const game = gameResult.data;
+      if (game.messageId) {
+        const channel = interaction.channel as TextChannel;
+        const message = await channel.messages.fetch(game.messageId);
+
+        const participantsResult = await container.gameService.getParticipants(gameId);
+        const participants = participantsResult.success ? participantsResult.data : [];
+
+        const gameContainer = createGameContainer(game, topyName, participants);
+        const buttons = createGameButtons(game, true);
+        await message.edit({
+          components: [gameContainer, ...buttons],
+          flags: MessageFlags.IsComponentsV2,
+          embeds: [],
+        });
+      }
+    }
+  } catch (err) {
+    console.error('[GAME] Failed to update game message after kick:', err);
+  }
+}
+
+/**
+ * 강제 퇴장 취소 핸들러
+ */
+export async function handleGameKickCancel(
+  interaction: ButtonInteraction
+) {
+  const cancelContainer = new ContainerBuilder();
+  cancelContainer.addTextDisplayComponents(
+    new TextDisplayBuilder().setContent('퇴장이 취소되었습니다.')
+  );
+  await interaction.update({
+    components: [cancelContainer.toJSON()],
+    flags: MessageFlags.IsComponentsV2,
+  });
 }
 
 // ============================================================

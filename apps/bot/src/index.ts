@@ -42,6 +42,9 @@ import {
   handleGameTeamRemove,
   handleGameTeamUnassign,
   handleGameStart,
+  handleGameKick,
+  handleGameKickSelect,
+  handleGameKickCancel,
   handleGameResult,
   handleGameResultRank,
   handleGameCancel,
@@ -524,6 +527,19 @@ async function main() {
           return;
         }
 
+        // 강제 퇴장 버튼 (관리자)
+        if (customId.startsWith('game_kick_') && !customId.includes('select') && !customId.includes('cancel')) {
+          const gameId = BigInt(customId.replace('game_kick_', ''));
+          await handleGameKick(interaction, container, gameId);
+          return;
+        }
+
+        // 강제 퇴장 취소 버튼
+        if (customId.startsWith('game_kick_cancel_')) {
+          await handleGameKickCancel(interaction);
+          return;
+        }
+
         // 게임 결과 입력 버튼 (관리자)
         if (customId.startsWith('game_result_') && !customId.includes('rank')) {
           const gameId = BigInt(customId.replace('game_result_', ''));
@@ -629,6 +645,13 @@ async function main() {
         // 게임 팀 해제 선택
         if (customId.startsWith('game_team_unassign_')) {
           await handleGameTeamUnassign(interaction, container);
+          return;
+        }
+
+        // 강제 퇴장 유저 선택
+        if (customId.startsWith('game_kick_select_')) {
+          const gameId = BigInt(customId.replace('game_kick_select_', ''));
+          await handleGameKickSelect(interaction, container, gameId);
           return;
         }
       } catch (error) {
