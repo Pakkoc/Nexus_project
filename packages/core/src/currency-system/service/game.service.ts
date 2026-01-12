@@ -651,17 +651,17 @@ export class GameService {
       if (game.customRankRewards) {
         rankPercents = this.normalizeRankPercents(game.customRankRewards, results);
       }
-      // Case 2: 일회성 승자독식 설정
-      else if (game.customWinnerTakesAll === true && game.teamCount === 2) {
-        rankPercents = { 1: 100, 2: 0 };
+      // Case 2: 일회성 승자독식 설정 (팀 수 무관)
+      else if (game.customWinnerTakesAll === true) {
+        rankPercents = { 1: 100 };
       }
       // Case 3: 카테고리에 커스텀 비율이 설정된 경우
       else if (category?.rankRewards) {
         rankPercents = this.normalizeRankPercents(category.rankRewards, results);
       }
-      // Case 4: 카테고리 승자독식 모드 (2팀 게임, 기본값: true)
-      else if (game.teamCount === 2 && (category?.winnerTakesAll ?? true)) {
-        rankPercents = { 1: 100, 2: 0 };
+      // Case 4: 카테고리 승자독식 모드 (팀 수 무관)
+      else if (category?.winnerTakesAll) {
+        rankPercents = { 1: 100 };
       }
       // Case 5: 전역 설정 사용
       else {

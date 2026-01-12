@@ -16,7 +16,7 @@ export interface GameCategory {
   enabled: boolean;
   maxPlayersPerTeam: number | null; // 팀당 최대 인원 (null=제한없음)
   rankRewards: RankRewards | null; // 순위별 보상 비율 (null=전역설정)
-  winnerTakesAll: boolean; // 2팀 승자독식
+  winnerTakesAll: boolean; // 승자독식 (1등 100%)
   createdAt: Date;
 }
 

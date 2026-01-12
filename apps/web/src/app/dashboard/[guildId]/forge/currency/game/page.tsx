@@ -183,7 +183,7 @@ export default function GameCenterPage() {
         name: newCategoryName.trim(),
         teamCount,
         maxPlayersPerTeam: newCategoryMaxPlayers ? parseInt(newCategoryMaxPlayers) : null,
-        winnerTakesAll: teamCount === 2 ? newCategoryWinnerTakesAll : undefined,
+        winnerTakesAll: newCategoryWinnerTakesAll,
         rankRewards,
       });
       setNewCategoryName("");
@@ -536,8 +536,8 @@ export default function GameCenterPage() {
               {createCategoryMutation.isPending ? "추가 중..." : "카테고리 추가"}
             </Button>
           </div>
-          {/* 2팀 승자독식 옵션 */}
-          {newCategoryTeamCount === "2" && !newCategoryUseCustomRewards && (
+          {/* 승자독식 옵션 (팀 수 무관) */}
+          {!newCategoryUseCustomRewards && (
             <label className="flex items-center gap-2 text-white/70 text-sm cursor-pointer">
               <input
                 type="checkbox"
@@ -545,7 +545,7 @@ export default function GameCenterPage() {
                 onChange={(e) => setNewCategoryWinnerTakesAll(e.target.checked)}
                 className="w-4 h-4 rounded border-white/20 bg-white/5 text-emerald-500 focus:ring-emerald-500/50"
               />
-              2팀 승자 독식 (1등 100%, 2등 0%)
+              승자 독식 (1등 100%)
             </label>
           )}
 
@@ -631,7 +631,7 @@ export default function GameCenterPage() {
                     <p className="text-white/40 text-xs">
                       {category.teamCount}팀
                       {category.maxPlayersPerTeam && ` · 팀당 ${category.maxPlayersPerTeam}명`}
-                      {category.teamCount === 2 && category.winnerTakesAll && " · 승자독식"}
+                      {category.winnerTakesAll && " · 승자독식"}
                     </p>
                   </div>
                 </div>
