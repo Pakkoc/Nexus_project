@@ -89,10 +89,11 @@ interface GameResultRow extends RowDataPacket {
 
 // ========== Row to Entity ==========
 
-function parseRankRewards(json: string | null): RankRewards {
+function parseRankRewards(json: string | object | null): RankRewards {
   if (!json) return { ...DEFAULT_RANK_REWARDS };
   try {
-    const parsed = JSON.parse(json);
+    // MySQL JSON 타입은 이미 파싱된 객체로 반환될 수 있음
+    const parsed = typeof json === 'string' ? JSON.parse(json) : json;
     // Convert string keys to numbers
     const result: RankRewards = {};
     for (const [key, value] of Object.entries(parsed)) {
@@ -117,10 +118,11 @@ function settingsRowToEntity(row: GameSettingsRow): GameSettings {
   };
 }
 
-function parseNullableRankRewards(json: string | null): RankRewards | null {
+function parseNullableRankRewards(json: string | object | null): RankRewards | null {
   if (!json) return null;
   try {
-    const parsed = JSON.parse(json);
+    // MySQL JSON 타입은 이미 파싱된 객체로 반환될 수 있음
+    const parsed = typeof json === 'string' ? JSON.parse(json) : json;
     const result: RankRewards = {};
     for (const [key, value] of Object.entries(parsed)) {
       result[parseInt(key, 10)] = value as number;
