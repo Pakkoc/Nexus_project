@@ -2320,7 +2320,20 @@ export async function handleGameCancel(
   const cancelResult = await container.gameService.cancelGame(guildId, gameId);
 
   if (!cancelResult.success) {
-    await interaction.editReply({ content: '❌ 게임 취소에 실패했습니다.' });
+    let errorMessage = '❌ 게임 취소에 실패했습니다.';
+    const errorType = cancelResult.error.type;
+
+    if (errorType === 'GAME_NOT_FOUND') {
+      errorMessage = '❌ 게임을 찾을 수 없습니다.';
+    } else if (errorType === 'GAME_ALREADY_FINISHED') {
+      errorMessage = '❌ 이미 종료된 게임입니다.';
+    } else if (errorType === 'REPOSITORY_ERROR') {
+      const cause = (cancelResult.error as { cause?: { message?: string } }).cause;
+      errorMessage = `❌ DB 오류: ${cause?.message || '알 수 없는 오류'}`;
+      console.error('[GAME] cancelGame error:', cancelResult.error);
+    }
+
+    await interaction.editReply({ content: errorMessage });
     scheduleEphemeralDelete(interaction);
     return;
   }
