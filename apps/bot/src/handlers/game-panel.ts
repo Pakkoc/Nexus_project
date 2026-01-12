@@ -31,8 +31,8 @@ interface Container {
 }
 
 // 메시지 삭제 딜레이 설정
-const SHORT_DELETE_DELAY = 30 * 1000;  // 30초 - 에러, 확인 메시지
-const LONG_DELETE_DELAY = 60 * 1000;   // 1분 - 팀 배정 UI, 결과 메시지
+const SHORT_DELETE_DELAY = 30 * 1000;       // 30초 - 에러, 확인 메시지
+const LONG_DELETE_DELAY = 5 * 60 * 1000;    // 5분 - 팀 배정 UI, 결과 메시지
 
 function scheduleEphemeralDelete(interaction: ButtonInteraction | ModalSubmitInteraction | UserSelectMenuInteraction | StringSelectMenuInteraction | any, delay: number = SHORT_DELETE_DELAY) {
   setTimeout(async () => {
