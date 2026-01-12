@@ -368,6 +368,24 @@ export default function XpSettingsPage() {
 
         {/* XP 획득 설정 탭 */}
         <TabsContent value="xp" className="space-y-6 animate-fade-up">
+          {/* XP 시스템 설명 */}
+          <div className="bg-indigo-500/10 border border-indigo-500/20 rounded-2xl p-5">
+            <div className="flex items-start gap-3">
+              <div className="w-8 h-8 rounded-lg bg-indigo-500/20 flex items-center justify-center flex-shrink-0">
+                <Icon icon="solar:lightbulb-bolt-linear" className="w-4 h-4 text-indigo-400" />
+              </div>
+              <div className="space-y-2">
+                <p className="text-sm text-indigo-300 font-medium">XP 시스템 안내</p>
+                <ul className="text-sm text-indigo-300/70 space-y-1 list-disc list-inside">
+                  <li><strong>텍스트 XP</strong>: 채팅 메시지를 보낼 때마다 설정된 범위 내에서 랜덤하게 XP를 획득합니다</li>
+                  <li><strong>음성 XP</strong>: 음성 채널에 접속해 있는 동안 주기적으로 XP를 획득합니다</li>
+                  <li><strong>쿨다운</strong>: XP를 획득한 후 다음 획득까지 대기해야 하는 시간입니다 (스팸 방지)</li>
+                  <li><strong>쿨다운당 횟수</strong>: 쿨다운 시간 동안 XP를 획득할 수 있는 최대 횟수입니다</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmitXpSettings)} className="space-y-6">
               <div className="grid gap-6 lg:grid-cols-2">
@@ -406,6 +424,13 @@ export default function XpSettingsPage() {
                       )}
                     />
 
+                    {/* XP 범위 설명 */}
+                    <div className="bg-blue-500/5 border border-blue-500/10 rounded-lg p-3 mb-4">
+                      <p className="text-xs text-blue-300/70">
+                        💡 메시지 1개당 최소~최대 범위에서 랜덤한 XP를 획득합니다
+                      </p>
+                    </div>
+
                     <div className="grid gap-4 sm:grid-cols-2">
                       <FormField
                         control={form.control}
@@ -420,6 +445,9 @@ export default function XpSettingsPage() {
                                 className="bg-white/5 border-white/10 text-white focus:border-indigo-500/50"
                               />
                             </FormControl>
+                            <FormDescription className="text-xs text-white/40">
+                              획득 가능한 최소 경험치
+                            </FormDescription>
                             <FormMessage />
                           </FormItem>
                         )}
@@ -438,6 +466,9 @@ export default function XpSettingsPage() {
                                 className="bg-white/5 border-white/10 text-white focus:border-indigo-500/50"
                               />
                             </FormControl>
+                            <FormDescription className="text-xs text-white/40">
+                              획득 가능한 최대 경험치
+                            </FormDescription>
                             <FormMessage />
                           </FormItem>
                         )}
@@ -458,6 +489,9 @@ export default function XpSettingsPage() {
                                 className="bg-white/5 border-white/10 text-white focus:border-indigo-500/50"
                               />
                             </FormControl>
+                            <FormDescription className="text-xs text-white/40">
+                              예: 60초 = 1분마다 XP 획득 가능
+                            </FormDescription>
                             <FormMessage />
                           </FormItem>
                         )}
@@ -476,6 +510,9 @@ export default function XpSettingsPage() {
                                 className="bg-white/5 border-white/10 text-white focus:border-indigo-500/50"
                               />
                             </FormControl>
+                            <FormDescription className="text-xs text-white/40">
+                              예: 1 = 쿨다운 중 1회만 획득
+                            </FormDescription>
                             <FormMessage />
                           </FormItem>
                         )}
@@ -519,6 +556,13 @@ export default function XpSettingsPage() {
                       )}
                     />
 
+                    {/* 음성 XP 범위 설명 */}
+                    <div className="bg-green-500/5 border border-green-500/10 rounded-lg p-3 mb-4">
+                      <p className="text-xs text-green-300/70">
+                        💡 음성 채널 접속 시 쿨다운마다 최소~최대 범위에서 랜덤한 XP를 획득합니다
+                      </p>
+                    </div>
+
                     <div className="grid gap-4 sm:grid-cols-2">
                       <FormField
                         control={form.control}
@@ -533,6 +577,9 @@ export default function XpSettingsPage() {
                                 className="bg-white/5 border-white/10 text-white focus:border-indigo-500/50"
                               />
                             </FormControl>
+                            <FormDescription className="text-xs text-white/40">
+                              획득 가능한 최소 경험치
+                            </FormDescription>
                             <FormMessage />
                           </FormItem>
                         )}
@@ -551,6 +598,9 @@ export default function XpSettingsPage() {
                                 className="bg-white/5 border-white/10 text-white focus:border-indigo-500/50"
                               />
                             </FormControl>
+                            <FormDescription className="text-xs text-white/40">
+                              획득 가능한 최대 경험치
+                            </FormDescription>
                             <FormMessage />
                           </FormItem>
                         )}
@@ -571,6 +621,9 @@ export default function XpSettingsPage() {
                                 className="bg-white/5 border-white/10 text-white focus:border-indigo-500/50"
                               />
                             </FormControl>
+                            <FormDescription className="text-xs text-white/40">
+                              예: 60초 = 1분마다 XP 획득 가능
+                            </FormDescription>
                             <FormMessage />
                           </FormItem>
                         )}
@@ -589,6 +642,9 @@ export default function XpSettingsPage() {
                                 className="bg-white/5 border-white/10 text-white focus:border-indigo-500/50"
                               />
                             </FormControl>
+                            <FormDescription className="text-xs text-white/40">
+                              예: 1 = 쿨다운 중 1회만 획득
+                            </FormDescription>
                             <FormMessage />
                           </FormItem>
                         )}
