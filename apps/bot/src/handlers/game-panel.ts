@@ -929,21 +929,43 @@ export async function handleGameTeamAssign(
   const participantsResult = await container.gameService.getParticipants(gameId);
   const participants = participantsResult.success ? participantsResult.data : [];
 
-  // 팀별 인원수 계산
-  const teamCounts: Record<number, number> = {};
-  let unassignedCount = 0;
+  // 팀별 멤버 분류
+  const teamMembers: Record<number, string[]> = {};
+  const unassignedMembers: string[] = [];
   for (const p of participants) {
     if (p.teamNumber === null) {
-      unassignedCount++;
+      unassignedMembers.push(p.userId);
     } else {
-      teamCounts[p.teamNumber] = (teamCounts[p.teamNumber] || 0) + 1;
+      if (!teamMembers[p.teamNumber]) {
+        teamMembers[p.teamNumber] = [];
+      }
+      teamMembers[p.teamNumber]!.push(p.userId);
     }
+  }
+
+  // Discord 멤버 이름 조회
+  const allUserIds = participants.map(p => p.userId);
+  const userNames: Record<string, string> = {};
+  try {
+    const guild = interaction.guild;
+    if (guild) {
+      for (const odminUserId of allUserIds) {
+        try {
+          const member = await guild.members.fetch(odminUserId);
+          userNames[odminUserId] = member.displayName || member.user.username;
+        } catch {
+          userNames[odminUserId] = `유저(${odminUserId.slice(-4)})`;
+        }
+      }
+    }
+  } catch {
+    // 멤버 조회 실패해도 계속 진행
   }
 
   // 팀 선택 메뉴
   const selectOptions = [];
   for (let i = 1; i <= game.teamCount; i++) {
-    const currentCount = teamCounts[i] || 0;
+    const currentCount = teamMembers[i]?.length || 0;
     const maxDisplay = game.maxPlayersPerTeam ? `/${game.maxPlayersPerTeam}` : '';
     selectOptions.push({
       label: `${i}팀 (${currentCount}${maxDisplay}명)`,
@@ -959,14 +981,22 @@ export async function handleGameTeamAssign(
 
   const row = new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(teamSelect);
 
-  // 팀 배정 현황 텍스트 생성
-  let statusText = '**📊 현재 팀 배정 현황**\n';
+  // 팀 배정 현황 텍스트 생성 (멤버 목록 포함)
+  let statusText = '**📊 현재 팀 배정 현황**\n\n';
   for (let i = 1; i <= game.teamCount; i++) {
-    const currentCount = teamCounts[i] || 0;
+    const members = teamMembers[i] || [];
     const maxDisplay = game.maxPlayersPerTeam ? `/${game.maxPlayersPerTeam}` : '';
-    statusText += `${getTeamEmoji(i)} ${i}팀: ${currentCount}${maxDisplay}명\n`;
+    statusText += `${getTeamEmoji(i)} **${i}팀** (${members.length}${maxDisplay}명)\n`;
+    if (members.length > 0) {
+      const memberNames = members.map(id => userNames[id] || `유저(${id.slice(-4)})`);
+      statusText += `-# ${memberNames.join(', ')}\n`;
+    }
   }
-  statusText += `\n⏳ 미배정: ${unassignedCount}명`;
+  statusText += `\n⏳ **미배정**: ${unassignedMembers.length}명`;
+  if (unassignedMembers.length > 0) {
+    const unassignedNames = unassignedMembers.map(id => userNames[id] || `유저(${id.slice(-4)})`);
+    statusText += `\n-# ${unassignedNames.join(', ')}`
+  }
 
   await interaction.reply({
     content: `🎲 배정할 팀을 선택하세요:\n\n${statusText}`,
@@ -1016,11 +1046,14 @@ export async function handleGameTeamSelect(
   const participants = participantsResult.data;
   const unassignedParticipants = participants.filter(p => p.teamNumber === null);
 
-  // 팀별 인원수 계산
-  const teamCounts: Record<number, number> = {};
+  // 팀별 멤버 분류
+  const teamMembers: Record<number, string[]> = {};
   for (const p of participants) {
     if (p.teamNumber !== null) {
-      teamCounts[p.teamNumber] = (teamCounts[p.teamNumber] || 0) + 1;
+      if (!teamMembers[p.teamNumber]) {
+        teamMembers[p.teamNumber] = [];
+      }
+      teamMembers[p.teamNumber]!.push(p.userId);
     }
   }
 
@@ -1029,30 +1062,31 @@ export async function handleGameTeamSelect(
     return;
   }
 
-  // 참가자 선택 메뉴 (StringSelectMenuBuilder로 참가자만 표시)
-  const participantOptions = unassignedParticipants.slice(0, 25).map(p => ({
-    label: `참가자`,
-    value: p.userId,
-    description: `<@${p.userId}>`,
-  }));
-
-  // Discord에서 유저 이름을 가져오기 위해 멤버 조회
+  // Discord에서 유저 이름을 가져오기 위해 멤버 조회 (전체 참가자)
+  const allUserIds = participants.map(p => p.userId);
+  const userNames: Record<string, string> = {};
   try {
     const guild = interaction.guild;
     if (guild) {
-      for (const option of participantOptions) {
+      for (const odminId of allUserIds) {
         try {
-          const member = await guild.members.fetch(option.value);
-          option.label = member.displayName || member.user.username;
-          option.description = `@${member.user.username}`;
+          const member = await guild.members.fetch(odminId);
+          userNames[odminId] = member.displayName || member.user.username;
         } catch {
-          option.label = `유저 (${option.value.slice(-4)})`;
+          userNames[odminId] = `유저(${odminId.slice(-4)})`;
         }
       }
     }
   } catch {
     // 멤버 조회 실패해도 계속 진행
   }
+
+  // 참가자 선택 메뉴 (StringSelectMenuBuilder로 참가자만 표시)
+  const participantOptions = unassignedParticipants.slice(0, 25).map(p => ({
+    label: userNames[p.userId] || `유저(${p.userId.slice(-4)})`,
+    value: p.userId,
+    description: `@${userNames[p.userId] || p.userId.slice(-4)}`,
+  }))
 
   const userSelect = new StringSelectMenuBuilder()
     .setCustomId(`game_team_users_${gameId}_${teamNumber}_${odminUserId}`)
@@ -1063,15 +1097,23 @@ export async function handleGameTeamSelect(
 
   const row = new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(userSelect);
 
-  // 팀 배정 현황 텍스트 생성
-  let statusText = '**📊 현재 팀 배정 현황**\n';
+  // 팀 배정 현황 텍스트 생성 (멤버 목록 포함)
+  let statusText = '**📊 현재 팀 배정 현황**\n\n';
   for (let i = 1; i <= game.teamCount; i++) {
-    const currentCount = teamCounts[i] || 0;
+    const members = teamMembers[i] || [];
     const maxDisplay = game.maxPlayersPerTeam ? `/${game.maxPlayersPerTeam}` : '';
     const isSelected = i === teamNumber ? ' ◀' : '';
-    statusText += `${getTeamEmoji(i)} ${i}팀: ${currentCount}${maxDisplay}명${isSelected}\n`;
+    statusText += `${getTeamEmoji(i)} **${i}팀** (${members.length}${maxDisplay}명)${isSelected}\n`;
+    if (members.length > 0) {
+      const memberNames = members.map(id => userNames[id] || `유저(${id.slice(-4)})`);
+      statusText += `-# ${memberNames.join(', ')}\n`;
+    }
   }
-  statusText += `\n⏳ 미배정: ${unassignedParticipants.length}명`;
+  statusText += `\n⏳ **미배정**: ${unassignedParticipants.length}명`;
+  if (unassignedParticipants.length > 0) {
+    const unassignedNames = unassignedParticipants.map(p => userNames[p.userId] || `유저(${p.userId.slice(-4)})`);
+    statusText += `\n-# ${unassignedNames.join(', ')}`;
+  }
 
   await interaction.update({
     content: `${getTeamEmoji(teamNumber)} **${teamNumber}팀** 팀원을 선택하세요:\n\n${statusText}`,
