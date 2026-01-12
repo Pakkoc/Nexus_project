@@ -30,17 +30,18 @@ interface Container {
   currencyService: CurrencyService;
 }
 
-// 5초 후 ephemeral 메시지 삭제
-const EPHEMERAL_DELETE_DELAY = 5 * 1000;
+// 메시지 삭제 딜레이 설정
+const SHORT_DELETE_DELAY = 5 * 1000;  // 5초 - 에러, 확인 메시지
+const LONG_DELETE_DELAY = 60 * 1000;  // 1분 - 팀 배정 UI, 결과 메시지
 
-function scheduleEphemeralDelete(interaction: ButtonInteraction | ModalSubmitInteraction | UserSelectMenuInteraction | StringSelectMenuInteraction | any) {
+function scheduleEphemeralDelete(interaction: ButtonInteraction | ModalSubmitInteraction | UserSelectMenuInteraction | StringSelectMenuInteraction | any, delay: number = SHORT_DELETE_DELAY) {
   setTimeout(async () => {
     try {
       await interaction.deleteReply();
     } catch {
       // 이미 삭제됨
     }
-  }, EPHEMERAL_DELETE_DELAY);
+  }, delay);
 }
 
 // ============================================================
@@ -1093,7 +1094,7 @@ export async function handleGameTeamAssign(
     components: [uiContainer.toJSON(), ...buttonRows.map(r => r.toJSON()), removeRow.toJSON()],
     flags: MessageFlags.IsComponentsV2 | MessageFlags.Ephemeral,
   });
-  scheduleEphemeralDelete(interaction);
+  scheduleEphemeralDelete(interaction, LONG_DELETE_DELAY);
 }
 
 /**
@@ -1401,7 +1402,7 @@ export async function handleGameTeamEdit(
     components: [uiContainer.toJSON(), selectRow.toJSON()],
     flags: MessageFlags.IsComponentsV2 | MessageFlags.Ephemeral,
   });
-  scheduleEphemeralDelete(interaction);
+  scheduleEphemeralDelete(interaction, LONG_DELETE_DELAY);
 }
 
 /**
@@ -1549,7 +1550,7 @@ export async function handleGameTeamRemove(
     components: [uiContainer.toJSON(), selectRow.toJSON()],
     flags: MessageFlags.IsComponentsV2 | MessageFlags.Ephemeral,
   });
-  scheduleEphemeralDelete(interaction);
+  scheduleEphemeralDelete(interaction, LONG_DELETE_DELAY);
 }
 
 /**
@@ -2275,7 +2276,7 @@ export async function handleGameResultRank(
   resultText += `\n총 보상: ${totalRewarded.toLocaleString()} ${topyName} (${rewards.length}명)`;
 
   await interaction.editReply({ content: resultText });
-  scheduleEphemeralDelete(interaction);
+  scheduleEphemeralDelete(interaction, LONG_DELETE_DELAY);
 }
 
 // ============================================================
@@ -2369,5 +2370,5 @@ export async function handleGameCancel(
   await interaction.editReply({
     content: `✅ 게임이 취소되었습니다.\n\n환불: ${refundedCount}명\n총 환불액: ${game.totalPool.toLocaleString()} ${topyName}`,
   });
-  scheduleEphemeralDelete(interaction);
+  scheduleEphemeralDelete(interaction, LONG_DELETE_DELAY);
 }
