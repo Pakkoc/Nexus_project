@@ -100,21 +100,17 @@ const SELECTABLE_ITEM_TYPE_LABELS: Record<SelectableItemType, string> = {
 };
 
 // 역할선택권 프리셋 타입
-const ROLE_TICKET_PRESETS = ["once_permanent", "period_unlimited", "advanced"] as const;
+const ROLE_TICKET_PRESETS = ["once", "period"] as const;
 type RoleTicketPreset = (typeof ROLE_TICKET_PRESETS)[number];
 
 const ROLE_TICKET_PRESET_INFO: Record<RoleTicketPreset, { label: string; description: string }> = {
-  once_permanent: {
-    label: "1회 사용 (영구)",
-    description: "1번 선택하면 역할이 영구히 유지됩니다",
+  once: {
+    label: "1회 사용권",
+    description: "한 번 사용하면 역할이 영구히 유지됩니다",
   },
-  period_unlimited: {
-    label: "기간제 무제한",
-    description: "유효기간 동안 자유롭게 변경할 수 있습니다",
-  },
-  advanced: {
-    label: "고급 설정",
-    description: "소모 개수, 효과 지속 등 직접 설정합니다",
+  period: {
+    label: "기간권",
+    description: "유효기간 동안 자유롭게 변경, 만료 시 역할 제거",
   },
 };
 
@@ -139,7 +135,6 @@ const shopItemFormSchema = z.object({
   consumeQuantity: z.coerce.number().min(0).optional(),
   removePreviousRole: z.boolean().optional(),
   fixedRoleId: z.string().optional(), // 고정 역할 ID
-  effectDurationDays: z.coerce.number().min(0).optional(),
 });
 
 type ShopItemFormValues = z.infer<typeof shopItemFormSchema>;
@@ -233,11 +228,10 @@ export default function ShopV2Page() {
       maxPerUser: undefined,
       enabled: true,
       hasRoleTicket: false,
-      roleTicketPreset: "once_permanent",
+      roleTicketPreset: "once",
       consumeQuantity: 1,
       removePreviousRole: true,
       fixedRoleId: "__none__",
-      effectDurationDays: 0,
     },
   });
 
@@ -294,29 +288,23 @@ export default function ShopV2Page() {
       }));
 
       // Build role ticket if enabled
-      // 프리셋에 따라 consumeQuantity와 effectDurationSeconds 자동 설정
-      let consumeQuantity = data.consumeQuantity ?? 1;
-      let effectDurationSeconds: number | null = data.effectDurationDays
-        ? data.effectDurationDays * 24 * 60 * 60
-        : null;
+      // 프리셋에 따라 consumeQuantity 설정, effectDurationSeconds는 항상 null (아이템 만료 = 역할 만료)
+      let consumeQuantity = 1;
 
-      if (data.roleTicketPreset === "once_permanent") {
-        // 1회 사용 (영구): 1개 소모, 역할 영구 유지
+      if (data.roleTicketPreset === "once") {
+        // 1회 사용권: 1개 소모, 역할 영구 유지
         consumeQuantity = 1;
-        effectDurationSeconds = null;
-      } else if (data.roleTicketPreset === "period_unlimited") {
-        // 기간제 무제한: 소모 없음, 아이템 만료까지 유지
+      } else if (data.roleTicketPreset === "period") {
+        // 기간권: 소모 없음, 아이템 만료까지 유지
         consumeQuantity = 0;
-        effectDurationSeconds = null;
       }
-      // advanced: 사용자 입력값 그대로 사용
 
       const roleTicket = data.hasRoleTicket
         ? {
             consumeQuantity,
             removePreviousRole: data.removePreviousRole ?? true,
             fixedRoleId: data.fixedRoleId && data.fixedRoleId !== "__none__" ? data.fixedRoleId : null,
-            effectDurationSeconds,
+            effectDurationSeconds: null, // 항상 null - 아이템 만료 시 역할도 만료
             roleOptions,
           }
         : undefined;
@@ -403,21 +391,10 @@ export default function ShopV2Page() {
       setPendingRoleOptions([]);
     }
 
-    // 효과 지속 기간: 초 -> 일 변환
-    const effectDurationDays = item.roleTicket?.effectDurationSeconds
-      ? Math.floor(item.roleTicket.effectDurationSeconds / (24 * 60 * 60))
-      : 0;
-
-    // 프리셋 추론
-    let roleTicketPreset: RoleTicketPreset = "advanced";
+    // 프리셋 추론: consumeQuantity가 0이면 기간권, 아니면 1회 사용권
+    let roleTicketPreset: RoleTicketPreset = "once";
     if (item.roleTicket) {
-      const consumeQty = item.roleTicket.consumeQuantity;
-      const effectSec = item.roleTicket.effectDurationSeconds;
-      if (consumeQty === 1 && (effectSec === null || effectSec === 0)) {
-        roleTicketPreset = "once_permanent";
-      } else if (consumeQty === 0 && (effectSec === null || effectSec === 0)) {
-        roleTicketPreset = "period_unlimited";
-      }
+      roleTicketPreset = item.roleTicket.consumeQuantity === 0 ? "period" : "once";
     }
 
     // itemType이 선택 가능한 타입인지 확인 (아니면 custom으로 설정)
@@ -447,7 +424,6 @@ export default function ShopV2Page() {
       consumeQuantity: item.roleTicket?.consumeQuantity ?? 1,
       removePreviousRole: item.roleTicket?.removePreviousRole ?? true,
       fixedRoleId: item.roleTicket?.fixedRoleId || "__none__",
-      effectDurationDays,
     });
   };
 
@@ -1053,57 +1029,6 @@ export default function ShopV2Page() {
                   </FormItem>
                 )}
               />
-
-              {/* 고급 설정일 때만 세부 옵션 표시 */}
-              {roleTicketPreset === "advanced" && (
-                <div className="grid grid-cols-2 gap-4 p-3 rounded-lg bg-white/5 border border-white/10">
-                  <FormField
-                    control={form.control}
-                    name="consumeQuantity"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel className="text-white/70">소모 개수</FormLabel>
-                        <FormControl>
-                          <Input
-                            type="number"
-                            min={0}
-                            {...field}
-                            className="bg-white/5 border-white/10 text-white"
-                          />
-                        </FormControl>
-                        <FormDescription className="text-xs text-white/40">
-                          0 = 무제한
-                        </FormDescription>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="effectDurationDays"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel className="text-white/70">효과 지속 (일)</FormLabel>
-                        <FormControl>
-                          <Input
-                            type="number"
-                            min={0}
-                            placeholder="0"
-                            {...field}
-                            value={field.value || ""}
-                          className="bg-white/5 border-white/10 text-white"
-                        />
-                      </FormControl>
-                      <FormDescription className="text-xs text-white/40">
-                        0 = 영구, 양수 = 기간제
-                      </FormDescription>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                </div>
-              )}
 
               {/* Role Options */}
               <div className="space-y-3">
