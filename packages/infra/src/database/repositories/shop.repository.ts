@@ -3,6 +3,7 @@ import type {
   ShopRepositoryPort,
   ShopItem,
   ShopItemType,
+  ShopItemEffectConfig,
   CreateShopItemInput,
   UpdateShopItemInput,
   UserItemV2,
@@ -22,6 +23,7 @@ interface ShopItemRow extends RowDataPacket {
   currency_type: 'topy' | 'ruby' | 'both';
   item_type: ShopItemType | null;
   effect_percent: number | null;
+  effect_config: string | null;  // JSON string
   duration_days: number;
   stock: number | null;
   max_per_user: number | null;
@@ -46,6 +48,15 @@ interface UserItemV2Row extends RowDataPacket {
 
 // ========== Mappers ==========
 
+function parseEffectConfig(json: string | null): ShopItemEffectConfig {
+  if (!json) return null;
+  try {
+    return JSON.parse(json) as ShopItemEffectConfig;
+  } catch {
+    return null;
+  }
+}
+
 function toShopItem(row: ShopItemRow): ShopItem {
   return {
     id: row.id,
@@ -57,6 +68,7 @@ function toShopItem(row: ShopItemRow): ShopItem {
     currencyType: row.currency_type,
     itemType: row.item_type ?? 'custom',
     effectPercent: row.effect_percent,
+    effectConfig: parseEffectConfig(row.effect_config),
     durationDays: row.duration_days,
     stock: row.stock,
     maxPerUser: row.max_per_user,
@@ -211,8 +223,8 @@ export class ShopRepository implements ShopRepositoryPort {
     try {
       const [result] = await this.pool.execute<ResultSetHeader>(
         `INSERT INTO shop_items_v2
-         (guild_id, name, description, topy_price, ruby_price, currency_type, item_type, effect_percent, duration_days, stock, max_per_user, enabled)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+         (guild_id, name, description, topy_price, ruby_price, currency_type, item_type, effect_percent, effect_config, duration_days, stock, max_per_user, enabled)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [
           input.guildId,
           input.name,
@@ -222,6 +234,7 @@ export class ShopRepository implements ShopRepositoryPort {
           input.currencyType,
           input.itemType ?? 'custom',
           input.effectPercent ?? null,
+          input.effectConfig ? JSON.stringify(input.effectConfig) : null,
           input.durationDays ?? 0,
           input.stock ?? null,
           input.maxPerUser ?? null,
@@ -278,6 +291,10 @@ export class ShopRepository implements ShopRepositoryPort {
       if (input.effectPercent !== undefined) {
         fields.push('effect_percent = ?');
         values.push(input.effectPercent);
+      }
+      if (input.effectConfig !== undefined) {
+        fields.push('effect_config = ?');
+        values.push(input.effectConfig ? JSON.stringify(input.effectConfig) : null);
       }
       if (input.durationDays !== undefined) {
         fields.push('duration_days = ?');

@@ -36,6 +36,20 @@ export type ShopItemType =
   | 'role_ticket';
 
 /**
+ * 디토뱅크 효과 설정 (dito_silver, dito_gold 등)
+ */
+export interface DitoEffectConfig {
+  vaultLimit: number;           // 금고 한도
+  monthlyInterestRate: number;  // 월 이자율 (%)
+}
+
+/**
+ * 아이템 효과 설정 (JSON)
+ * - 아이템 타입별로 다른 스키마 사용
+ */
+export type ShopItemEffectConfig = DitoEffectConfig | null;
+
+/**
  * 상점 아이템 - 티켓 판매
  */
 export interface ShopItem {
@@ -48,6 +62,7 @@ export interface ShopItem {
   currencyType: ShopItemCurrencyType;
   itemType: ShopItemType;  // 아이템 타입
   effectPercent: number | null;  // 효과 비율 (세금면제권, 이체감면권 등) - null=100%
+  effectConfig: ShopItemEffectConfig;  // 효과 설정 (디토뱅크 등) - JSON
   durationDays: number; // 0=영구, 양수=기간제
   stock: number | null; // null=무제한
   maxPerUser: number | null; // null=무제한
@@ -64,6 +79,7 @@ export interface CreateShopItemInput {
   currencyType: ShopItemCurrencyType;
   itemType?: ShopItemType;
   effectPercent?: number | null;  // 효과 비율 (세금면제권, 이체감면권 등)
+  effectConfig?: ShopItemEffectConfig;  // 효과 설정 (디토뱅크 등)
   durationDays?: number;
   stock?: number | null;
   maxPerUser?: number | null;
@@ -78,6 +94,7 @@ export interface UpdateShopItemInput {
   currencyType?: ShopItemCurrencyType;
   itemType?: ShopItemType;
   effectPercent?: number | null;  // 효과 비율 (세금면제권, 이체감면권 등)
+  effectConfig?: ShopItemEffectConfig;  // 효과 설정 (디토뱅크 등)
   durationDays?: number;
   stock?: number | null;
   maxPerUser?: number | null;

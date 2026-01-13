@@ -42,6 +42,19 @@ export const itemTypeEnum = z.enum([
 
 export type ItemType = z.infer<typeof itemTypeEnum>;
 
+// 디토뱅크 효과 설정 스키마
+export const ditoEffectConfigSchema = z.object({
+  vaultLimit: z.number().min(0),           // 금고 한도
+  monthlyInterestRate: z.number().min(0),  // 월 이자율 (%)
+});
+
+export type DitoEffectConfig = z.infer<typeof ditoEffectConfigSchema>;
+
+// 효과 설정 (타입별로 다른 스키마)
+export const effectConfigSchema = ditoEffectConfigSchema.nullable();
+
+export type EffectConfig = z.infer<typeof effectConfigSchema>;
+
 export const shopItemV2Schema = z.object({
   id: z.number(),
   guildId: z.string(),
@@ -49,6 +62,7 @@ export const shopItemV2Schema = z.object({
   description: z.string().max(500).nullable(),
   itemType: itemTypeEnum.default("custom"),
   effectPercent: z.number().min(1).max(100).nullable(), // 효과 비율 (세금면제권, 이체감면권 등)
+  effectConfig: effectConfigSchema.optional(), // 효과 설정 (디토뱅크 등)
   topyPrice: z.number().min(0).nullable(),
   rubyPrice: z.number().min(0).nullable(),
   currencyType: z.enum(["topy", "ruby", "both"]),
@@ -88,6 +102,7 @@ export const createShopItemV2Schema = z.object({
   description: z.string().max(500).optional(),
   itemType: itemTypeEnum.optional(),
   effectPercent: z.number().min(1).max(100).nullable().optional(), // 효과 비율
+  effectConfig: effectConfigSchema.optional(), // 효과 설정 (디토뱅크 등)
   topyPrice: z.number().min(0).nullable().optional(),
   rubyPrice: z.number().min(0).nullable().optional(),
   currencyType: z.enum(["topy", "ruby", "both"]),
@@ -106,6 +121,7 @@ export const updateShopItemV2Schema = z.object({
   description: z.string().max(500).nullable().optional(),
   itemType: itemTypeEnum.optional(),
   effectPercent: z.number().min(1).max(100).nullable().optional(), // 효과 비율
+  effectConfig: effectConfigSchema.optional(), // 효과 설정 (디토뱅크 등)
   topyPrice: z.number().min(0).nullable().optional(),
   rubyPrice: z.number().min(0).nullable().optional(),
   currencyType: z.enum(["topy", "ruby", "both"]).optional(),
