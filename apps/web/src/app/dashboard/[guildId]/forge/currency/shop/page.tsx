@@ -89,15 +89,14 @@ interface PendingRoleOption {
 }
 
 // 선택 가능한 아이템 타입
-const SELECTABLE_ITEM_TYPES = ["custom", "tax_exemption", "transfer_fee_reduction", "dito_silver", "dito_gold"] as const;
+const SELECTABLE_ITEM_TYPES = ["custom", "tax_exemption", "transfer_fee_reduction", "dito_silver"] as const;
 type SelectableItemType = (typeof SELECTABLE_ITEM_TYPES)[number];
 
 const SELECTABLE_ITEM_TYPE_LABELS: Record<SelectableItemType, string> = {
   custom: "일반",
   tax_exemption: "세금면제권",
   transfer_fee_reduction: "이체수수료감면권",
-  dito_silver: "디토실버",
-  dito_gold: "디토골드",
+  dito_silver: "금고 등급",
 };
 
 const shopItemFormSchema = z.object({
@@ -295,8 +294,8 @@ export default function ShopV2Page() {
       // 효과 비율 (세금면제권, 이체감면권일 때만 적용)
       const effectPercent = data.effectPercent && data.effectPercent !== 100 ? data.effectPercent : null;
 
-      // 효과 설정 (디토뱅크일 때만 적용)
-      const effectConfig = (data.itemType === "dito_silver" || data.itemType === "dito_gold")
+      // 효과 설정 (금고 등급일 때만 적용)
+      const effectConfig = (data.itemType === "dito_silver")
         ? {
             vaultLimit: data.vaultLimit ?? 100000,
             monthlyInterestRate: data.monthlyInterestRate ?? 1,
@@ -720,12 +719,12 @@ export default function ShopV2Page() {
           />
         )}
 
-        {/* 디토뱅크 설정 - 디토실버, 디토골드일 때만 표시 */}
-        {(itemType === "dito_silver" || itemType === "dito_gold") && (
-          <div className="space-y-4 p-4 rounded-xl bg-gradient-to-r from-blue-500/10 to-cyan-500/10 border border-blue-500/20">
+        {/* 금고 등급 설정 - 금고 등급일 때만 표시 */}
+        {itemType === "dito_silver" && (
+          <div className="space-y-4 p-4 rounded-xl bg-gradient-to-r from-amber-500/10 to-yellow-500/10 border border-amber-500/20">
             <h4 className="text-sm font-medium text-white/70 flex items-center gap-2">
-              <Icon icon="solar:safe-square-bold" className="h-4 w-4 text-blue-400" />
-              디토뱅크 설정
+              <Icon icon="solar:safe-square-bold" className="h-4 w-4 text-amber-400" />
+              금고 등급 설정
             </h4>
             <div className="grid grid-cols-2 gap-4">
               <FormField
