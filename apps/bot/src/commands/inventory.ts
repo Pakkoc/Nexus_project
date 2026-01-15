@@ -402,6 +402,10 @@ export const inventoryCommand: Command = {
           components: [createInventoryContainer(ownedItems, topyName, rubyName)],
           flags: IS_COMPONENTS_V2,
         });
+        // 5분 후 자동 삭제
+        setTimeout(() => {
+          interaction.deleteReply().catch(() => {});
+        }, 300000);
         return;
       }
 
@@ -686,6 +690,10 @@ export const inventoryCommand: Command = {
             // 무시
           }
         }
+        // 5분 후 자동 삭제
+        setTimeout(() => {
+          interaction.deleteReply().catch(() => {});
+        }, 300000);
       });
 
     } catch (error) {

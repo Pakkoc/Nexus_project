@@ -236,6 +236,10 @@ export const transferCommand: Command = {
               components: [timeoutContainer.toJSON()],
               flags: MessageFlags.IsComponentsV2,
             });
+            // 5분 후 자동 삭제
+            setTimeout(() => {
+              interaction.deleteReply().catch(() => {});
+            }, 300000);
             return;
           }
         }
@@ -285,6 +289,10 @@ export const transferCommand: Command = {
           components: [errorContainer.toJSON()],
           flags: MessageFlags.IsComponentsV2,
         });
+        // 5분 후 자동 삭제
+        setTimeout(() => {
+          interaction.deleteReply().catch(() => {});
+        }, 300000);
         return;
       }
 
@@ -357,6 +365,11 @@ export const transferCommand: Command = {
         components: [successContainer.toJSON()],
         flags: MessageFlags.IsComponentsV2,
       });
+
+      // 5분 후 자동 삭제
+      setTimeout(() => {
+        interaction.deleteReply().catch(() => {});
+      }, 300000);
 
       // DM 알림 발송 (실패해도 무시)
       const guildName = interaction.guild?.name ?? '서버';
@@ -437,6 +450,10 @@ export const transferCommand: Command = {
         components: [errorContainer.toJSON()],
         flags: MessageFlags.IsComponentsV2,
       });
+      // 5분 후 자동 삭제
+      setTimeout(() => {
+        interaction.deleteReply().catch(() => {});
+      }, 300000);
     }
   },
 };
