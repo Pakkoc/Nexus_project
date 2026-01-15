@@ -21,7 +21,7 @@ export const DEFAULT_SHOP_ITEMS: DefaultShopItemDefinition[] = [
   // === 인벤토리형 (소모성) ===
   {
     name: '경고차감권',
-    description: '경고 1회를 차감합니다. 티켓 문의를 통해 사용하세요.',
+    description: '경고 1회를 차감합니다. 티켓 문의를 통해 사용하세요. (특수한 경우 사용 불가)',
     itemType: 'warning_reduction',
     currencyType: 'topy',
     durationDays: 0,  // 영구
