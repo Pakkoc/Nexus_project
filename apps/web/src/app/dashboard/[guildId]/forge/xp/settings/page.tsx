@@ -130,6 +130,21 @@ export default function XpSettingsPage() {
     setHasUnsavedChanges(formIsDirty || textHasChanges || voiceHasChanges);
   }, [formIsDirty, textHasChanges, voiceHasChanges, setHasUnsavedChanges]);
 
+  // XP 비활성화 시 레벨 탭 자동 전환
+  const textXpEnabled = form.watch("textXpEnabled");
+  const voiceXpEnabled = form.watch("voiceXpEnabled");
+
+  useEffect(() => {
+    // 현재 텍스트 탭인데 텍스트 XP가 비활성화되면 음성 탭으로 전환
+    if (levelTypeTab === "text" && !textXpEnabled && voiceXpEnabled) {
+      setLevelTypeTab("voice");
+    }
+    // 현재 음성 탭인데 음성 XP가 비활성화되면 텍스트 탭으로 전환
+    if (levelTypeTab === "voice" && !voiceXpEnabled && textXpEnabled) {
+      setLevelTypeTab("text");
+    }
+  }, [textXpEnabled, voiceXpEnabled, levelTypeTab]);
+
   // Text Level Requirements Query
   const { data: textLevelData, isLoading: textLevelLoading } = useQuery<LevelRequirement[]>({
     queryKey: ["levelRequirements", guildId, "text"],
@@ -673,26 +688,34 @@ export default function XpSettingsPage() {
           {/* Level Type Sub-Tabs */}
           <div className="flex items-center gap-3">
             <button
-              onClick={() => setLevelTypeTab("text")}
+              onClick={() => textXpEnabled && setLevelTypeTab("text")}
+              disabled={!textXpEnabled}
               className={`flex items-center gap-2 px-4 py-2 rounded-xl border transition-all ${
-                levelTypeTab === "text"
-                  ? "bg-gradient-to-r from-blue-500 to-cyan-500 text-white border-transparent"
-                  : "bg-white/5 text-white/60 border-white/10 hover:bg-white/10"
+                !textXpEnabled
+                  ? "opacity-50 cursor-not-allowed bg-white/5 text-white/40 border-white/10"
+                  : levelTypeTab === "text"
+                    ? "bg-gradient-to-r from-blue-500 to-cyan-500 text-white border-transparent"
+                    : "bg-white/5 text-white/60 border-white/10 hover:bg-white/10"
               }`}
             >
               <Icon icon="solar:chat-line-linear" className="h-4 w-4" />
               텍스트 레벨
+              {!textXpEnabled && <span className="text-xs">(비활성화됨)</span>}
             </button>
             <button
-              onClick={() => setLevelTypeTab("voice")}
+              onClick={() => voiceXpEnabled && setLevelTypeTab("voice")}
+              disabled={!voiceXpEnabled}
               className={`flex items-center gap-2 px-4 py-2 rounded-xl border transition-all ${
-                levelTypeTab === "voice"
-                  ? "bg-gradient-to-r from-green-500 to-emerald-500 text-white border-transparent"
-                  : "bg-white/5 text-white/60 border-white/10 hover:bg-white/10"
+                !voiceXpEnabled
+                  ? "opacity-50 cursor-not-allowed bg-white/5 text-white/40 border-white/10"
+                  : levelTypeTab === "voice"
+                    ? "bg-gradient-to-r from-green-500 to-emerald-500 text-white border-transparent"
+                    : "bg-white/5 text-white/60 border-white/10 hover:bg-white/10"
               }`}
             >
               <Icon icon="solar:microphone-linear" className="h-4 w-4" />
               음성 레벨
+              {!voiceXpEnabled && <span className="text-xs">(비활성화됨)</span>}
             </button>
           </div>
 
