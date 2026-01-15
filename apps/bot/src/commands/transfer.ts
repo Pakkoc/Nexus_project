@@ -58,13 +58,21 @@ export const transferCommand: Command = {
       try {
         // 서버의 화폐 설정 조회
         const settingsResult = await container.currencyService.getSettings(guildId);
-        const topyName = settingsResult.success && settingsResult.data?.topyName || '토피';
-        const rubyName = settingsResult.success && settingsResult.data?.rubyName || '루비';
+        const settings = settingsResult.success ? settingsResult.data : null;
+        const topyName = settings?.topyName || '토피';
+        const rubyName = settings?.rubyName || '루비';
 
-        await interaction.respond([
-          { name: topyName, value: 'topy' },
-          { name: rubyName, value: 'ruby' },
-        ]);
+        const choices: { name: string; value: string }[] = [];
+
+        // 활성화된 화폐만 표시
+        if (settings?.topyManagerEnabled !== false) {
+          choices.push({ name: topyName, value: 'topy' });
+        }
+        if (settings?.rubyManagerEnabled !== false) {
+          choices.push({ name: rubyName, value: 'ruby' });
+        }
+
+        await interaction.respond(choices);
       } catch {
         // 에러 시 기본값 반환
         await interaction.respond([
@@ -112,6 +120,34 @@ export const transferCommand: Command = {
       const rubyName = settings?.rubyName || '루비';
       const currencyName = currencyType === 'topy' ? topyName : rubyName;
       const logChannelId = settings?.currencyLogChannelId;
+
+      // 비활성화된 화폐 체크
+      const isCurrencyDisabled =
+        (currencyType === 'topy' && settings?.topyManagerEnabled === false) ||
+        (currencyType === 'ruby' && settings?.rubyManagerEnabled === false);
+
+      if (isCurrencyDisabled) {
+        const errorContainer = new ContainerBuilder()
+          .setAccentColor(0xFF0000)
+          .addTextDisplayComponents(
+            new TextDisplayBuilder().setContent('# ❌ 이체 불가')
+          )
+          .addSeparatorComponents(
+            new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small)
+          )
+          .addTextDisplayComponents(
+            new TextDisplayBuilder().setContent(`**${currencyName}** 화폐는 현재 비활성화되어 있습니다.`)
+          );
+
+        await interaction.editReply({
+          components: [errorContainer.toJSON()],
+          flags: MessageFlags.IsComponentsV2,
+        });
+        setTimeout(() => {
+          interaction.deleteReply().catch(() => {});
+        }, 300000);
+        return;
+      }
 
       // 수수료 미리 계산
       const feeResult = await container.currencyService.calculateTransferFee(guildId, BigInt(amount), currencyType);

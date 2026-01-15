@@ -621,13 +621,21 @@ export default function ShopV2Page() {
                   </SelectTrigger>
                 </FormControl>
                 <SelectContent>
-                  <SelectItem value="topy">{topyName}</SelectItem>
-                  <SelectItem value="ruby">{rubyName}</SelectItem>
-                  <SelectItem value="both">둘 다</SelectItem>
+                  {settings?.topyManagerEnabled !== false && (
+                    <SelectItem value="topy">{topyName}</SelectItem>
+                  )}
+                  {settings?.rubyManagerEnabled !== false && (
+                    <SelectItem value="ruby">{rubyName}</SelectItem>
+                  )}
+                  {settings?.topyManagerEnabled !== false && settings?.rubyManagerEnabled !== false && (
+                    <SelectItem value="both">둘 다</SelectItem>
+                  )}
                 </SelectContent>
               </Select>
               <FormDescription className="text-xs text-white/40">
-                &quot;둘 다&quot;를 선택하면 두 상점 패널 모두에 표시됩니다
+                {settings?.topyManagerEnabled === false && settings?.rubyManagerEnabled === false
+                  ? "모든 화폐가 비활성화되어 있습니다"
+                  : "&quot;둘 다&quot;를 선택하면 두 상점 패널 모두에 표시됩니다"}
               </FormDescription>
               <FormMessage />
             </FormItem>

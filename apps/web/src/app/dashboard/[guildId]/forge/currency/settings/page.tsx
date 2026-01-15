@@ -711,7 +711,7 @@ export default function CurrencySettingsPage() {
 
           <div className="grid gap-6 lg:grid-cols-2">
             {/* 텍스트 보상 설정 */}
-            <div className="bg-white/5 backdrop-blur-sm rounded-2xl border border-white/10 overflow-hidden">
+            <div className={`bg-white/5 backdrop-blur-sm rounded-2xl border border-white/10 overflow-hidden transition-opacity ${!form.watch("topyManagerEnabled") ? "opacity-50 pointer-events-none" : ""}`}>
               <div className="p-6 border-b border-white/10">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500 to-orange-500 flex items-center justify-center">
@@ -885,7 +885,7 @@ export default function CurrencySettingsPage() {
             </div>
 
             {/* 음성 보상 설정 */}
-            <div className="bg-white/5 backdrop-blur-sm rounded-2xl border border-white/10 overflow-hidden">
+            <div className={`bg-white/5 backdrop-blur-sm rounded-2xl border border-white/10 overflow-hidden transition-opacity ${!form.watch("topyManagerEnabled") ? "opacity-50 pointer-events-none" : ""}`}>
               <div className="p-6 border-b border-white/10">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-green-500 to-emerald-500 flex items-center justify-center">
@@ -1039,7 +1039,7 @@ export default function CurrencySettingsPage() {
           {/* 이체 설정 - 2열 그리드로 분리 */}
           <div className="grid gap-6 lg:grid-cols-2">
             {/* 활동형 화폐(토피) 이체 설정 */}
-            <div className="bg-white/5 backdrop-blur-sm rounded-2xl border border-amber-500/30 overflow-hidden">
+            <div className={`bg-white/5 backdrop-blur-sm rounded-2xl border border-amber-500/30 overflow-hidden transition-opacity ${!form.watch("topyManagerEnabled") ? "opacity-50 pointer-events-none" : ""}`}>
               <div className="p-6 border-b border-white/10 bg-gradient-to-r from-amber-500/10 to-orange-500/10">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500 to-orange-500 flex items-center justify-center">
@@ -1128,7 +1128,7 @@ export default function CurrencySettingsPage() {
             </div>
 
             {/* 수익형 화폐(루비) 이체 설정 */}
-            <div className="bg-white/5 backdrop-blur-sm rounded-2xl border border-pink-500/30 overflow-hidden">
+            <div className={`bg-white/5 backdrop-blur-sm rounded-2xl border border-pink-500/30 overflow-hidden transition-opacity ${!form.watch("rubyManagerEnabled") ? "opacity-50 pointer-events-none" : ""}`}>
               <div className="p-6 border-b border-white/10 bg-gradient-to-r from-pink-500/10 to-rose-500/10">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-pink-500 to-rose-500 flex items-center justify-center">
@@ -1337,7 +1337,7 @@ export default function CurrencySettingsPage() {
           </div>
 
           {/* 월말 세금 설정 */}
-          <div className="bg-white/5 backdrop-blur-sm rounded-2xl border border-white/10 overflow-hidden">
+          <div className={`bg-white/5 backdrop-blur-sm rounded-2xl border border-white/10 overflow-hidden transition-opacity ${!form.watch("topyManagerEnabled") ? "opacity-50 pointer-events-none" : ""}`}>
             <div className="p-6 border-b border-white/10">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-red-500 to-rose-500 flex items-center justify-center">
