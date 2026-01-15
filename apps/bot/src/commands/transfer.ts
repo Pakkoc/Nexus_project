@@ -3,6 +3,7 @@ import {
   ActionRowBuilder,
   ButtonBuilder,
   ButtonStyle,
+  StringSelectMenuBuilder,
   ComponentType,
   ContainerBuilder,
   TextDisplayBuilder,
@@ -121,39 +122,24 @@ export const transferCommand: Command = {
       let reductionPercent = 0; // 감면 비율 (0 = 감면 안함, 100 = 완전 면제)
 
       if (expectedFee > BigInt(0)) {
-        const reductionResult = await container.shopV2Service.checkTransferFeeReduction(guildId, senderId);
+        const reductionsResult = await container.shopV2Service.getAllTransferFeeReductions(guildId, senderId);
 
-        if (reductionResult.success && reductionResult.data.hasReduction) {
-          const itemReductionPercent = reductionResult.data.reductionPercent;
-          const isFullExempt = itemReductionPercent >= 100;
+        if (reductionsResult.success && reductionsResult.data.length > 0) {
+          const reductions = reductionsResult.data;
 
-          // 감면 후 예상 수수료 계산
-          const reducedFee = isFullExempt
-            ? BigInt(0)
-            : (expectedFee * BigInt(100 - itemReductionPercent)) / BigInt(100);
-          const savedFee = expectedFee - reducedFee;
-
-          // 버튼 라벨 설정
-          const useButtonLabel = isFullExempt
-            ? `감면권 사용 (${expectedFee.toLocaleString()} ${currencyName} 면제)`
-            : `감면권 사용 (${savedFee.toLocaleString()} ${currencyName} 감면, 수수료 ${reducedFee.toLocaleString()})`;
-
-          // 버튼 UI 표시
-          const row = new ActionRowBuilder<ButtonBuilder>()
-            .addComponents(
-              new ButtonBuilder()
-                .setCustomId('use_reduction')
-                .setLabel(useButtonLabel)
-                .setStyle(ButtonStyle.Primary),
-              new ButtonBuilder()
-                .setCustomId('skip_reduction')
-                .setLabel(`그냥 이체 (수수료 ${expectedFee.toLocaleString()} ${currencyName})`)
-                .setStyle(ButtonStyle.Secondary),
-            );
-
-          const reductionText = isFullExempt
-            ? '100% 면제'
-            : `${itemReductionPercent}% 감면 (${savedFee.toLocaleString()} ${currencyName} 절약)`;
+          // 감면권 목록 텍스트 생성
+          const reductionListText = reductions
+            .map((r, i) => {
+              const reducedFee = r.reductionPercent >= 100
+                ? BigInt(0)
+                : (expectedFee * BigInt(100 - r.reductionPercent)) / BigInt(100);
+              const savedFee = expectedFee - reducedFee;
+              const effectText = r.reductionPercent >= 100
+                ? '100% 면제'
+                : `${r.reductionPercent}% 감면 (${savedFee.toLocaleString()} 절약)`;
+              return `**${i + 1}. ${r.itemName}** - ${effectText} (보유: ${r.quantity}개)`;
+            })
+            .join('\n');
 
           const confirmContainer = new ContainerBuilder()
             .setAccentColor(0xFFAA00)
@@ -166,9 +152,9 @@ export const transferCommand: Command = {
             .addTextDisplayComponents(
               new TextDisplayBuilder().setContent(
                 `이체 금액: **${amount.toLocaleString()} ${currencyName}**\n` +
-                `기본 수수료: **${expectedFee.toLocaleString()} ${currencyName}**\n` +
-                `감면권 효과: **${reductionText}**\n\n` +
-                `이체수수료감면권을 사용하시겠습니까?`
+                `기본 수수료: **${expectedFee.toLocaleString()} ${currencyName}**\n\n` +
+                `**보유 감면권:**\n${reductionListText}\n\n` +
+                `사용할 감면권을 선택하세요.`
               )
             )
             .addSeparatorComponents(
@@ -178,29 +164,62 @@ export const transferCommand: Command = {
               new TextDisplayBuilder().setContent('-# 30초 내에 선택해주세요')
             );
 
+          // 감면권 선택 메뉴 생성
+          const selectMenu = new StringSelectMenuBuilder()
+            .setCustomId('select_reduction')
+            .setPlaceholder('사용할 감면권을 선택하세요')
+            .addOptions(
+              reductions.map((r) => {
+                const reducedFee = r.reductionPercent >= 100
+                  ? BigInt(0)
+                  : (expectedFee * BigInt(100 - r.reductionPercent)) / BigInt(100);
+                const effectText = r.reductionPercent >= 100
+                  ? '100% 면제'
+                  : `${r.reductionPercent}% 감면, 수수료 ${reducedFee.toLocaleString()}`;
+                return {
+                  label: r.itemName,
+                  description: effectText,
+                  value: `${r.userItemId}:${r.reductionPercent}`,
+                };
+              })
+            );
+
+          const selectRow = new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(selectMenu);
+
+          const buttonRow = new ActionRowBuilder<ButtonBuilder>()
+            .addComponents(
+              new ButtonBuilder()
+                .setCustomId('skip_reduction')
+                .setLabel(`감면권 사용 안함 (수수료 ${expectedFee.toLocaleString()} ${currencyName})`)
+                .setStyle(ButtonStyle.Secondary),
+            );
+
           const response = await interaction.editReply({
-            components: [confirmContainer.toJSON(), row],
+            components: [confirmContainer.toJSON(), selectRow, buttonRow],
             flags: MessageFlags.IsComponentsV2,
           });
 
           try {
-            const buttonInteraction = await response.awaitMessageComponent({
-              componentType: ComponentType.Button,
+            const componentInteraction = await response.awaitMessageComponent({
               filter: (i) => i.user.id === senderId,
               time: 30_000,
             });
 
-            if (buttonInteraction.customId === 'use_reduction') {
-              // 감면권 사용
-              const userItemId = reductionResult.data.userItemId!;
-              await container.shopV2Service.useTransferFeeReduction(guildId, senderId, userItemId);
-              reductionPercent = itemReductionPercent;
+            if (componentInteraction.isStringSelectMenu() && componentInteraction.customId === 'select_reduction') {
+              // 감면권 선택됨
+              const [userItemIdStr, percentStr] = componentInteraction.values[0]!.split(':');
+              const selectedUserItemId = BigInt(userItemIdStr!);
+              const selectedPercent = parseInt(percentStr!, 10);
+
+              await container.shopV2Service.useTransferFeeReduction(guildId, senderId, selectedUserItemId);
+              reductionPercent = selectedPercent;
               usedReductionItem = true;
             }
+            // skip_reduction 버튼은 그냥 진행
 
-            await buttonInteraction.deferUpdate();
+            await componentInteraction.deferUpdate();
           } catch {
-            // 시간 초과 - 일반 이체로 진행
+            // 시간 초과 - 이체 취소
             const timeoutContainer = new ContainerBuilder()
               .setAccentColor(0xFF0000)
               .addTextDisplayComponents(

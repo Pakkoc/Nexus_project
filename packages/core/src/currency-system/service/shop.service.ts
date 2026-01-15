@@ -488,7 +488,7 @@ export class ShopService {
   }
 
   /**
-   * 이체수수료감면권 확인
+   * 이체수수료감면권 확인 (단일 - 하위호환용)
    * @returns hasReduction: 감면권 보유 여부, reductionPercent: 감면 비율 (1-100)
    */
   async checkTransferFeeReduction(
@@ -521,6 +521,41 @@ export class ShopService {
         reductionPercent: 0,
       },
     };
+  }
+
+  /**
+   * 이체수수료감면권 목록 조회 (여러 종류)
+   * @returns 보유한 모든 이체수수료감면권 목록 (감면율 높은 순 정렬)
+   */
+  async getAllTransferFeeReductions(
+    guildId: string,
+    userId: string
+  ): Promise<Result<{ userItemId: bigint; itemName: string; reductionPercent: number; quantity: number }[], CurrencyError>> {
+    const itemsResult = await this.shopRepo.findAllUserItemsWithEffectByType(guildId, userId, 'transfer_fee_reduction');
+    if (!itemsResult.success) {
+      return { success: false, error: { type: 'REPOSITORY_ERROR', cause: itemsResult.error } };
+    }
+
+    // 아이템 이름을 가져오기 위해 상점 아이템 조회
+    const shopItemsResult = await this.shopRepo.findAllByGuild(guildId);
+    if (!shopItemsResult.success) {
+      return { success: false, error: { type: 'REPOSITORY_ERROR', cause: shopItemsResult.error } };
+    }
+
+    const shopItemMap = new Map(shopItemsResult.data.map(item => [item.id, item.name]));
+
+    const reductions = itemsResult.data
+      .filter(item => item.userItem.quantity > 0)
+      .map(item => ({
+        userItemId: item.userItem.id,
+        itemName: shopItemMap.get(item.userItem.shopItemId) ?? '이체수수료감면권',
+        reductionPercent: item.effectPercent ?? 100,
+        quantity: item.userItem.quantity,
+      }))
+      // 감면율 높은 순으로 정렬
+      .sort((a, b) => b.reductionPercent - a.reductionPercent);
+
+    return { success: true, data: reductions };
   }
 
   /**
