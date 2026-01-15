@@ -94,14 +94,14 @@ export const DEFAULT_SHOP_ITEMS: DefaultShopItemDefinition[] = [
     isRoleItem: true,
   },
 
-  // === 역할선택권 (즉시구매) ===
+  // === 역할선택권 (인벤토리형) ===
   {
     name: '역할선택권',
-    description: '원하는 역할을 선택하여 즉시 구매할 수 있습니다. 역할별로 가격이 다릅니다.',
+    description: '원하는 역할을 선택하여 교환할 수 있습니다. 사용 시 1개 소모됩니다.',
     itemType: 'role_ticket',
     currencyType: 'both',  // 토피/루비 모두 가능
-    durationDays: 0,  // 즉시 부여 (영구)
-    isRoleItem: true,
+    durationDays: 0,  // 영구 (1회 사용 후 역할 영구 유지)
+    isRoleItem: false,  // 인벤토리형 (1회 소모 후 역할 교환)
   },
 ];
 
