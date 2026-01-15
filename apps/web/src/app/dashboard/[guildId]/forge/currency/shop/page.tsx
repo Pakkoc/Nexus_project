@@ -106,7 +106,7 @@ type RoleTicketPreset = (typeof ROLE_TICKET_PRESETS)[number];
 const ROLE_TICKET_PRESET_INFO: Record<RoleTicketPreset, { label: string; description: string }> = {
   once: {
     label: "1회 사용권",
-    description: "한 번 사용하면 역할이 영구히 유지됩니다",
+    description: "한 번 사용하면 역할이 기간제한 없이 유지됩니다",
   },
   period: {
     label: "기간권",
@@ -1548,7 +1548,7 @@ export default function ShopV2Page() {
             <ul className="text-sm text-white/60 space-y-1">
               <li>• 상점에서는 <strong className="text-white/80">티켓</strong>을 판매합니다</li>
               <li>• <strong className="text-white/80">역할선택권</strong>을 활성화하면 티켓을 역할 교환에 사용할 수 있습니다</li>
-              <li>• 유효기간이 0이면 영구, 양수이면 기간제입니다</li>
+              <li>• 유효기간이 0이면 기간제한 없음, 양수이면 기간제입니다</li>
               <li>• 소모 개수가 0이면 기간 내 무제한 변경 가능합니다</li>
             </ul>
           </div>
@@ -1687,7 +1687,7 @@ export default function ShopV2Page() {
                             )}
                           </span>
                           <span className="text-white/30">•</span>
-                          <span>{item.durationDays === 0 ? "영구" : `${item.durationDays}일`}</span>
+                          <span>{item.durationDays === 0 ? "기간제한 없음" : `${item.durationDays}일`}</span>
                           {item.stock !== null && (
                             <>
                               <span className="text-white/30">•</span>
