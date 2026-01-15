@@ -83,7 +83,7 @@ function createShopContainer(
       if (item.durationDays > 0) {
         info += ` · ⏰ ${item.durationDays}일`;
       } else {
-        info += ' · ♾️ 영구';
+        info += ' · ♾️ 기간제한 없음';
       }
 
       if (item.stock !== null) {
@@ -152,7 +152,7 @@ function createSelectMenu(
 ): StringSelectMenuBuilder {
   const options = items.slice(0, 25).map((item) => {
     const price = getItemPrice(item, currencyType) ?? BigInt(0);
-    const durationInfo = item.durationDays > 0 ? ` (${item.durationDays}일)` : ' (영구)';
+    const durationInfo = item.durationDays > 0 ? ` (${item.durationDays}일)` : ' (기간제한 없음)';
 
     return {
       label: item.name,
