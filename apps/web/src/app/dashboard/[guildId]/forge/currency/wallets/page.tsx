@@ -85,10 +85,17 @@ export default function WalletsPage() {
                 <span className="w-8 text-center text-lg text-white/70 font-bold">
                   #{entry.rank}
                 </span>
-                <div className="flex-1">
+                <Avatar className="h-8 w-8 flex-shrink-0">
+                  <AvatarImage src={entry.avatar ?? undefined} />
+                  <AvatarFallback className="bg-white/10 text-white/70 text-xs">
+                    {entry.displayName?.[0]?.toUpperCase() ?? "?"}
+                  </AvatarFallback>
+                </Avatar>
+                <div className="flex-1 min-w-0">
                   <p className="text-white font-medium truncate">
-                    {entry.userId}
+                    {entry.displayName}
                   </p>
+                  <p className="text-white/40 text-xs truncate">{entry.userId}</p>
                 </div>
                 <div className="text-right">
                   <p className="text-amber-400 font-bold">
