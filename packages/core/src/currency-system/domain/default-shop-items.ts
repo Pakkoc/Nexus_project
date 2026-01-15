@@ -55,7 +55,7 @@ export const DEFAULT_SHOP_ITEMS: DefaultShopItemDefinition[] = [
   },
   {
     name: '프리미엄잠수방',
-    description: '프리미엄 잠수방 채널에 접근할 수 있습니다.',
+    description: '프리미엄 잠수방 채널에 접근할 수 있습니다. (XP/화폐 설정에서 배율 조정)',
     itemType: 'premium_afk',
     currencyType: 'topy',
     durationDays: 30,
