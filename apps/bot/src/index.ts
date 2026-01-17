@@ -21,12 +21,6 @@ import {
 import { createPool, createRedisClient, createContainer, getPool, type Container } from '@topia/infra';
 import { createXpHandler } from './handlers/xp.handler';
 import { createCurrencyHandler } from './handlers/currency.handler';
-import {
-  handleMarketPanelList,
-  handleMarketPanelRegister,
-  handleMarketPanelRegisterModal,
-  handleMarketPanelMy,
-} from './handlers/market-panel';
 import { handleShopPanelButton } from './handlers/shop-panel';
 import {
   handleGamePanelCreate,
@@ -457,20 +451,6 @@ async function main() {
           return;
         }
 
-        // 장터 패널 버튼
-        if (customId === 'market_panel_list') {
-          await handleMarketPanelList(interaction, container);
-          return;
-        }
-        if (customId === 'market_panel_register') {
-          await handleMarketPanelRegister(interaction, container);
-          return;
-        }
-        if (customId === 'market_panel_my') {
-          await handleMarketPanelMy(interaction, container);
-          return;
-        }
-
         // 게임센터 패널 버튼 - 직접 입력
         if (customId === 'game_panel_create') {
           await handleGamePanelCreate(interaction, container);
@@ -575,12 +555,6 @@ async function main() {
       const customId = interaction.customId;
 
       try {
-        // 장터 등록 모달
-        if (customId.startsWith('market_panel_register_modal_')) {
-          await handleMarketPanelRegisterModal(interaction, container);
-          return;
-        }
-
         // 게임 생성 모달
         if (customId.startsWith('game_create_modal_')) {
           // 카테고리 ID 파싱: game_create_modal_cat_${categoryId}_${uniqueId}
@@ -616,8 +590,6 @@ async function main() {
       const customId = interaction.customId;
 
       try {
-        // 장터 목록 선택 - 상품 상세 보기 등 추가 핸들러 필요시 여기에 추가
-
         // 게임 카테고리 선택
         if (customId.startsWith('game_create_category_')) {
           await handleGameCategorySelect(interaction, container);
@@ -792,125 +764,6 @@ async function main() {
     }
 
     return res.json({ success: true });
-  });
-
-  // 장터 패널 생성 엔드포인트
-  app.post('/api/market/panel', async (req, res) => {
-    const { guildId, channelId } = req.body;
-
-    if (!guildId || !channelId) {
-      return res.status(400).json({ error: 'guildId and channelId are required' });
-    }
-
-    try {
-      const guild = await client.guilds.fetch(guildId);
-      const channel = await guild.channels.fetch(channelId);
-
-      if (!channel) {
-        return res.status(404).json({ error: 'Channel not found' });
-      }
-
-      // 텍스트 채널인지 확인
-      if (channel.type !== ChannelType.GuildText && channel.type !== ChannelType.GuildAnnouncement) {
-        return res.status(400).json({ error: 'Channel must be a text channel' });
-      }
-
-      // 기존 설정 조회
-      const marketSettingsResult = await container.marketSettingsService.getSettings(guildId);
-      const marketSettings = marketSettingsResult.success ? marketSettingsResult.data : null;
-
-      // 기존 패널 메시지 삭제 (채널 변경 시)
-      if (marketSettings?.channelId && marketSettings?.messageId) {
-        try {
-          const oldChannel = await guild.channels.fetch(marketSettings.channelId);
-          if (oldChannel && 'messages' in oldChannel) {
-            const oldMessage = await oldChannel.messages.fetch(marketSettings.messageId);
-            if (oldMessage) {
-              await oldMessage.delete();
-              console.log(`[MARKET] Deleted old panel message in channel ${marketSettings.channelId}`);
-            }
-          }
-        } catch (err) {
-          // 기존 메시지 삭제 실패는 무시 (이미 삭제됐을 수 있음)
-          console.log(`[MARKET] Could not delete old panel message: ${err}`);
-        }
-      }
-
-      // 화폐 설정 조회
-      const currencySettingsResult = await container.currencyService.getSettings(guildId);
-      const topyName = (currencySettingsResult.success && currencySettingsResult.data?.topyName) || '토피';
-      const rubyName = (currencySettingsResult.success && currencySettingsResult.data?.rubyName) || '루비';
-
-      // 수수료율 (설정에서 가져오기)
-      const topyFeePercent = marketSettings?.topyFeePercent ?? 5;
-      const rubyFeePercent = marketSettings?.rubyFeePercent ?? 3;
-
-      // Components v2 패널 생성
-      const marketContainer = new ContainerBuilder()
-        .setAccentColor(0x5865F2)
-        .addTextDisplayComponents(
-          new TextDisplayBuilder().setContent('# 🛒 토피아 장터')
-        )
-        .addSeparatorComponents(
-          new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small)
-        )
-        .addTextDisplayComponents(
-          new TextDisplayBuilder().setContent(
-            '재능과 서비스를 자유롭게 거래하세요!\n\n' +
-            '아래 버튼을 클릭하여 장터를 이용할 수 있습니다.'
-          )
-        )
-        .addSeparatorComponents(
-          new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small)
-        )
-        .addTextDisplayComponents(
-          new TextDisplayBuilder().setContent(
-            `💰 **${topyName} 수수료**: ${topyFeePercent}%\n` +
-            `💎 **${rubyName} 수수료**: ${rubyFeePercent}%\n` +
-            `⏰ **등록 유효기간**: 30일`
-          )
-        )
-        .addSeparatorComponents(
-          new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small)
-        )
-        .addTextDisplayComponents(
-          new TextDisplayBuilder().setContent('-# 거래 시 발생하는 분쟁은 관리자에게 문의하세요.')
-        );
-
-      // 버튼 생성
-      const marketButtonRow = new ActionRowBuilder<ButtonBuilder>().addComponents(
-        new ButtonBuilder()
-          .setCustomId('market_panel_list')
-          .setLabel('목록보기')
-          .setStyle(ButtonStyle.Primary)
-          .setEmoji('📋'),
-        new ButtonBuilder()
-          .setCustomId('market_panel_register')
-          .setLabel('등록하기')
-          .setStyle(ButtonStyle.Success)
-          .setEmoji('📝'),
-        new ButtonBuilder()
-          .setCustomId('market_panel_my')
-          .setLabel('내상품')
-          .setStyle(ButtonStyle.Secondary)
-          .setEmoji('📦')
-      );
-
-      // 채널에 패널 메시지 전송
-      const message = await channel.send({
-        components: [marketContainer.toJSON(), marketButtonRow],
-        flags: MessageFlags.IsComponentsV2,
-      });
-
-      // 설정에 채널/메시지 ID 저장
-      await container.marketSettingsService.updatePanel(guildId, channelId, message.id);
-
-      console.log(`[MARKET] Panel created in channel ${channel.name} (${channelId}) in guild ${guildId}`);
-      return res.json({ success: true, messageId: message.id });
-    } catch (error) {
-      console.error('[MARKET] Failed to create panel:', error);
-      return res.status(500).json({ error: 'Failed to create market panel' });
-    }
   });
 
   // 상점 패널 생성 엔드포인트
@@ -1146,78 +999,6 @@ async function main() {
           }
         } catch {
           results.push({ type: 'ruby', success: false, reason: 'Message not found' });
-        }
-      }
-
-      // 4. 장터 패널 업데이트
-      const marketSettingsResult = await container.marketSettingsService.getSettings(guildId);
-      if (marketSettingsResult.success && marketSettingsResult.data?.channelId && marketSettingsResult.data?.messageId) {
-        try {
-          const channel = await guild.channels.fetch(marketSettingsResult.data.channelId);
-          if (channel && 'messages' in channel) {
-            const message = await channel.messages.fetch(marketSettingsResult.data.messageId);
-            const marketSettings = marketSettingsResult.data;
-            const topyFeePercent = marketSettings.topyFeePercent ?? 5;
-            const rubyFeePercent = marketSettings.rubyFeePercent ?? 3;
-
-            const marketContainer = new ContainerBuilder()
-              .setAccentColor(0x5865F2)
-              .addTextDisplayComponents(
-                new TextDisplayBuilder().setContent('# 🛒 토피아 장터')
-              )
-              .addSeparatorComponents(
-                new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small)
-              )
-              .addTextDisplayComponents(
-                new TextDisplayBuilder().setContent(
-                  '재능과 서비스를 자유롭게 거래하세요!\n\n' +
-                  '아래 버튼을 클릭하여 장터를 이용할 수 있습니다.'
-                )
-              )
-              .addSeparatorComponents(
-                new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small)
-              )
-              .addTextDisplayComponents(
-                new TextDisplayBuilder().setContent(
-                  `💰 **${topyName || '토피'} 수수료**: ${topyFeePercent}%\n` +
-                  `💎 **${rubyName || '루비'} 수수료**: ${rubyFeePercent}%\n` +
-                  `⏰ **등록 유효기간**: 30일`
-                )
-              )
-              .addSeparatorComponents(
-                new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small)
-              )
-              .addTextDisplayComponents(
-                new TextDisplayBuilder().setContent('-# 거래 시 발생하는 분쟁은 관리자에게 문의하세요.')
-              );
-
-            const marketButtons = new ActionRowBuilder<ButtonBuilder>().addComponents(
-              new ButtonBuilder()
-                .setCustomId('market_panel_list')
-                .setLabel('목록보기')
-                .setStyle(ButtonStyle.Primary)
-                .setEmoji('📋'),
-              new ButtonBuilder()
-                .setCustomId('market_panel_register')
-                .setLabel('등록하기')
-                .setStyle(ButtonStyle.Success)
-                .setEmoji('📝'),
-              new ButtonBuilder()
-                .setCustomId('market_panel_my')
-                .setLabel('내상품')
-                .setStyle(ButtonStyle.Secondary)
-                .setEmoji('📦')
-            );
-
-            await message.edit({
-              components: [marketContainer.toJSON(), marketButtons],
-              flags: MessageFlags.IsComponentsV2,
-              embeds: [],
-            });
-            results.push({ type: 'market', success: true });
-          }
-        } catch {
-          results.push({ type: 'market', success: false, reason: 'Message not found' });
         }
       }
 

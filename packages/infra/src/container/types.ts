@@ -2,8 +2,6 @@ import type {
   XpService,
   CurrencyService,
   ShopService,
-  MarketService,
-  MarketSettingsService,
   BankService,
   RoleTicketService,
   InventoryService,
@@ -19,8 +17,6 @@ export interface Container {
   xpService: XpService;
   currencyService: CurrencyService;
   shopService: ShopService;
-  marketService: MarketService;
-  marketSettingsService: MarketSettingsService;
   bankService: BankService;
 
   // V2 역할선택권 시스템 (ShopService로 통합됨)

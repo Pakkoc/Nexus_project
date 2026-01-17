@@ -56,12 +56,6 @@ export class UserDataCleanupRepository implements UserDataCleanupPort {
         [guildId, userId]
       );
 
-      // 장터 등록 상품 삭제
-      await connection.execute(
-        'DELETE FROM market_listings WHERE guild_id = ? AND seller_id = ?',
-        [guildId, userId]
-      );
-
       // 뱅크 구독 삭제
       await connection.execute(
         'DELETE FROM bank_subscriptions WHERE guild_id = ? AND user_id = ?',

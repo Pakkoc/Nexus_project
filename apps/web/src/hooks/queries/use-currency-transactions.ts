@@ -10,8 +10,6 @@ export type TransactionType =
   | "transfer_in"
   | "transfer_out"
   | "shop_purchase"
-  | "market_buy"
-  | "market_sell"
   | "tax"
   | "fee"
   | "admin_add"

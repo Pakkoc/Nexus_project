@@ -6,8 +6,6 @@ export * from './currency-settings.repository';
 export * from './currency-transaction.repository';
 export * from './daily-reward.repository';
 export * from './shop.repository';
-export * from './market.repository';
-export * from './market-settings.repository';
 export * from './bank-subscription.repository';
 
 // 역할선택권 시스템

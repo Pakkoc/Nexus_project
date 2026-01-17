@@ -2,8 +2,6 @@ import {
   XpService,
   CurrencyService,
   ShopService,
-  MarketService,
-  MarketSettingsService,
   BankService,
   ShopV2Service,
   RoleTicketService,
@@ -24,8 +22,6 @@ import {
   CurrencyTransactionRepository,
   DailyRewardRepository,
   ShopRepository,
-  MarketRepository,
-  MarketSettingsRepository,
   BankSubscriptionRepository,
   ShopV2Repository,
   RoleTicketRepository,
@@ -59,8 +55,6 @@ export function createContainer(): Container {
   const currencyTransactionRepo = new CurrencyTransactionRepository(pool);
   const dailyRewardRepo = new DailyRewardRepository(pool);
   const shopRepo = new ShopRepository(pool);
-  const marketRepo = new MarketRepository(pool);
-  const marketSettingsRepo = new MarketSettingsRepository(pool);
   const bankSubscriptionRepo = new BankSubscriptionRepository(pool);
 
   // V2 Repositories
@@ -110,14 +104,6 @@ export function createContainer(): Container {
     clock,
     bankSubscriptionRepo
   );
-  const marketService = new MarketService(
-    marketRepo,
-    topyWalletRepo,
-    rubyWalletRepo,
-    currencyTransactionRepo,
-    clock
-  );
-  const marketSettingsService = new MarketSettingsService(marketSettingsRepo);
   const bankService = new BankService(bankSubscriptionRepo, clock);
 
   // V2 Services
@@ -173,8 +159,6 @@ export function createContainer(): Container {
     xpService,
     currencyService,
     shopService,
-    marketService,
-    marketSettingsService,
     bankService,
 
     // V2 역할선택권 시스템
