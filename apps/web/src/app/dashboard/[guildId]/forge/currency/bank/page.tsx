@@ -1,9 +1,10 @@
 "use client";
 
 import { useParams } from "next/navigation";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
@@ -96,6 +97,8 @@ export default function BankPage() {
 
   const [selectedChannelId, setSelectedChannelId] = useState<string>("");
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [editingBankName, setEditingBankName] = useState<string>("");
+  const [isEditingName, setIsEditingName] = useState(false);
 
   // 데이터 조회
   const { data: treasury, isLoading: treasuryLoading } = useTreasury(guildId);
@@ -111,6 +114,47 @@ export default function BankPage() {
   const topyName = settings?.topyName ?? "토피";
   const rubyName = settings?.rubyName ?? "루비";
   const bankName = settings?.bankName ?? "디토뱅크";
+
+  // 은행 이름 초기화
+  useEffect(() => {
+    if (settings?.bankName) {
+      setEditingBankName(settings.bankName);
+    }
+  }, [settings?.bankName]);
+
+  // 은행 이름 저장 핸들러
+  const handleSaveBankName = async () => {
+    if (!editingBankName.trim()) {
+      toast({
+        title: "은행 이름을 입력해주세요",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (editingBankName.length > 20) {
+      toast({
+        title: "은행 이름은 20자 이내로 입력해주세요",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      await updateSettings.mutateAsync({ bankName: editingBankName.trim() });
+      toast({
+        title: "은행 이름이 변경되었습니다",
+        description: `"${editingBankName.trim()}"으로 변경되었습니다.`,
+      });
+      setIsEditingName(false);
+    } catch (error) {
+      toast({
+        title: "저장 실패",
+        description: "다시 시도해주세요.",
+        variant: "destructive",
+      });
+    }
+  };
 
   // 숫자 포맷
   const formatNumber = (value: string | number | bigint) => {
@@ -175,9 +219,67 @@ export default function BankPage() {
     <div className="space-y-8">
       {/* 페이지 헤더 */}
       <div className="space-y-2">
-        <h1 className="text-2xl font-bold text-white">{bankName}</h1>
+        <div className="flex items-center gap-3">
+          {isEditingName ? (
+            <div className="flex items-center gap-2">
+              <Input
+                value={editingBankName}
+                onChange={(e) => setEditingBankName(e.target.value)}
+                placeholder="은행 이름"
+                className="bg-white/5 border-white/10 text-white text-2xl font-bold h-12 w-64"
+                maxLength={20}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") handleSaveBankName();
+                  if (e.key === "Escape") {
+                    setIsEditingName(false);
+                    setEditingBankName(bankName);
+                  }
+                }}
+                autoFocus
+              />
+              <Button
+                size="sm"
+                onClick={handleSaveBankName}
+                disabled={updateSettings.isPending}
+                className="bg-emerald-500 hover:bg-emerald-600"
+              >
+                {updateSettings.isPending ? (
+                  <Icon icon="svg-spinners:ring-resize" className="w-4 h-4" />
+                ) : (
+                  <Icon icon="solar:check-circle-bold" className="w-4 h-4" />
+                )}
+              </Button>
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => {
+                  setIsEditingName(false);
+                  setEditingBankName(bankName);
+                }}
+                className="text-white/50 hover:text-white"
+              >
+                <Icon icon="solar:close-circle-bold" className="w-4 h-4" />
+              </Button>
+            </div>
+          ) : (
+            <>
+              <h1 className="text-2xl font-bold text-white">{bankName}</h1>
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => {
+                  setEditingBankName(bankName);
+                  setIsEditingName(true);
+                }}
+                className="text-white/30 hover:text-white/70"
+              >
+                <Icon icon="solar:pen-linear" className="w-4 h-4" />
+              </Button>
+            </>
+          )}
+        </div>
         <p className="text-white/60">
-          국고 현황을 확인하고 디토뱅크 패널을 설치하여 멤버들이 금융 서비스를 이용할 수 있게 하세요.
+          국고 현황을 확인하고 {bankName} 패널을 설치하여 멤버들이 금융 서비스를 이용할 수 있게 하세요.
         </p>
       </div>
 
