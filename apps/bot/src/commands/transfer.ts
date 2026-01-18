@@ -157,8 +157,18 @@ export const transferCommand: Command = {
       // 이체수수료감면권 확인 (토피만 수수료 있음)
       let usedReductionItem = false;
       let reductionPercent = 0; // 감면 비율 (0 = 감면 안함, 100 = 완전 면제)
+      let bankSubscriptionExempt = false; // 금고 등급 구독으로 인한 면제
 
+      // 금고 등급 구독자 이체수수료 면제 확인
       if (expectedFee > BigInt(0)) {
+        const isExempt = await container.bankService.isTransferFeeExempt(guildId, senderId);
+        if (isExempt) {
+          bankSubscriptionExempt = true;
+          reductionPercent = 100; // 완전 면제
+        }
+      }
+
+      if (expectedFee > BigInt(0) && !bankSubscriptionExempt) {
         const reductionsResult = await container.shopV2Service.getAllTransferFeeReductions(guildId, senderId);
 
         if (reductionsResult.success && reductionsResult.data.length > 0) {
@@ -338,10 +348,13 @@ export const transferCommand: Command = {
       const hasFee = fee > BigInt(0);
       const reasonText = reason ? `\n📝 사유: ${reason}` : '';
       const reductionText = usedReductionItem ? '\n🎫 이체수수료감면권 사용 (수수료 면제)' : '';
+      const bankExemptText = bankSubscriptionExempt ? '\n🏦 금고 등급 혜택 (이체수수료 면제)' : '';
 
       // 채널 응답
       let replyDescription: string;
-      if (usedReductionItem) {
+      if (bankSubscriptionExempt) {
+        replyDescription = `**${receiver.displayName}**님에게 **${transferAmount.toLocaleString()} ${currencyName}**를 보냈습니다.${bankExemptText}${reasonText}`;
+      } else if (usedReductionItem) {
         replyDescription = `**${receiver.displayName}**님에게 **${transferAmount.toLocaleString()} ${currencyName}**를 보냈습니다.${reductionText}${reasonText}`;
       } else if (hasFee) {
         replyDescription = `**${receiver.displayName}**님에게 **${transferAmount.toLocaleString()} ${currencyName}**를 보냈습니다.\n총 **${totalDeducted.toLocaleString()} ${currencyName}** 차감 (송금 ${transferAmount.toLocaleString()} + 수수료 ${fee.toLocaleString()})${reasonText}`;
@@ -384,7 +397,8 @@ export const transferCommand: Command = {
               new TextDisplayBuilder().setContent(
                 `<@${interaction.user.id}> → <@${receiver.id}>\n` +
                 `금액: **${transferAmount.toLocaleString()} ${currencyName}**` +
-                (hasFee && !usedReductionItem ? `\n수수료: **${fee.toLocaleString()} ${currencyName}**` : '') +
+                (hasFee && !usedReductionItem && !bankSubscriptionExempt ? `\n수수료: **${fee.toLocaleString()} ${currencyName}**` : '') +
+                (bankSubscriptionExempt ? '\n🏦 금고 등급 면제' : '') +
                 (usedReductionItem ? '\n🎫 감면권 사용' : '') +
                 (reason ? `\n📝 사유: ${reason}` : '')
               )
@@ -398,7 +412,7 @@ export const transferCommand: Command = {
       }
 
       // 수수료가 발생했으면 은행 패널 새로고침 (국고 잔액 업데이트)
-      if (hasFee && !usedReductionItem) {
+      if (hasFee && !usedReductionItem && !bankSubscriptionExempt) {
         refreshBankPanel(interaction.client, guildId, container).catch(() => {});
       }
 
@@ -418,7 +432,9 @@ export const transferCommand: Command = {
 
       // 보내는 사람에게 DM
       let senderDmDescription: string;
-      if (usedReductionItem) {
+      if (bankSubscriptionExempt) {
+        senderDmDescription = `**${guildName}**에서 **${receiver.displayName}**님에게 **${transferAmount.toLocaleString()} ${currencyName}**를 보냈습니다.${bankExemptText}${reason ? `\n📝 사유: ${reason}` : ''}`;
+      } else if (usedReductionItem) {
         senderDmDescription = `**${guildName}**에서 **${receiver.displayName}**님에게 **${transferAmount.toLocaleString()} ${currencyName}**를 보냈습니다.${reductionText}${reason ? `\n📝 사유: ${reason}` : ''}`;
       } else if (hasFee) {
         senderDmDescription = `**${guildName}**에서 **${receiver.displayName}**님에게 **${transferAmount.toLocaleString()} ${currencyName}**를 보냈습니다.\n총 **${totalDeducted.toLocaleString()} ${currencyName}** 차감 (송금 ${transferAmount.toLocaleString()} + 수수료 ${fee.toLocaleString()})${reason ? `\n📝 사유: ${reason}` : ''}`;

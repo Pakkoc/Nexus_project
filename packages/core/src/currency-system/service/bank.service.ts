@@ -4,7 +4,7 @@ import type { BankSubscription, BankTier, BankBenefits } from '../domain/bank-su
 import type { CurrencyError } from '../errors';
 import { Result } from '../../shared/types/result';
 import {
-  getBankBenefits,
+  getBankBenefitsFromSubscription,
   createBankSubscription,
   SUBSCRIPTION_DURATION_DAYS,
 } from '../domain/bank-subscription';
@@ -52,8 +52,7 @@ export class BankService {
       return Result.err(subscriptionResult.error);
     }
 
-    const tier = subscriptionResult.data?.tier ?? null;
-    return Result.ok(getBankBenefits(tier));
+    return Result.ok(getBankBenefitsFromSubscription(subscriptionResult.data));
   }
 
   /**
