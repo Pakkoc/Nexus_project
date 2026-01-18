@@ -11,6 +11,7 @@ import {
   ShopPanelService,
   DataRetentionService,
   VaultService,
+  createTreasuryService,
 } from '@topia/core';
 import { getPool } from '../database/pool';
 import {
@@ -34,6 +35,7 @@ import {
   UserDataCleanupRepository,
   VaultRepository,
   ActivityLogRepository,
+  TreasuryRepository,
 } from '../database/repositories';
 import { SystemClock } from '../clock';
 import type { Container } from './types';
@@ -84,6 +86,9 @@ export function createContainer(): Container {
   // 활동 로그
   const activityLogRepo = new ActivityLogRepository(pool);
 
+  // 국고
+  const treasuryRepo = new TreasuryRepository(pool);
+
   // Services (repositories needed for tax service)
   const xpService = new XpService(xpRepo, xpSettingsRepo, clock);
   const currencyService = new CurrencyService(
@@ -93,7 +98,8 @@ export function createContainer(): Container {
     currencyTransactionRepo,
     clock,
     dailyRewardRepo,
-    currencyManagerRepo
+    currencyManagerRepo,
+    treasuryRepo
   );
   const shopService = new ShopService(
     shopRepo,
@@ -102,7 +108,9 @@ export function createContainer(): Container {
     currencyTransactionRepo,
     currencySettingsRepo,
     clock,
-    bankSubscriptionRepo
+    bankSubscriptionRepo,
+    undefined, // roleTicketRepo
+    treasuryRepo
   );
   const bankService = new BankService(bankSubscriptionRepo, clock);
 
@@ -114,7 +122,9 @@ export function createContainer(): Container {
     currencyTransactionRepo,
     currencySettingsRepo,
     clock,
-    bankSubscriptionRepo
+    bankSubscriptionRepo,
+    undefined, // roleTicketRepo
+    treasuryRepo
   );
   const roleTicketService = new RoleTicketService(roleTicketRepo, shopV2Repo);
   const inventoryService = new InventoryService(shopV2Repo, roleTicketRepo, clock);
@@ -133,7 +143,8 @@ export function createContainer(): Container {
     currencyTransactionRepo,
     taxHistoryRepo,
     shopRepo,
-    clock
+    clock,
+    treasuryRepo
   );
 
   // 상점 패널 서비스
@@ -154,6 +165,9 @@ export function createContainer(): Container {
     bankSubscriptionRepo,
     clock
   );
+
+  // 국고 서비스
+  const treasuryService = createTreasuryService(treasuryRepo);
 
   return {
     xpService,
@@ -183,5 +197,8 @@ export function createContainer(): Container {
 
     // 활동 로그
     activityLogRepo,
+
+    // 국고
+    treasuryService,
   };
 }

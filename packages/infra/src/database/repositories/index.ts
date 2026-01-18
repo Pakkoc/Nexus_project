@@ -33,3 +33,6 @@ export * from './vault.repository';
 
 // 활동 로그
 export * from './activity-log.repository';
+
+// 국고
+export * from './treasury.repository';

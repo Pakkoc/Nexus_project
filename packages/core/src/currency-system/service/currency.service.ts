@@ -5,6 +5,7 @@ import type { CurrencySettingsRepositoryPort } from '../port/currency-settings-r
 import type { CurrencyTransactionRepositoryPort } from '../port/currency-transaction-repository.port';
 import type { DailyRewardRepositoryPort } from '../port/daily-reward-repository.port';
 import type { CurrencyManagerRepositoryPort } from '../port/currency-manager-repository.port';
+import type { TreasuryRepositoryPort } from '../../treasury/port/treasury-repository.port';
 import type { CurrencyManager } from '../domain/currency-manager';
 import type { TopyWallet } from '../domain/topy-wallet';
 import type { RubyWallet } from '../domain/ruby-wallet';
@@ -65,7 +66,8 @@ export class CurrencyService {
     private readonly transactionRepo: CurrencyTransactionRepositoryPort,
     private readonly clock: ClockPort,
     private readonly dailyRewardRepo?: DailyRewardRepositoryPort,
-    private readonly currencyManagerRepo?: CurrencyManagerRepositoryPort
+    private readonly currencyManagerRepo?: CurrencyManagerRepositoryPort,
+    private readonly treasuryRepo?: TreasuryRepositoryPort
   ) {}
 
   /**
@@ -687,13 +689,30 @@ export class CurrencyService {
       })
     );
 
-    // 수수료 기록 (수수료가 있는 경우)
+    // 수수료 기록 및 국고 적립 (수수료가 있는 경우)
     if (fee > BigInt(0)) {
       await this.transactionRepo.save(
         createTransaction(guildId, fromUserId, 'topy', 'fee', fee, fromBalance, {
           description: '이체 수수료',
         })
       );
+
+      // 국고에 이체 수수료 적립
+      if (this.treasuryRepo) {
+        await this.treasuryRepo.addBalance(guildId, 'topy', fee);
+        const treasuryResult = await this.treasuryRepo.findOrCreate(guildId);
+        if (treasuryResult.success) {
+          await this.treasuryRepo.saveTransaction({
+            guildId,
+            currencyType: 'topy',
+            transactionType: 'transfer_fee',
+            amount: fee,
+            balanceAfter: treasuryResult.data.topyBalance,
+            relatedUserId: fromUserId,
+            description: '이체 수수료',
+          });
+        }
+      }
     }
 
     return Result.ok({

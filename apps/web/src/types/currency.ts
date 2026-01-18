@@ -36,6 +36,8 @@ export const currencySettingsSchema = z.object({
   // 아이템 관리자 역할 및 로그 채널
   itemManagerRoleId: z.string().nullable().optional(),
   itemLogChannelId: z.string().nullable().optional(),
+  // 은행 이름
+  bankName: z.string().min(1).max(20).optional(),
 });
 
 export type CurrencySettings = z.infer<typeof currencySettingsSchema>;
@@ -133,6 +135,7 @@ export const DEFAULT_CURRENCY_SETTINGS: Omit<CurrencySettings, "guildId"> = {
   currencyLogChannelId: null,
   itemManagerRoleId: null,
   itemLogChannelId: null,
+  bankName: "디토뱅크",
 };
 
 export const CHANNEL_CATEGORY_LABELS: Record<string, string> = {

@@ -5,6 +5,7 @@ import type { TopyWalletRepositoryPort } from '../port/topy-wallet-repository.po
 import type { CurrencyTransactionRepositoryPort } from '../port/currency-transaction-repository.port';
 import type { TaxHistoryRepositoryPort, CreateTaxHistoryInput } from '../port/tax-history-repository.port';
 import type { ShopRepositoryPort } from '../port/shop-repository.port';
+import type { TreasuryRepositoryPort } from '../../treasury/port/treasury-repository.port';
 import { Result } from '../../shared/types/result';
 import { createTransaction } from '../domain/currency-transaction';
 
@@ -46,7 +47,8 @@ export class TaxService {
     private readonly transactionRepo: CurrencyTransactionRepositoryPort,
     private readonly taxHistoryRepo: TaxHistoryRepositoryPort,
     private readonly shopRepo: ShopRepositoryPort,
-    private readonly clock: ClockPort
+    private readonly clock: ClockPort,
+    private readonly treasuryRepo?: TreasuryRepositoryPort
   ) {}
 
   /**
@@ -281,6 +283,23 @@ export class TaxService {
         exempted: hasExemption,
         exemptionReason,
       });
+    }
+
+    // 국고에 총 세금 적립
+    if (this.treasuryRepo && totalTaxAmount > BigInt(0)) {
+      await this.treasuryRepo.addBalance(guildId, 'topy', totalTaxAmount);
+      const treasuryResult = await this.treasuryRepo.findOrCreate(guildId);
+      if (treasuryResult.success) {
+        await this.treasuryRepo.saveTransaction({
+          guildId,
+          currencyType: 'topy',
+          transactionType: 'tax',
+          amount: totalTaxAmount,
+          balanceAfter: treasuryResult.data.topyBalance,
+          relatedUserId: null,
+          description: `월말 세금 (${taxedUsers}명)`,
+        });
+      }
     }
 
     return {

@@ -38,6 +38,7 @@ interface CurrencySettingsRow extends RowDataPacket {
   currency_log_channel_id: string | null;
   item_manager_role_id: string | null;
   item_log_channel_id: string | null;
+  bank_name: string | null;
 }
 
 function rowToSettings(row: CurrencySettingsRow) {
@@ -73,6 +74,7 @@ function rowToSettings(row: CurrencySettingsRow) {
     currencyLogChannelId: row.currency_log_channel_id ?? null,
     itemManagerRoleId: row.item_manager_role_id ?? null,
     itemLogChannelId: row.item_log_channel_id ?? null,
+    bankName: row.bank_name ?? '디토뱅크',
   };
 }
 
@@ -156,6 +158,7 @@ export async function PATCH(
       currencyLogChannelId: "currency_log_channel_id",
       itemManagerRoleId: "item_manager_role_id",
       itemLogChannelId: "item_log_channel_id",
+      bankName: "bank_name",
     };
 
     const updates: string[] = [];

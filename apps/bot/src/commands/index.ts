@@ -7,6 +7,7 @@ import { inventoryCommand } from './inventory';
 import { vaultCommand } from './vault';
 import { itemGiveCommand } from './item-give';
 import { itemTakeCommand } from './item-take';
+import { treasuryCommand } from './treasury';
 import type { Command } from './types';
 
 export const commands: Command[] = [
@@ -19,6 +20,7 @@ export const commands: Command[] = [
   vaultCommand,
   itemGiveCommand,
   itemTakeCommand,
+  treasuryCommand,
 ];
 
 export type { Command } from './types';

@@ -43,6 +43,9 @@ interface CurrencySettingsRow extends RowDataPacket {
   currency_log_channel_id: string | null;
   item_manager_role_id: string | null;
   item_log_channel_id: string | null;
+  bank_name: string | null;
+  bank_panel_channel_id: string | null;
+  bank_panel_message_id: string | null;
   created_at: Date;
   updated_at: Date;
 }
@@ -120,6 +123,9 @@ function toCurrencySettings(row: CurrencySettingsRow): CurrencySettings {
     currencyLogChannelId: row.currency_log_channel_id ?? null,
     itemManagerRoleId: row.item_manager_role_id ?? null,
     itemLogChannelId: row.item_log_channel_id ?? null,
+    bankName: row.bank_name ?? '디토뱅크',
+    bankPanelChannelId: row.bank_panel_channel_id ?? null,
+    bankPanelMessageId: row.bank_panel_message_id ?? null,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };

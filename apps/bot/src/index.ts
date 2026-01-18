@@ -22,6 +22,7 @@ import { createPool, createRedisClient, createContainer, getPool, type Container
 import { createXpHandler } from './handlers/xp.handler';
 import { createCurrencyHandler } from './handlers/currency.handler';
 import { handleShopPanelButton } from './handlers/shop-panel';
+import { handleBankPanelInteraction } from './handlers/bank-panel';
 import {
   handleGamePanelCreate,
   handleGamePanelCategory,
@@ -449,6 +450,12 @@ async function main() {
         if (customId === 'shop_panel_open') {
           await handleShopPanelButton(interaction, container);
           return;
+        }
+
+        // 은행 패널 버튼
+        if (customId.startsWith('bank_panel_')) {
+          const handled = await handleBankPanelInteraction(interaction, container);
+          if (handled) return;
         }
 
         // 게임센터 패널 버튼 - 직접 입력

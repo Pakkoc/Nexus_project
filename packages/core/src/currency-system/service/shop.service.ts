@@ -7,6 +7,7 @@ import type { CurrencyTransactionRepositoryPort } from '../port/currency-transac
 import type { CurrencySettingsRepositoryPort } from '../port/currency-settings-repository.port';
 import type { BankSubscriptionRepositoryPort } from '../port/bank-subscription-repository.port';
 import type { RoleTicketRepositoryPort } from '../port/role-ticket-repository.port';
+import type { TreasuryRepositoryPort } from '../../treasury/port/treasury-repository.port';
 import type {
   ShopItem,
   ShopItemType,
@@ -44,7 +45,8 @@ export class ShopService {
     private readonly currencySettingsRepo: CurrencySettingsRepositoryPort,
     private readonly clock: ClockPort,
     private readonly bankSubscriptionRepo?: BankSubscriptionRepositoryPort,
-    private readonly roleTicketRepo?: RoleTicketRepositoryPort
+    private readonly roleTicketRepo?: RoleTicketRepositoryPort,
+    private readonly treasuryRepo?: TreasuryRepositoryPort
   ) {}
 
   // ========== 상점 아이템 CRUD ==========
@@ -263,11 +265,31 @@ export class ShopService {
       })
     );
 
-    // 수수료가 있으면 별도 거래 기록
+    // 수수료가 있으면 별도 거래 기록 및 국고 적립
     if (fee > BigInt(0)) {
       await this.transactionRepo.save(
         createTransaction(guildId, userId, currency, 'fee', -fee, newBalance)
       );
+
+      // 국고에 상점 수수료 적립
+      if (this.treasuryRepo) {
+        await this.treasuryRepo.addBalance(guildId, currency, fee);
+        const treasuryResult = await this.treasuryRepo.findOrCreate(guildId);
+        if (treasuryResult.success) {
+          const balanceAfter = currency === 'topy'
+            ? treasuryResult.data.topyBalance
+            : treasuryResult.data.rubyBalance;
+          await this.treasuryRepo.saveTransaction({
+            guildId,
+            currencyType: currency,
+            transactionType: 'shop_fee',
+            amount: fee,
+            balanceAfter,
+            relatedUserId: userId,
+            description: `상점 수수료 (${item.name})`,
+          });
+        }
+      }
     }
 
     // 9. 디토뱅크 구독 처리 (dito_silver, dito_gold)

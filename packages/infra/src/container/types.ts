@@ -10,6 +10,7 @@ import type {
   ShopPanelService,
   DataRetentionService,
   VaultService,
+  TreasuryService,
 } from '@topia/core';
 import type { ActivityLogRepositoryPort } from '../database/repositories/activity-log.repository';
 
@@ -41,4 +42,7 @@ export interface Container {
 
   // 활동 로그
   activityLogRepo: ActivityLogRepositoryPort;
+
+  // 국고
+  treasuryService: TreasuryService;
 }
