@@ -14,8 +14,9 @@ import {
   type StringSelectMenuInteraction,
   type APIContainerComponent,
 } from 'discord.js';
-import type { ShopItemV2, ShopService, CurrencyService, CurrencyType, RoleTicketService, RoleTicket, TicketRoleOption } from '@topia/core';
+import type { ShopItemV2, ShopService, CurrencyService, CurrencyType, RoleTicketService, RoleTicket, TicketRoleOption, TreasuryService, BankService, VaultService } from '@topia/core';
 import { getItemPrice } from '@topia/core';
+import { refreshBankPanel } from './bank-panel.js';
 
 const ITEMS_PER_PAGE = 5;
 
@@ -26,6 +27,9 @@ interface Container {
   shopV2Service: ShopService;
   currencyService: CurrencyService;
   roleTicketService: RoleTicketService;
+  treasuryService: TreasuryService;
+  bankService: BankService;
+  vaultService: VaultService;
 }
 
 /** 상점 아이템을 Components v2 Container로 변환 */
@@ -883,7 +887,12 @@ async function handleItemSelection(
           return;
         }
 
-        const { item, userItem, totalCost: paidAmount } = purchaseResult.data;
+        const { item, userItem, totalCost: paidAmount, fee } = purchaseResult.data;
+
+        // 수수료가 발생했으면 은행 패널 새로고침 (국고 잔액 업데이트)
+        if (fee > BigInt(0)) {
+          refreshBankPanel(interaction.client, guildId, container).catch(() => {});
+        }
 
         // 성공 메시지 Container 생성
         const successContainer = new ContainerBuilder();
