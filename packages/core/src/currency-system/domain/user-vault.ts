@@ -7,6 +7,7 @@ export interface UserVault {
   guildId: string;
   userId: string;
   depositedAmount: bigint;
+  lastDepositAt: Date | null;  // 마지막 예금 시점 (이자 지급 조건 체크용)
   lastInterestAt: Date;
   createdAt: Date;
   updatedAt: Date;

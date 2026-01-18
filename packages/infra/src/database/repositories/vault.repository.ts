@@ -12,6 +12,7 @@ interface VaultRow extends RowDataPacket {
   guild_id: string;
   user_id: string;
   deposited_amount: bigint;
+  last_deposit_at: Date | null;
   last_interest_at: Date;
   created_at: Date;
   updated_at: Date;
@@ -23,6 +24,7 @@ function rowToEntity(row: VaultRow): UserVault {
     guildId: row.guild_id,
     userId: row.user_id,
     depositedAmount: BigInt(row.deposited_amount),
+    lastDepositAt: row.last_deposit_at,
     lastInterestAt: row.last_interest_at,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
@@ -95,9 +97,11 @@ export class VaultRepository implements VaultRepositoryPort {
   ): Promise<Result<UserVault, RepositoryError>> {
     try {
       const op = operation === 'add' ? '+' : '-';
+      // 예금(add) 시 last_deposit_at도 업데이트
+      const extraSet = operation === 'add' ? ', last_deposit_at = NOW()' : '';
       await this.pool.query<ResultSetHeader>(
         `UPDATE user_vaults
-         SET deposited_amount = deposited_amount ${op} ?
+         SET deposited_amount = deposited_amount ${op} ?${extraSet}
          WHERE guild_id = ? AND user_id = ?`,
         [amount, guildId, userId]
       );

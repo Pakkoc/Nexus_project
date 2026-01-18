@@ -13,6 +13,7 @@ export interface BankSubscription {
   tier: BankTier;
   vaultLimit: bigint | null;      // 커스텀 금고 한도 (null이면 기본값)
   interestRate: number | null;    // 커스텀 월 이자율 (null이면 기본값)
+  minDepositDays: number | null;  // 커스텀 최소 예치 기간 (null이면 기본값)
   startsAt: Date;
   expiresAt: Date;
   createdAt: Date;
@@ -28,6 +29,7 @@ export interface BankBenefits {
   purchaseFeePercent: number;  // 0 = 면제
   marketFeePercent: number;
   interestRate: number;  // 월 이자율 (%) - 금고 예금에 적용
+  minDepositDays: number;  // 최소 예치 기간 (일)
 }
 
 /**
@@ -55,6 +57,7 @@ export function getBankBenefits(tier: BankTier | null): BankBenefits {
       purchaseFeePercent: 0,      // 면제
       marketFeePercent: 3,        // 3%
       interestRate: 2,            // 월 2%
+      minDepositDays: 7,          // 최소 7일 예치
     };
   }
 
@@ -66,6 +69,7 @@ export function getBankBenefits(tier: BankTier | null): BankBenefits {
       purchaseFeePercent: 1.2,    // 1.2%
       marketFeePercent: 5,        // 5%
       interestRate: 1,            // 월 1%
+      minDepositDays: 7,          // 최소 7일 예치
     };
   }
 
@@ -77,6 +81,7 @@ export function getBankBenefits(tier: BankTier | null): BankBenefits {
     purchaseFeePercent: 1.2,      // 1.2%
     marketFeePercent: 5,          // 5%
     interestRate: 0,              // 이자 없음
+    minDepositDays: 0,            // 이자 없으므로 의미 없음
   };
 }
 
@@ -89,7 +94,8 @@ export function createBankSubscription(
   tier: BankTier,
   startsAt: Date,
   vaultLimit?: bigint | null,
-  interestRate?: number | null
+  interestRate?: number | null,
+  minDepositDays?: number | null
 ): Omit<BankSubscription, 'id' | 'createdAt'> {
   const expiresAt = new Date(startsAt.getTime() + SUBSCRIPTION_DURATION_DAYS * 24 * 60 * 60 * 1000);
 
@@ -99,6 +105,7 @@ export function createBankSubscription(
     tier,
     vaultLimit: vaultLimit ?? null,
     interestRate: interestRate ?? null,
+    minDepositDays: minDepositDays ?? null,
     startsAt,
     expiresAt,
   };

@@ -297,10 +297,11 @@ export class ShopService {
       const tier: BankTier = item.itemType === 'dito_silver' ? 'silver' : 'gold';
       const daysToAdd = (item.durationDays || 30) * quantity;
 
-      // effectConfig에서 금고 한도와 이자율 가져오기
-      const effectConfig = item.effectConfig as { vaultLimit?: number; monthlyInterestRate?: number } | null;
+      // effectConfig에서 금고 한도, 이자율, 최소 예치 기간 가져오기
+      const effectConfig = item.effectConfig as { vaultLimit?: number; monthlyInterestRate?: number; minDepositDays?: number } | null;
       const vaultLimit = effectConfig?.vaultLimit != null ? BigInt(effectConfig.vaultLimit) : null;
       const interestRate = effectConfig?.monthlyInterestRate ?? null;
+      const minDepositDays = effectConfig?.minDepositDays ?? null;
 
       // 기존 구독 확인
       const existingResult = await this.bankSubscriptionRepo.findByUserAndTier(guildId, userId, tier);
@@ -320,6 +321,7 @@ export class ShopService {
           tier,
           vaultLimit,
           interestRate,
+          minDepositDays,
           startsAt,
           expiresAt,
         });

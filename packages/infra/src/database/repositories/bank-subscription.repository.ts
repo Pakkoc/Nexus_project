@@ -14,6 +14,7 @@ interface BankSubscriptionRow extends RowDataPacket {
   tier: BankTier;
   vault_limit: bigint | null;
   interest_rate: string | null;  // DECIMAL은 문자열로 반환됨
+  min_deposit_days: number | null;
   starts_at: Date;
   expires_at: Date;
   created_at: Date;
@@ -27,6 +28,7 @@ function rowToEntity(row: BankSubscriptionRow): BankSubscription {
     tier: row.tier,
     vaultLimit: row.vault_limit,
     interestRate: row.interest_rate ? parseFloat(row.interest_rate) : null,
+    minDepositDays: row.min_deposit_days,
     startsAt: row.starts_at,
     expiresAt: row.expires_at,
     createdAt: row.created_at,
@@ -111,14 +113,15 @@ export class BankSubscriptionRepository implements BankSubscriptionRepositoryPor
   ): Promise<Result<BankSubscription, RepositoryError>> {
     try {
       const [result] = await this.pool.query<ResultSetHeader>(
-        `INSERT INTO bank_subscriptions (guild_id, user_id, tier, vault_limit, interest_rate, starts_at, expires_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?)`,
+        `INSERT INTO bank_subscriptions (guild_id, user_id, tier, vault_limit, interest_rate, min_deposit_days, starts_at, expires_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
         [
           subscription.guildId,
           subscription.userId,
           subscription.tier,
           subscription.vaultLimit,
           subscription.interestRate,
+          subscription.minDepositDays,
           subscription.startsAt,
           subscription.expiresAt,
         ]

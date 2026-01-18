@@ -32,6 +32,28 @@ function getEffectiveInterestRate(subscription: BankSubscription): number {
   return getBankBenefits(subscription.tier).interestRate;
 }
 
+/**
+ * 구독에서 실제 적용될 최소 예치 기간 계산
+ * (커스텀 값이 있으면 사용, 없으면 기본값)
+ */
+function getEffectiveMinDepositDays(subscription: BankSubscription): number {
+  if (subscription.minDepositDays != null) {
+    return subscription.minDepositDays;
+  }
+  return getBankBenefits(subscription.tier).minDepositDays;
+}
+
+/**
+ * 예치 기간이 최소 기간을 충족하는지 확인
+ */
+function meetsMinDepositDays(lastDepositAt: Date | null, minDepositDays: number, now: Date): boolean {
+  if (minDepositDays <= 0) return true;
+  if (!lastDepositAt) return false;
+
+  const depositedDays = Math.floor((now.getTime() - lastDepositAt.getTime()) / (24 * 60 * 60 * 1000));
+  return depositedDays >= minDepositDays;
+}
+
 export interface VaultSummary {
   vault: UserVault | null;
   storageLimit: bigint;
@@ -296,6 +318,12 @@ export class VaultService {
       // 커스텀 값 또는 기본값 사용
       const interestRate = getEffectiveInterestRate(subscriptionResult.data);
       if (interestRate <= 0) continue;
+
+      // 최소 예치 기간 확인
+      const minDepositDays = getEffectiveMinDepositDays(subscriptionResult.data);
+      if (!meetsMinDepositDays(vault.lastDepositAt, minDepositDays, now)) {
+        continue; // 최소 예치 기간 미충족
+      }
 
       // 이자 계산
       const interestAmount = calculateInterest(vault.depositedAmount, interestRate);
