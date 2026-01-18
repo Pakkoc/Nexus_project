@@ -41,8 +41,9 @@ export const currencySettingsSchema = z.object({
   // 은행 패널
   bankPanelChannelId: z.string().nullable().optional(),
   bankPanelMessageId: z.string().nullable().optional(),
-  // 국고 관리자 역할
+  // 국고 관리자 역할 및 유저
   treasuryManagerRoleId: z.string().nullable().optional(),
+  treasuryManagerUserIds: z.array(z.string()).optional(),
 });
 
 export type CurrencySettings = z.infer<typeof currencySettingsSchema>;
@@ -144,6 +145,7 @@ export const DEFAULT_CURRENCY_SETTINGS: Omit<CurrencySettings, "guildId"> = {
   bankPanelChannelId: null,
   bankPanelMessageId: null,
   treasuryManagerRoleId: null,
+  treasuryManagerUserIds: [],
 };
 
 export const CHANNEL_CATEGORY_LABELS: Record<string, string> = {

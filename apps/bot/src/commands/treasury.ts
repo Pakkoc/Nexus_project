@@ -118,13 +118,15 @@ export const treasuryCommand: Command = {
     const rubyName = settings?.rubyName || '루비';
     const logChannelId = settings?.currencyLogChannelId;
     const treasuryManagerRoleId = settings?.treasuryManagerRoleId;
+    const treasuryManagerUserIds = settings?.treasuryManagerUserIds || [];
 
-    // 권한 체크: 관리자 권한 또는 국고 관리자 역할
+    // 권한 체크: 관리자 권한 또는 국고 관리자 역할 또는 지정된 유저
     const member = interaction.member as GuildMember;
     const isAdmin = member.permissions.has(PermissionFlagsBits.Administrator);
     const hasTreasuryRole = treasuryManagerRoleId && member.roles.cache.has(treasuryManagerRoleId);
+    const isDesignatedUser = treasuryManagerUserIds.includes(member.id);
 
-    if (!isAdmin && !hasTreasuryRole) {
+    if (!isAdmin && !hasTreasuryRole && !isDesignatedUser) {
       const errorPanel = new ContainerBuilder()
         .setAccentColor(0xff0000)
         .addTextDisplayComponents(
@@ -138,7 +140,8 @@ export const treasuryCommand: Command = {
             '이 명령어를 사용할 권한이 없습니다.\n\n' +
             '**필요 조건:**\n' +
             '• 서버 관리자 권한\n' +
-            (treasuryManagerRoleId ? `• 또는 <@&${treasuryManagerRoleId}> 역할` : '• 또는 국고 관리자 역할 (설정 필요)')
+            (treasuryManagerRoleId ? `• 또는 <@&${treasuryManagerRoleId}> 역할\n` : '') +
+            '• 또는 국고 관리자로 직접 지정'
           )
         );
 

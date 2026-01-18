@@ -1,7 +1,7 @@
 "use client";
 
 import { useParams } from "next/navigation";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -24,11 +24,25 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { useTreasury, useCurrencySettings, useTextChannels, useRoles, useUpdateCurrencySettings } from "@/hooks/queries";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { useTreasury, useCurrencySettings, useTextChannels, useRoles, useUpdateCurrencySettings, useMembers } from "@/hooks/queries";
 import { useToast } from "@/hooks/use-toast";
 import { Icon } from "@iconify/react";
 import { apiClient } from "@/lib/remote/api-client";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Check, ChevronsUpDown, X, Search } from "lucide-react";
 
 // 국고 거래 타입 라벨
 const TRANSACTION_TYPE_LABELS: Record<string, string> = {
@@ -100,12 +114,21 @@ export default function BankPage() {
   const [editingBankName, setEditingBankName] = useState<string>("");
   const [isEditingName, setIsEditingName] = useState(false);
 
+  // 채널 검색
+  const [channelOpen, setChannelOpen] = useState(false);
+  const [channelSearch, setChannelSearch] = useState("");
+
+  // 유저 검색
+  const [userSearch, setUserSearch] = useState("");
+  const [userSearchOpen, setUserSearchOpen] = useState(false);
+
   // 데이터 조회
   const { data: treasury, isLoading: treasuryLoading } = useTreasury(guildId);
   const { data: settings } = useCurrencySettings(guildId);
   const { data: panelSettings, isLoading: panelLoading } = useBankPanelSettings(guildId);
   const { data: channels = [] } = useTextChannels(guildId);
   const { data: roles = [] } = useRoles(guildId);
+  const { data: membersData } = useMembers(guildId, { search: userSearch, limit: 20 });
 
   const createPanel = useCreateBankPanel(guildId);
   const deletePanel = useDeleteBankPanel(guildId);
@@ -114,6 +137,17 @@ export default function BankPage() {
   const topyName = settings?.topyName ?? "토피";
   const rubyName = settings?.rubyName ?? "루비";
   const bankName = settings?.bankName ?? "디토뱅크";
+
+  // 채널 검색 필터링
+  const filteredChannels = useMemo(() => {
+    if (!channelSearch) return channels;
+    return channels.filter((ch) =>
+      ch.name.toLowerCase().includes(channelSearch.toLowerCase())
+    );
+  }, [channels, channelSearch]);
+
+  // 관리자 유저 목록
+  const managerUserIds = settings?.treasuryManagerUserIds ?? [];
 
   // 은행 이름 초기화
   useEffect(() => {
@@ -159,6 +193,50 @@ export default function BankPage() {
   // 숫자 포맷
   const formatNumber = (value: string | number | bigint) => {
     return BigInt(value).toLocaleString();
+  };
+
+  // 관리자 유저 추가
+  const handleAddManagerUser = async (userId: string, displayName: string) => {
+    if (managerUserIds.includes(userId)) {
+      toast({ title: "이미 추가된 유저입니다" });
+      return;
+    }
+
+    try {
+      await updateSettings.mutateAsync({
+        treasuryManagerUserIds: [...managerUserIds, userId],
+      });
+      toast({
+        title: "관리자가 추가되었습니다",
+        description: `${displayName}님이 국고 관리자로 추가되었습니다.`,
+      });
+      setUserSearch("");
+      setUserSearchOpen(false);
+    } catch (error) {
+      toast({
+        title: "추가 실패",
+        description: "다시 시도해주세요.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  // 관리자 유저 제거
+  const handleRemoveManagerUser = async (userId: string) => {
+    try {
+      await updateSettings.mutateAsync({
+        treasuryManagerUserIds: managerUserIds.filter((id) => id !== userId),
+      });
+      toast({
+        title: "관리자가 제거되었습니다",
+      });
+    } catch (error) {
+      toast({
+        title: "제거 실패",
+        description: "다시 시도해주세요.",
+        variant: "destructive",
+      });
+    }
   };
 
   // 패널 설치 핸들러
@@ -479,27 +557,53 @@ export default function BankPage() {
             <label className="block text-sm font-medium text-white/70 mb-2">
               설치할 채널 선택
             </label>
-            <Select value={selectedChannelId} onValueChange={setSelectedChannelId}>
-              <SelectTrigger className="bg-white/5 border-white/10 text-white">
-                <SelectValue placeholder="채널을 선택하세요">
-                  {selectedChannelId && channels.find((c) => c.id === selectedChannelId)
-                    ? `# ${channels.find((c) => c.id === selectedChannelId)?.name}`
-                    : selectedChannelId
-                      ? "로딩 중..."
-                      : "채널을 선택하세요"}
-                </SelectValue>
-              </SelectTrigger>
-              <SelectContent>
-                <SelectGroup>
-                  <SelectLabel className="text-xs text-slate-400"># 텍스트 채널</SelectLabel>
-                  {channels.map((channel) => (
-                    <SelectItem key={channel.id} value={channel.id}>
-                      # {channel.name}
-                    </SelectItem>
-                  ))}
-                </SelectGroup>
-              </SelectContent>
-            </Select>
+            <Popover open={channelOpen} onOpenChange={setChannelOpen}>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  role="combobox"
+                  aria-expanded={channelOpen}
+                  className="w-full justify-between bg-white/5 border-white/10 text-white hover:bg-white/10"
+                >
+                  {selectedChannelId
+                    ? `# ${channels.find((c) => c.id === selectedChannelId)?.name ?? "로딩 중..."}`
+                    : "채널을 검색하세요..."}
+                  <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0" align="start">
+                <Command shouldFilter={false}>
+                  <CommandInput
+                    placeholder="채널 검색..."
+                    value={channelSearch}
+                    onValueChange={setChannelSearch}
+                  />
+                  <CommandList>
+                    <CommandEmpty>채널을 찾을 수 없습니다.</CommandEmpty>
+                    <CommandGroup heading="# 텍스트 채널">
+                      {filteredChannels.map((channel) => (
+                        <CommandItem
+                          key={channel.id}
+                          value={channel.id}
+                          onSelect={() => {
+                            setSelectedChannelId(channel.id);
+                            setChannelOpen(false);
+                            setChannelSearch("");
+                          }}
+                        >
+                          <Check
+                            className={`mr-2 h-4 w-4 ${
+                              selectedChannelId === channel.id ? "opacity-100" : "opacity-0"
+                            }`}
+                          />
+                          # {channel.name}
+                        </CommandItem>
+                      ))}
+                    </CommandGroup>
+                  </CommandList>
+                </Command>
+              </PopoverContent>
+            </Popover>
             <p className="text-xs text-white/40 mt-2">
               패널이 전송될 텍스트 채널을 선택하세요. 기존 패널이 있다면 교체됩니다.
             </p>
@@ -525,7 +629,7 @@ export default function BankPage() {
         </div>
       </div>
 
-      {/* 국고 관리자 역할 설정 */}
+      {/* 국고 관리자 설정 */}
       <div className="bg-white/5 backdrop-blur-sm rounded-2xl border border-white/10 p-6">
         <div className="flex items-center gap-3 mb-6">
           <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center">
@@ -534,15 +638,17 @@ export default function BankPage() {
           <div>
             <h2 className="text-lg font-semibold text-white">국고 관리자 설정</h2>
             <p className="text-sm text-white/50">
-              국고 명령어(/국고)를 사용할 수 있는 역할을 지정합니다
+              국고 명령어(/국고)를 사용할 수 있는 역할 또는 유저를 지정합니다
             </p>
           </div>
         </div>
 
-        <div className="space-y-4">
+        <div className="space-y-6">
+          {/* 역할로 관리자 지정 */}
           <div>
             <label className="block text-sm font-medium text-white/70 mb-2">
-              관리자 역할
+              <Icon icon="solar:users-group-rounded-bold" className="inline w-4 h-4 mr-1" />
+              역할로 지정
             </label>
             <Select
               value={settings?.treasuryManagerRoleId ?? "none"}
@@ -554,7 +660,7 @@ export default function BankPage() {
                     title: "설정이 저장되었습니다",
                     description: roleId
                       ? `${roles.find((r) => r.id === roleId)?.name} 역할이 국고 관리자로 설정되었습니다.`
-                      : "관리자만 국고 명령어를 사용할 수 있습니다.",
+                      : "역할 지정이 해제되었습니다.",
                   });
                 } catch (error) {
                   toast({
@@ -569,12 +675,12 @@ export default function BankPage() {
                 <SelectValue placeholder="역할을 선택하세요">
                   {settings?.treasuryManagerRoleId
                     ? `@${roles.find((r) => r.id === settings.treasuryManagerRoleId)?.name ?? "로딩 중..."}`
-                    : "관리자만 사용 가능"}
+                    : "역할 미지정"}
                 </SelectValue>
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="none">
-                  <span className="text-white/60">관리자만 사용 가능</span>
+                  <span className="text-white/60">역할 미지정</span>
                 </SelectItem>
                 <SelectGroup>
                   <SelectLabel className="text-xs text-slate-400">역할 목록</SelectLabel>
@@ -591,25 +697,145 @@ export default function BankPage() {
               </SelectContent>
             </Select>
             <p className="text-xs text-white/40 mt-2">
-              선택한 역할을 가진 멤버는 /국고 명령어로 국고를 관리할 수 있습니다.
-              역할을 선택하지 않으면 서버 관리자만 사용할 수 있습니다.
+              선택한 역할을 가진 멤버는 /국고 명령어를 사용할 수 있습니다.
             </p>
           </div>
 
-          {/* 현재 설정 표시 */}
-          {settings?.treasuryManagerRoleId && (
-            <div className="bg-amber-500/10 border border-amber-500/20 rounded-xl p-4">
-              <div className="flex items-center gap-3">
-                <Icon icon="solar:info-circle-bold" className="w-5 h-5 text-amber-400" />
-                <div>
-                  <span className="text-white font-medium">현재 설정</span>
-                  <p className="text-sm text-white/60">
-                    @{roles.find((r) => r.id === settings.treasuryManagerRoleId)?.name ?? settings.treasuryManagerRoleId} 역할이 국고를 관리할 수 있습니다.
-                  </p>
+          {/* 유저 직접 지정 */}
+          <div>
+            <label className="block text-sm font-medium text-white/70 mb-2">
+              <Icon icon="solar:user-bold" className="inline w-4 h-4 mr-1" />
+              유저 직접 지정
+            </label>
+            <Popover open={userSearchOpen} onOpenChange={setUserSearchOpen}>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  className="w-full justify-start bg-white/5 border-white/10 text-white/60 hover:bg-white/10"
+                >
+                  <Search className="mr-2 h-4 w-4" />
+                  유저 검색하여 추가...
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0" align="start">
+                <Command shouldFilter={false}>
+                  <CommandInput
+                    placeholder="닉네임으로 검색..."
+                    value={userSearch}
+                    onValueChange={setUserSearch}
+                  />
+                  <CommandList>
+                    {!userSearch && (
+                      <div className="py-6 text-center text-sm text-muted-foreground">
+                        닉네임을 입력하여 검색하세요
+                      </div>
+                    )}
+                    {userSearch && (!membersData?.members || membersData.members.length === 0) && (
+                      <CommandEmpty>유저를 찾을 수 없습니다.</CommandEmpty>
+                    )}
+                    {userSearch && membersData?.members && membersData.members.length > 0 && (
+                      <CommandGroup heading="검색 결과">
+                        {membersData.members
+                          .filter((m) => !managerUserIds.includes(m.userId))
+                          .map((member) => (
+                            <CommandItem
+                              key={member.userId}
+                              value={member.userId}
+                              onSelect={() => handleAddManagerUser(member.userId, member.displayName)}
+                            >
+                              <div className="flex items-center gap-2">
+                                {member.avatar ? (
+                                  <img
+                                    src={member.avatar}
+                                    alt=""
+                                    className="w-6 h-6 rounded-full"
+                                  />
+                                ) : (
+                                  <div className="w-6 h-6 rounded-full bg-white/10 flex items-center justify-center">
+                                    <Icon icon="solar:user-bold" className="w-4 h-4 text-white/50" />
+                                  </div>
+                                )}
+                                <span>{member.displayName}</span>
+                                <span className="text-xs text-muted-foreground">@{member.username}</span>
+                              </div>
+                            </CommandItem>
+                          ))}
+                      </CommandGroup>
+                    )}
+                  </CommandList>
+                </Command>
+              </PopoverContent>
+            </Popover>
+
+            {/* 지정된 유저 목록 */}
+            {managerUserIds.length > 0 && (
+              <div className="mt-3 space-y-2">
+                <p className="text-xs text-white/50">지정된 유저 ({managerUserIds.length}명)</p>
+                <div className="flex flex-wrap gap-2">
+                  {managerUserIds.map((userId) => {
+                    const member = membersData?.members.find((m) => m.userId === userId);
+                    return (
+                      <Badge
+                        key={userId}
+                        variant="secondary"
+                        className="bg-white/10 text-white/80 hover:bg-white/15 pl-1.5 pr-1 py-1 gap-1.5"
+                      >
+                        {member?.avatar ? (
+                          <img src={member.avatar} alt="" className="w-4 h-4 rounded-full" />
+                        ) : (
+                          <div className="w-4 h-4 rounded-full bg-white/20 flex items-center justify-center">
+                            <Icon icon="solar:user-bold" className="w-3 h-3 text-white/60" />
+                          </div>
+                        )}
+                        <span>{member?.displayName ?? userId}</span>
+                        <button
+                          onClick={() => handleRemoveManagerUser(userId)}
+                          className="ml-0.5 hover:bg-white/20 rounded p-0.5 transition-colors"
+                        >
+                          <X className="w-3 h-3" />
+                        </button>
+                      </Badge>
+                    );
+                  })}
                 </div>
               </div>
+            )}
+
+            <p className="text-xs text-white/40 mt-2">
+              역할과 별개로 특정 유저에게 직접 권한을 부여할 수 있습니다.
+            </p>
+          </div>
+
+          {/* 현재 설정 요약 */}
+          <div className="bg-amber-500/10 border border-amber-500/20 rounded-xl p-4">
+            <div className="flex items-start gap-3">
+              <Icon icon="solar:info-circle-bold" className="w-5 h-5 text-amber-400 mt-0.5" />
+              <div>
+                <span className="text-white font-medium">권한 안내</span>
+                <p className="text-sm text-white/60 mt-1">
+                  다음 조건 중 하나라도 충족하면 /국고 명령어를 사용할 수 있습니다:
+                </p>
+                <ul className="text-sm text-white/50 mt-2 space-y-1">
+                  <li className="flex items-center gap-2">
+                    <Icon icon="solar:check-circle-bold" className="w-4 h-4 text-green-400" />
+                    서버 관리자 권한 보유
+                  </li>
+                  {settings?.treasuryManagerRoleId && (
+                    <li className="flex items-center gap-2">
+                      <Icon icon="solar:check-circle-bold" className="w-4 h-4 text-green-400" />
+                      @{roles.find((r) => r.id === settings.treasuryManagerRoleId)?.name ?? "..."} 역할 보유
+                    </li>
+                  )}
+                  {managerUserIds.length > 0 && (
+                    <li className="flex items-center gap-2">
+                      <Icon icon="solar:check-circle-bold" className="w-4 h-4 text-green-400" />
+                      직접 지정된 유저 ({managerUserIds.length}명)
+                    </li>
+                  )}
+                </ul>
+              </div>
             </div>
-          )}
+          </div>
         </div>
       </div>
 

@@ -42,6 +42,7 @@ interface CurrencySettingsRow extends RowDataPacket {
   bank_panel_channel_id: string | null;
   bank_panel_message_id: string | null;
   treasury_manager_role_id: string | null;
+  treasury_manager_user_ids: string | null;
 }
 
 function rowToSettings(row: CurrencySettingsRow) {
@@ -81,6 +82,7 @@ function rowToSettings(row: CurrencySettingsRow) {
     bankPanelChannelId: row.bank_panel_channel_id ?? null,
     bankPanelMessageId: row.bank_panel_message_id ?? null,
     treasuryManagerRoleId: row.treasury_manager_role_id ?? null,
+    treasuryManagerUserIds: row.treasury_manager_user_ids ? JSON.parse(row.treasury_manager_user_ids) : [],
   };
 }
 
@@ -175,19 +177,37 @@ export async function PATCH(
       if (key in validatedData) {
         updates.push(`${dbField} = ?`);
         const val = validatedData[key as keyof typeof validatedData];
-        values.push(typeof val === 'boolean' ? (val ? 1 : 0) : (val ?? null));
+        // 배열이 아닌 값만 처리 (배열 필드는 별도로 처리)
+        if (!Array.isArray(val)) {
+          values.push(typeof val === 'boolean' ? (val ? 1 : 0) : (val ?? null));
+        }
       }
     }
 
+    // 배열 필드는 JSON.stringify 처리
+    if ('treasuryManagerUserIds' in validatedData) {
+      updates.push('treasury_manager_user_ids = ?');
+      values.push(validatedData.treasuryManagerUserIds ? JSON.stringify(validatedData.treasuryManagerUserIds) : null);
+    }
+
     if (updates.length > 0) {
-      const insertFields = Object.values(fieldMap).join(", ");
-      const insertPlaceholders = Object.keys(fieldMap).map(() => "?").join(", ");
-      const insertValues = Object.keys(fieldMap).map((key) => {
+      // 기본 필드
+      const baseInsertFields = Object.values(fieldMap).join(", ");
+      const baseInsertPlaceholders = Object.keys(fieldMap).map(() => "?").join(", ");
+      const baseInsertValues = Object.keys(fieldMap).map((key) => {
         const val = validatedData[key as keyof typeof validatedData]
           ?? DEFAULT_CURRENCY_SETTINGS[key as keyof typeof DEFAULT_CURRENCY_SETTINGS]
           ?? null;
         return typeof val === 'boolean' ? (val ? 1 : 0) : val;
       });
+
+      // 배열 필드 추가
+      const insertFields = `${baseInsertFields}, treasury_manager_user_ids`;
+      const insertPlaceholders = `${baseInsertPlaceholders}, ?`;
+      const treasuryUserIds = validatedData.treasuryManagerUserIds
+        ?? DEFAULT_CURRENCY_SETTINGS.treasuryManagerUserIds
+        ?? [];
+      const insertValues = [...baseInsertValues, JSON.stringify(treasuryUserIds)];
 
       await pool.query(
         `INSERT INTO currency_settings (guild_id, ${insertFields})

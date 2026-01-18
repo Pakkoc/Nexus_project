@@ -61,8 +61,9 @@ export interface CurrencySettings {
   bankPanelChannelId: string | null;
   bankPanelMessageId: string | null;
 
-  // 국고 관리자 역할
+  // 국고 관리자 역할 및 유저
   treasuryManagerRoleId: string | null;
+  treasuryManagerUserIds: string[];
 
   createdAt: Date;
   updatedAt: Date;
@@ -118,6 +119,7 @@ export function createDefaultCurrencySettings(guildId: string): CurrencySettings
     bankPanelMessageId: null,
 
     treasuryManagerRoleId: null,
+    treasuryManagerUserIds: [],
 
     createdAt: now,
     updatedAt: now,
