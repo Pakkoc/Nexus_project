@@ -809,17 +809,16 @@ export default function BankPage() {
           {/* 현재 설정 요약 */}
           <div className="bg-amber-500/10 border border-amber-500/20 rounded-xl p-4">
             <div className="flex items-start gap-3">
-              <Icon icon="solar:info-circle-bold" className="w-5 h-5 text-amber-400 mt-0.5" />
+              <Icon icon="solar:danger-triangle-bold" className="w-5 h-5 text-amber-400 mt-0.5" />
               <div>
-                <span className="text-white font-medium">권한 안내</span>
+                <span className="text-white font-medium">중요: 국고 관리자 지정 필수</span>
                 <p className="text-sm text-white/60 mt-1">
-                  다음 조건 중 하나라도 충족하면 /국고 명령어를 사용할 수 있습니다:
+                  <strong className="text-amber-400">서버 관리자라도 별도로 지정되어야</strong> /국고 명령어를 사용할 수 있습니다.
+                </p>
+                <p className="text-sm text-white/50 mt-2">
+                  다음 조건 중 하나를 충족해야 합니다:
                 </p>
                 <ul className="text-sm text-white/50 mt-2 space-y-1">
-                  <li className="flex items-center gap-2">
-                    <Icon icon="solar:check-circle-bold" className="w-4 h-4 text-green-400" />
-                    서버 관리자 권한 보유
-                  </li>
                   {settings?.treasuryManagerRoleId && (
                     <li className="flex items-center gap-2">
                       <Icon icon="solar:check-circle-bold" className="w-4 h-4 text-green-400" />
@@ -830,6 +829,12 @@ export default function BankPage() {
                     <li className="flex items-center gap-2">
                       <Icon icon="solar:check-circle-bold" className="w-4 h-4 text-green-400" />
                       직접 지정된 유저 ({managerUserIds.length}명)
+                    </li>
+                  )}
+                  {!settings?.treasuryManagerRoleId && managerUserIds.length === 0 && (
+                    <li className="flex items-center gap-2 text-red-400">
+                      <Icon icon="solar:close-circle-bold" className="w-4 h-4" />
+                      아직 국고 관리자가 지정되지 않았습니다
                     </li>
                   )}
                 </ul>
