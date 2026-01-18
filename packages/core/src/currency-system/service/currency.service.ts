@@ -623,7 +623,7 @@ export class CurrencyService {
     if (currencyType === 'topy') {
       return this.transferTopy(guildId, fromUserId, toUserId, amount, fee, totalRequired, reason);
     } else {
-      return this.transferRuby(guildId, fromUserId, toUserId, amount, reason);
+      return this.transferRuby(guildId, fromUserId, toUserId, amount, fee, totalRequired, reason);
     }
   }
 
@@ -729,6 +729,8 @@ export class CurrencyService {
     fromUserId: string,
     toUserId: string,
     amount: bigint,
+    fee: bigint,
+    totalRequired: bigint,
     reason?: string
   ): Promise<Result<TransferResult, CurrencyError>> {
     // 송금자 지갑 확인
@@ -737,25 +739,25 @@ export class CurrencyService {
       return Result.err({ type: 'REPOSITORY_ERROR', cause: fromWalletResult.error });
     }
     if (!fromWalletResult.data) {
-      return Result.err({ type: 'INSUFFICIENT_BALANCE', required: amount, available: BigInt(0) });
+      return Result.err({ type: 'INSUFFICIENT_BALANCE', required: totalRequired, available: BigInt(0) });
     }
 
     const fromWallet = fromWalletResult.data;
-    if (fromWallet.balance < amount) {
-      return Result.err({ type: 'INSUFFICIENT_BALANCE', required: amount, available: fromWallet.balance });
+    if (fromWallet.balance < totalRequired) {
+      return Result.err({ type: 'INSUFFICIENT_BALANCE', required: totalRequired, available: fromWallet.balance });
     }
 
-    // 송금자 잔액 차감
-    const subtractResult = await this.rubyWalletRepo.updateBalance(guildId, fromUserId, amount, 'subtract');
+    // 송금자 잔액 차감 (금액 + 수수료)
+    const subtractResult = await this.rubyWalletRepo.updateBalance(guildId, fromUserId, totalRequired, 'subtract');
     if (!subtractResult.success) {
       return Result.err({ type: 'REPOSITORY_ERROR', cause: subtractResult.error });
     }
 
-    // 수신자 잔액 증가
+    // 수신자 잔액 증가 (금액만)
     const addResult = await this.rubyWalletRepo.updateBalance(guildId, toUserId, amount, 'add');
     if (!addResult.success) {
       // 롤백: 송금자 잔액 복구
-      await this.rubyWalletRepo.updateBalance(guildId, fromUserId, amount, 'add');
+      await this.rubyWalletRepo.updateBalance(guildId, fromUserId, totalRequired, 'add');
       return Result.err({ type: 'REPOSITORY_ERROR', cause: addResult.error });
     }
 
@@ -764,7 +766,8 @@ export class CurrencyService {
 
     // 거래 기록 저장
     await this.transactionRepo.save(
-      createTransaction(guildId, fromUserId, 'ruby', 'transfer_out', amount, fromBalance, {
+      createTransaction(guildId, fromUserId, 'ruby', 'transfer_out', amount, fromBalance + fee, {
+        fee,
         relatedUserId: toUserId,
         description: reason,
       })
@@ -777,9 +780,36 @@ export class CurrencyService {
       })
     );
 
+    // 수수료 기록 및 국고 적립 (수수료가 있는 경우)
+    if (fee > BigInt(0)) {
+      await this.transactionRepo.save(
+        createTransaction(guildId, fromUserId, 'ruby', 'fee', fee, fromBalance, {
+          description: '이체 수수료',
+        })
+      );
+
+      // 국고에 이체 수수료 적립
+      if (this.treasuryRepo) {
+        await this.treasuryRepo.addBalance(guildId, 'ruby', fee);
+
+        const treasuryResult = await this.treasuryRepo.findOrCreate(guildId);
+        if (treasuryResult.success) {
+          await this.treasuryRepo.saveTransaction({
+            guildId,
+            currencyType: 'ruby',
+            transactionType: 'transfer_fee',
+            amount: fee,
+            balanceAfter: treasuryResult.data.rubyBalance,
+            relatedUserId: fromUserId,
+            description: '이체 수수료',
+          });
+        }
+      }
+    }
+
     return Result.ok({
       amount,
-      fee: BigInt(0),
+      fee,
       fromBalance,
       toBalance,
     });
