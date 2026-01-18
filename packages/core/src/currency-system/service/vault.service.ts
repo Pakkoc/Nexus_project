@@ -301,15 +301,19 @@ export class VaultService {
       const interestAmount = calculateInterest(vault.depositedAmount, interestRate);
       if (interestAmount <= BigInt(0)) continue;
 
-      // 이자 지급 (금고에 추가)
-      const addResult = await this.vaultRepo.addInterest(guildId, vault.userId, interestAmount);
-      if (!addResult.success) continue;
+      // 이자 지급 (지갑으로 직접 지급 - 단리 방식)
+      await this.topyWalletRepo.updateBalance(guildId, vault.userId, interestAmount, 'add');
 
-      const newTotal = vault.depositedAmount + interestAmount;
+      // 이자 수령 시간 기록
+      await this.vaultRepo.updateLastInterestAt(guildId, vault.userId);
+
+      // 현재 지갑 잔액 조회
+      const walletResult = await this.topyWalletRepo.findByUser(guildId, vault.userId);
+      const newWalletBalance = walletResult.success ? (walletResult.data?.balance ?? BigInt(0)) : BigInt(0);
 
       // 거래 기록
       await this.transactionRepo.save(
-        createTransaction(guildId, vault.userId, 'topy', 'vault_interest', interestAmount, newTotal)
+        createTransaction(guildId, vault.userId, 'topy', 'vault_interest', interestAmount, newWalletBalance)
       );
 
       totalInterestPaid += interestAmount;
@@ -318,7 +322,7 @@ export class VaultService {
         depositedAmount: vault.depositedAmount,
         interestRate,
         interestAmount,
-        newTotal,
+        newTotal: newWalletBalance,
       });
     }
 

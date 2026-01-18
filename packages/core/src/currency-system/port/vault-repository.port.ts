@@ -46,4 +46,12 @@ export interface VaultRepositoryPort {
     year: number,
     month: number
   ): Promise<Result<boolean, RepositoryError>>;
+
+  /**
+   * 이자 수령 시간만 업데이트 (이자를 지갑으로 지급할 때 사용)
+   */
+  updateLastInterestAt(
+    guildId: string,
+    userId: string
+  ): Promise<Result<void, RepositoryError>>;
 }

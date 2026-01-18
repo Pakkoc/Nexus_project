@@ -169,4 +169,20 @@ export class VaultRepository implements VaultRepositoryPort {
       return { success: false, error: toRepositoryError(error) };
     }
   }
+
+  async updateLastInterestAt(
+    guildId: string,
+    userId: string
+  ): Promise<Result<void, RepositoryError>> {
+    try {
+      await this.pool.query<ResultSetHeader>(
+        `UPDATE user_vaults SET last_interest_at = NOW() WHERE guild_id = ? AND user_id = ?`,
+        [guildId, userId]
+      );
+
+      return { success: true, data: undefined };
+    } catch (error) {
+      return { success: false, error: toRepositoryError(error) };
+    }
+  }
 }

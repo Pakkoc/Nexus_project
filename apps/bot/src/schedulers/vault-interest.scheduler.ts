@@ -84,10 +84,83 @@ async function processGuildInterest(client: Client, container: Container, guildI
         `total interest: ${summary.totalInterestPaid}`
     );
 
+    // 개인 DM으로 이자 지급 알림 전송
+    await sendPersonalInterestNotifications(client, guildId, summary);
+
     // 이자 지급 완료 알림 전송 (선택적)
     await sendInterestNotification(client, guildId, summary);
   } catch (err) {
     console.error(`[VAULT INTEREST] Guild ${guildId}: Error -`, err);
+  }
+}
+
+/**
+ * 개인 DM으로 이자 지급 알림 전송
+ */
+async function sendPersonalInterestNotifications(
+  client: Client,
+  guildId: string,
+  summary: {
+    processedAt: Date;
+    results: Array<{
+      userId: string;
+      depositedAmount: bigint;
+      interestRate: number;
+      interestAmount: bigint;
+    }>;
+  }
+) {
+  const guild = await client.guilds.fetch(guildId).catch(() => null);
+  if (!guild) return;
+
+  const year = summary.processedAt.getFullYear();
+  const month = summary.processedAt.getMonth() + 1;
+
+  for (const result of summary.results) {
+    try {
+      const member = await guild.members.fetch(result.userId).catch(() => null);
+      if (!member) continue;
+
+      const dmContainer = new ContainerBuilder()
+        .setAccentColor(0x00BFFF)
+        .addTextDisplayComponents(
+          new TextDisplayBuilder().setContent('# 🏦 금고 이자 지급')
+        )
+        .addSeparatorComponents(
+          new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small)
+        )
+        .addTextDisplayComponents(
+          new TextDisplayBuilder().setContent(
+            `**${guild.name}** 서버에서 ${year}년 ${month}월 금고 이자가 지급되었습니다.`
+          )
+        )
+        .addSeparatorComponents(
+          new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small)
+        )
+        .addTextDisplayComponents(
+          new TextDisplayBuilder().setContent(
+            `💰 **금고 잔액**: ${result.depositedAmount.toLocaleString()} 토피\n` +
+            `📈 **이자율**: ${result.interestRate}%\n` +
+            `✨ **이자 지급액**: ${result.interestAmount.toLocaleString()} 토피`
+          )
+        )
+        .addSeparatorComponents(
+          new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small)
+        )
+        .addTextDisplayComponents(
+          new TextDisplayBuilder().setContent(
+            `> 이자는 지갑으로 직접 지급되었습니다.`
+          )
+        );
+
+      await member.send({
+        components: [dmContainer.toJSON()],
+        flags: MessageFlags.IsComponentsV2,
+      });
+    } catch (err) {
+      // DM 전송 실패는 무시 (DM 비활성화 등)
+      console.log(`[VAULT INTEREST] Failed to send DM to user ${result.userId}:`, err);
+    }
   }
 }
 
