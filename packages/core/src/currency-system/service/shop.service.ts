@@ -177,9 +177,22 @@ export class ShopService {
     // 4. 수수료 계산
     const settingsResult = await this.currencySettingsRepo.findByGuild(guildId);
     const settings = settingsResult.success ? settingsResult.data : null;
-    const feePercent = currency === 'topy'
+    const defaultFeePercent = currency === 'topy'
       ? (settings?.shopFeeTopyPercent ?? CURRENCY_DEFAULTS.SHOP_FEE_TOPY_PERCENT)
       : (settings?.shopFeeRubyPercent ?? CURRENCY_DEFAULTS.SHOP_FEE_RUBY_PERCENT);
+
+    // 금고 등급 구독자는 purchaseFeePercent 적용
+    let feePercent = defaultFeePercent;
+    if (this.bankSubscriptionRepo) {
+      const subscriptionResult = await this.bankSubscriptionRepo.findActiveByUser(guildId, userId, now);
+      if (subscriptionResult.success && subscriptionResult.data) {
+        const subscription = subscriptionResult.data;
+        // 구독에 purchaseFeePercent가 설정되어 있으면 사용 (0이면 면제)
+        if (subscription.purchaseFeePercent !== null) {
+          feePercent = subscription.purchaseFeePercent;
+        }
+      }
+    }
 
     // 해당 화폐에 맞는 가격 조회
     const price = getItemPrice(item, currency);
