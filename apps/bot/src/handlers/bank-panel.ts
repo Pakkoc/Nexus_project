@@ -394,7 +394,7 @@ export async function handleHistoryButton(
     const typeInfo = typeLabels[tx.transactionType] || { emoji: '•', label: tx.transactionType };
     const currencyEmoji = tx.currencyType === 'topy' ? '💰' : '💎';
     const currencyLabel = tx.currencyType === 'topy' ? topyName : rubyName;
-    const amountStr = tx.amount >= 0 ? `+${tx.amount.toLocaleString()}` : tx.amount.toLocaleString();
+    const amountStr = tx.amount >= BigInt(0) ? `+${tx.amount.toLocaleString()}` : tx.amount.toLocaleString();
     const date = new Date(tx.createdAt);
     const dateStr = `${date.getMonth() + 1}/${date.getDate()} ${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`;
 
