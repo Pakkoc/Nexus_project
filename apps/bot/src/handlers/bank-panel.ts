@@ -138,7 +138,7 @@ export async function handleMyInfoButton(
 
   let subscriptionText = '**💳 구독**: 없음';
   if (subscription) {
-    const tierName = subscription.tier === 'gold' ? 'Gold' : 'Silver';
+    const tierName = subscription.tierName ?? '알 수 없음';
     const expiresAt = subscription.expiresAt.toLocaleDateString('ko-KR', {
       year: 'numeric',
       month: 'long',

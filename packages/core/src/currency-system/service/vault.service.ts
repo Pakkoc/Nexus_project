@@ -103,9 +103,7 @@ export class VaultService {
       return { success: false, error: { type: 'REPOSITORY_ERROR', cause: vaultResult.error } };
     }
 
-    // 동적 등급에서 tierName 가져오기, 레거시는 tier에서 변환
-    const tierName = subscription.tierName ??
-      (subscription.tier === 'gold' ? '골드' : subscription.tier === 'silver' ? '실버' : '없음');
+    const tierName = subscription.tierName ?? '없음';
 
     return {
       success: true,
