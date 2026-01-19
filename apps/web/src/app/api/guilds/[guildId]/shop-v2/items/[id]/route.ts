@@ -12,7 +12,7 @@ interface ShopItemV2Row extends RowDataPacket {
   description: string | null;
   item_type: string | null;
   effect_percent: number | null;
-  effect_config: string | null;
+  effect_config: string | object | null;
   topy_price: string | null;
   ruby_price: string | null;
   currency_type: "topy" | "ruby" | "both";
@@ -31,7 +31,9 @@ function rowToShopItemV2(row: ShopItemV2Row) {
     description: row.description,
     itemType: row.item_type ?? "custom",
     effectPercent: row.effect_percent,
-    effectConfig: row.effect_config ? JSON.parse(row.effect_config) : null,
+    effectConfig: row.effect_config
+      ? (typeof row.effect_config === 'string' ? JSON.parse(row.effect_config) : row.effect_config)
+      : null,
     topyPrice: row.topy_price ? Number(row.topy_price) : null,
     rubyPrice: row.ruby_price ? Number(row.ruby_price) : null,
     currencyType: row.currency_type,

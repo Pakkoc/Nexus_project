@@ -12,7 +12,7 @@ interface ShopItemV2Row extends RowDataPacket {
   description: string | null;
   item_type: string | null;
   effect_percent: number | null;
-  effect_config: string | null;
+  effect_config: string | object | null;
   topy_price: string | null;
   ruby_price: string | null;
   currency_type: "topy" | "ruby" | "both";
@@ -46,7 +46,9 @@ function rowToShopItemV2(row: ShopItemV2Row, roleOptions?: RoleOptionRow[]) {
     description: row.description,
     itemType: row.item_type ?? "custom",
     effectPercent: row.effect_percent,
-    effectConfig: row.effect_config ? JSON.parse(row.effect_config) : null,
+    effectConfig: row.effect_config
+      ? (typeof row.effect_config === 'string' ? JSON.parse(row.effect_config) : row.effect_config)
+      : null,
     topyPrice: row.topy_price ? Number(row.topy_price) : null,
     rubyPrice: row.ruby_price ? Number(row.ruby_price) : null,
     currencyType: row.currency_type,
@@ -171,6 +173,7 @@ export async function POST(
       await connection.beginTransaction();
 
       // 1. Create shop item
+      const effectConfigValue = validatedData.effectConfig ? JSON.stringify(validatedData.effectConfig) : null;
       const [shopItemResult] = await connection.execute<ResultSetHeader>(
         `INSERT INTO shop_items_v2
          (guild_id, name, description, item_type, effect_percent, effect_config, topy_price, ruby_price, currency_type, duration_days, stock, max_per_user, enabled)
@@ -181,7 +184,7 @@ export async function POST(
           validatedData.description ?? null,
           validatedData.itemType ?? "custom",
           validatedData.effectPercent ?? null,
-          validatedData.effectConfig ? JSON.stringify(validatedData.effectConfig) : null,
+          effectConfigValue,
           validatedData.topyPrice ?? null,
           validatedData.rubyPrice ?? null,
           validatedData.currencyType,
