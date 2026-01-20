@@ -25,6 +25,20 @@ import type {
 // Components v2 플래그 (1 << 15)
 const IS_COMPONENTS_V2 = 32768;
 
+// 개인 응답 메시지 자동 삭제 시간 (5분)
+const AUTO_DELETE_DELAY = 5 * 60 * 1000;
+
+/** 일정 시간 후 메시지 삭제 */
+function scheduleDelete(interaction: ButtonInteraction | ModalSubmitInteraction, delay: number = AUTO_DELETE_DELAY): void {
+  setTimeout(async () => {
+    try {
+      await interaction.deleteReply();
+    } catch {
+      // 이미 삭제되었거나 권한 없음 - 무시
+    }
+  }, delay);
+}
+
 interface Container {
   currencyService: CurrencyService;
   bankService: BankService;
@@ -193,6 +207,7 @@ export async function handleMyInfoButton(
     components: [infoContainer.toJSON()],
     flags: IS_COMPONENTS_V2,
   });
+  scheduleDelete(interaction);
 }
 
 /** 예금 버튼 핸들러 */
@@ -233,6 +248,7 @@ export async function handleDepositButton(
       components: [noSubContainer.toJSON()],
       flags: MessageFlags.IsComponentsV2 | MessageFlags.Ephemeral,
     });
+    scheduleDelete(interaction);
     return;
   }
 
@@ -298,6 +314,7 @@ export async function handleWithdrawButton(
       components: [emptyContainer.toJSON()],
       flags: MessageFlags.IsComponentsV2 | MessageFlags.Ephemeral,
     });
+    scheduleDelete(interaction);
     return;
   }
 
@@ -367,6 +384,7 @@ export async function handleHistoryButton(
       components: [emptyContainer.toJSON()],
       flags: IS_COMPONENTS_V2,
     });
+    scheduleDelete(interaction);
     return;
   }
 
@@ -423,6 +441,7 @@ export async function handleHistoryButton(
     components: [historyContainer.toJSON()],
     flags: IS_COMPONENTS_V2,
   });
+  scheduleDelete(interaction);
 }
 
 /** 은행 패널 버튼 상호작용 핸들러 */
@@ -493,6 +512,7 @@ async function handleDepositModalSubmit(
       components: [errorContainer.toJSON()],
       flags: IS_COMPONENTS_V2,
     });
+    scheduleDelete(interaction);
     return;
   }
 
@@ -531,6 +551,7 @@ async function handleDepositModalSubmit(
       components: [errorContainer.toJSON()],
       flags: IS_COMPONENTS_V2,
     });
+    scheduleDelete(interaction);
     return;
   }
 
@@ -560,6 +581,7 @@ async function handleDepositModalSubmit(
     components: [successContainer.toJSON()],
     flags: IS_COMPONENTS_V2,
   });
+  scheduleDelete(interaction);
 }
 
 /** 출금 모달 제출 핸들러 */
@@ -601,6 +623,7 @@ async function handleWithdrawModalSubmit(
       components: [errorContainer.toJSON()],
       flags: IS_COMPONENTS_V2,
     });
+    scheduleDelete(interaction);
     return;
   }
 
@@ -635,6 +658,7 @@ async function handleWithdrawModalSubmit(
       components: [errorContainer.toJSON()],
       flags: IS_COMPONENTS_V2,
     });
+    scheduleDelete(interaction);
     return;
   }
 
@@ -664,6 +688,7 @@ async function handleWithdrawModalSubmit(
     components: [successContainer.toJSON()],
     flags: IS_COMPONENTS_V2,
   });
+  scheduleDelete(interaction);
 }
 
 /** 은행 패널 모달 상호작용 핸들러 */
