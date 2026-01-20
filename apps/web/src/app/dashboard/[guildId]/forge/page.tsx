@@ -57,6 +57,8 @@ export default function ForgePage() {
       color: "from-emerald-500 to-green-500",
       enabled: currencySettings?.enabled ?? false,
       stats: [
+        { label: "화폐명", value: currencySettings?.topyName ?? "토피" },
+        { label: "유상 화폐", value: currencySettings?.rubyName ?? "루비" },
         { label: "총 발행량", value: `${Number(treasuryData?.totalSupply?.topy ?? 0).toLocaleString()} ${currencySettings?.topyName ?? "토피"}` },
         { label: "국고", value: `${Number(treasuryData?.treasury?.topyBalance ?? 0).toLocaleString()} ${currencySettings?.topyName ?? "토피"}` },
       ],
