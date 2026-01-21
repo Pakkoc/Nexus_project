@@ -29,20 +29,20 @@ export async function GET(
   try {
     const pool = db();
 
-    // 보유량 구간별 분포 (topy 기준)
+    // 보유량 구간별 분포 (topy_wallets 테이블)
     const [distributionStats] = await pool.query<WalletDistributionRow[]>(
       `SELECT
         CASE
-          WHEN topy_balance = 0 THEN '0'
-          WHEN topy_balance BETWEEN 1 AND 1000 THEN '1-1K'
-          WHEN topy_balance BETWEEN 1001 AND 5000 THEN '1K-5K'
-          WHEN topy_balance BETWEEN 5001 AND 10000 THEN '5K-10K'
-          WHEN topy_balance BETWEEN 10001 AND 50000 THEN '10K-50K'
-          WHEN topy_balance BETWEEN 50001 AND 100000 THEN '50K-100K'
+          WHEN balance = 0 THEN '0'
+          WHEN balance BETWEEN 1 AND 1000 THEN '1-1K'
+          WHEN balance BETWEEN 1001 AND 5000 THEN '1K-5K'
+          WHEN balance BETWEEN 5001 AND 10000 THEN '5K-10K'
+          WHEN balance BETWEEN 10001 AND 50000 THEN '10K-50K'
+          WHEN balance BETWEEN 50001 AND 100000 THEN '50K-100K'
           ELSE '100K+'
         END as balance_range,
         COUNT(*) as count
-       FROM currency_wallets
+       FROM topy_wallets
        WHERE guild_id = ?
        GROUP BY balance_range
        ORDER BY FIELD(balance_range, '0', '1-1K', '1K-5K', '5K-10K', '10K-50K', '50K-100K', '100K+')`,
@@ -53,16 +53,16 @@ export async function GET(
     const [walletStats] = await pool.query<WalletStatsRow[]>(
       `SELECT
         COUNT(*) as total_wallets,
-        COALESCE(SUM(topy_balance), 0) as total_balance,
+        COALESCE(SUM(balance), 0) as total_balance,
         COALESCE((
-          SELECT SUM(topy_balance) FROM (
-            SELECT topy_balance FROM currency_wallets
+          SELECT SUM(balance) FROM (
+            SELECT balance FROM topy_wallets
             WHERE guild_id = ?
-            ORDER BY topy_balance DESC
-            LIMIT CEIL((SELECT COUNT(*) FROM currency_wallets WHERE guild_id = ?) * 0.1)
+            ORDER BY balance DESC
+            LIMIT CEIL((SELECT COUNT(*) FROM topy_wallets WHERE guild_id = ?) * 0.1)
           ) as top10
         ), 0) as top10_balance
-       FROM currency_wallets
+       FROM topy_wallets
        WHERE guild_id = ?`,
       [guildId, guildId, guildId]
     );
