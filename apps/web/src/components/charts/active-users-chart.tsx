@@ -73,7 +73,7 @@ export function ActiveUsersChart({
         <div>
           <div className="flex items-center justify-between text-xs mb-1">
             <span className="text-white/50">XP 보유 멤버</span>
-            <span className="text-white">{membersWithXp.toLocaleString()}명</span>
+            <span className="text-white">{membersWithXp.toLocaleString()}/{totalMembers.toLocaleString()}명</span>
           </div>
           <div className="h-1.5 bg-white/5 rounded-full overflow-hidden">
             <div
