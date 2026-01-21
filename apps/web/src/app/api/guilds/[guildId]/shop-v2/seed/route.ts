@@ -3,14 +3,10 @@ import { NextRequest, NextResponse } from "next/server";
 import { authOptions } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { DEFAULT_SHOP_ITEMS } from "@topia/core";
-import type { RowDataPacket, ResultSetHeader } from "mysql2";
-
-interface ExistingItemRow extends RowDataPacket {
-  item_type: string;
-}
+import type { ResultSetHeader } from "mysql2";
 
 /**
- * GET: 등록 가능한 기본 아이템 목록 조회
+ * GET: 기본 아이템 템플릿 목록 조회
  */
 export async function GET(
   _request: NextRequest,
@@ -21,41 +17,22 @@ export async function GET(
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const { guildId } = await params;
+  await params; // guildId는 사용하지 않지만 params는 await 필요
 
-  try {
-    const pool = db();
+  // 모든 기본 아이템 템플릿 반환 (중복 등록 제한 없음)
+  const items = DEFAULT_SHOP_ITEMS.map((item) => ({
+    itemType: item.itemType,
+    name: item.name,
+    description: item.description,
+    isRoleItem: item.isRoleItem,
+    durationDays: item.durationDays,
+  }));
 
-    // 기존에 등록된 시스템 아이템 타입 조회
-    const [existingRows] = await pool.query<ExistingItemRow[]>(
-      `SELECT item_type FROM shop_items_v2 WHERE guild_id = ? AND item_type IS NOT NULL AND item_type != 'custom'`,
-      [guildId]
-    );
-
-    const existingTypes = new Set(existingRows.map((r) => r.item_type));
-
-    // 모든 기본 아이템에 등록 여부 표시
-    const items = DEFAULT_SHOP_ITEMS.map((item) => ({
-      itemType: item.itemType,
-      name: item.name,
-      description: item.description,
-      isRoleItem: item.isRoleItem,
-      durationDays: item.durationDays,
-      alreadyExists: existingTypes.has(item.itemType),
-    }));
-
-    return NextResponse.json({ items });
-  } catch (error) {
-    console.error("Error fetching default shop items:", error);
-    return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 }
-    );
-  }
+  return NextResponse.json({ items });
 }
 
 /**
- * POST: 선택한 기본 아이템 등록
+ * POST: 선택한 기본 아이템 등록 (중복 등록 가능)
  */
 export async function POST(
   request: NextRequest,
@@ -82,26 +59,10 @@ export async function POST(
 
     const pool = db();
 
-    // 기존에 등록된 시스템 아이템 타입 조회
-    const [existingRows] = await pool.query<ExistingItemRow[]>(
-      `SELECT item_type FROM shop_items_v2 WHERE guild_id = ? AND item_type IS NOT NULL AND item_type != 'custom'`,
-      [guildId]
-    );
-
-    const existingTypes = new Set(existingRows.map((r) => r.item_type));
-
-    // 선택한 아이템 중 등록 가능한 것만 필터링
+    // 선택한 아이템 필터링 (중복 등록 제한 없음)
     const itemsToSeed = DEFAULT_SHOP_ITEMS.filter(
-      (item) => selectedTypes.includes(item.itemType) && !existingTypes.has(item.itemType)
+      (item) => selectedTypes.includes(item.itemType)
     );
-
-    if (itemsToSeed.length === 0) {
-      return NextResponse.json({
-        success: true,
-        message: "선택한 아이템이 이미 모두 등록되어 있습니다.",
-        seeded: 0,
-      });
-    }
 
     // 아이템 등록 (가격 0원, 비활성화)
     const insertedItems: string[] = [];

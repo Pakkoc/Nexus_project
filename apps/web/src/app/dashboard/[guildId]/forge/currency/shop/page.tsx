@@ -1405,9 +1405,7 @@ export default function ShopV2Page() {
                     <label
                       key={item.itemType}
                       className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${
-                        item.alreadyExists
-                          ? "bg-white/5 border-white/10 opacity-50 cursor-not-allowed"
-                          : selectedDefaultItems.includes(item.itemType)
+                        selectedDefaultItems.includes(item.itemType)
                           ? "bg-blue-500/20 border-blue-500/50"
                           : "bg-white/5 border-white/10 hover:bg-white/10"
                       }`}
@@ -1416,17 +1414,14 @@ export default function ShopV2Page() {
                         type="checkbox"
                         checked={selectedDefaultItems.includes(item.itemType)}
                         onChange={() => handleToggleDefaultItem(item.itemType)}
-                        disabled={item.alreadyExists}
                         className="sr-only"
                       />
                       <div className={`w-5 h-5 rounded border-2 flex items-center justify-center ${
-                        item.alreadyExists
-                          ? "border-white/20 bg-white/10"
-                          : selectedDefaultItems.includes(item.itemType)
+                        selectedDefaultItems.includes(item.itemType)
                           ? "border-blue-500 bg-blue-500"
                           : "border-white/30"
                       }`}>
-                        {(selectedDefaultItems.includes(item.itemType) || item.alreadyExists) && (
+                        {selectedDefaultItems.includes(item.itemType) && (
                           <Icon icon="solar:check-read-linear" className="h-3 w-3 text-white" />
                         )}
                       </div>
@@ -1434,9 +1429,6 @@ export default function ShopV2Page() {
                         <div className="font-medium text-white text-sm">{item.name}</div>
                         <div className="text-xs text-white/50">{item.description}</div>
                       </div>
-                      {item.alreadyExists && (
-                        <Badge className="bg-green-500/20 text-green-400 border-0 text-xs">등록됨</Badge>
-                      )}
                     </label>
                   ))}
               </div>
@@ -1455,9 +1447,7 @@ export default function ShopV2Page() {
                     <label
                       key={item.itemType}
                       className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${
-                        item.alreadyExists
-                          ? "bg-white/5 border-white/10 opacity-50 cursor-not-allowed"
-                          : selectedDefaultItems.includes(item.itemType)
+                        selectedDefaultItems.includes(item.itemType)
                           ? "bg-purple-500/20 border-purple-500/50"
                           : "bg-white/5 border-white/10 hover:bg-white/10"
                       }`}
@@ -1466,17 +1456,14 @@ export default function ShopV2Page() {
                         type="checkbox"
                         checked={selectedDefaultItems.includes(item.itemType)}
                         onChange={() => handleToggleDefaultItem(item.itemType)}
-                        disabled={item.alreadyExists}
                         className="sr-only"
                       />
                       <div className={`w-5 h-5 rounded border-2 flex items-center justify-center ${
-                        item.alreadyExists
-                          ? "border-white/20 bg-white/10"
-                          : selectedDefaultItems.includes(item.itemType)
+                        selectedDefaultItems.includes(item.itemType)
                           ? "border-purple-500 bg-purple-500"
                           : "border-white/30"
                       }`}>
-                        {(selectedDefaultItems.includes(item.itemType) || item.alreadyExists) && (
+                        {selectedDefaultItems.includes(item.itemType) && (
                           <Icon icon="solar:check-read-linear" className="h-3 w-3 text-white" />
                         )}
                       </div>
@@ -1487,9 +1474,6 @@ export default function ShopV2Page() {
                         </div>
                         <div className="text-xs text-white/50">{item.description}</div>
                       </div>
-                      {item.alreadyExists && (
-                        <Badge className="bg-green-500/20 text-green-400 border-0 text-xs">등록됨</Badge>
-                      )}
                     </label>
                   ))}
               </div>
