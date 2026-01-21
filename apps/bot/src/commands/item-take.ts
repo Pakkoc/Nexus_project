@@ -206,9 +206,42 @@ export const itemTakeCommand: Command = {
         return;
       }
 
-      const { remainingQuantity, item } = result.data;
+      const { remainingQuantity, item, revokedRoleIds, newExpiresAt } = result.data;
+
+      // Discord 역할 제거
+      if (revokedRoleIds.length > 0) {
+        try {
+          const member = await interaction.guild?.members.fetch(targetUser.id);
+          if (member) {
+            for (const roleId of revokedRoleIds) {
+              if (member.roles.cache.has(roleId)) {
+                const role = interaction.guild?.roles.cache.get(roleId);
+                if (role) {
+                  await member.roles.remove(role);
+                  console.log(`[ItemTake] Revoked role ${roleId} from user ${targetUser.id}`);
+                }
+              }
+            }
+          }
+        } catch (roleError) {
+          console.error('[ItemTake] Failed to revoke roles:', roleError);
+        }
+      }
 
       let infoText = `📦 **남은 수량**: ${remainingQuantity}개`;
+
+      // 기간제 아이템이면 새 만료일 표시
+      if (newExpiresAt) {
+        const daysLeft = Math.ceil((newExpiresAt.getTime() - Date.now()) / (1000 * 60 * 60 * 24));
+        infoText += `\n⏰ **유효기간**: ${daysLeft}일 남음`;
+      } else if (item.durationDays > 0 && remainingQuantity <= 0) {
+        infoText += `\n⏰ **유효기간**: 만료됨`;
+      }
+
+      // 역할 제거 표시
+      if (revokedRoleIds.length > 0) {
+        infoText += `\n🎭 **제거된 역할**: ${revokedRoleIds.map(id => `<@&${id}>`).join(', ')}`;
+      }
 
       if (reason) {
         infoText += `\n📝 **사유**: ${reason}`;

@@ -567,6 +567,26 @@ export class ShopRepository implements ShopRepositoryPort {
     }
   }
 
+  async updateUserItemExpiration(
+    id: bigint,
+    expiresAt: Date | null
+  ): Promise<Result<void, RepositoryError>> {
+    try {
+      await this.pool.execute(
+        `UPDATE user_items_v2
+         SET expires_at = ?, updated_at = NOW()
+         WHERE id = ?`,
+        [expiresAt, id.toString()]
+      );
+      return Result.ok(undefined);
+    } catch (error) {
+      return Result.err({
+        type: 'QUERY_ERROR',
+        message: error instanceof Error ? error.message : 'Unknown error',
+      });
+    }
+  }
+
   async updateCurrentRole(
     id: bigint,
     roleId: string | null,

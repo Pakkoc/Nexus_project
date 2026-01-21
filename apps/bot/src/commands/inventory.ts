@@ -35,7 +35,8 @@ const ITEM_TYPE_LABELS: Record<ShopItemType, string> = {
 function createInventoryContainer(
   items: OwnedItem[],
   topyName: string,
-  rubyName: string
+  rubyName: string,
+  autoAppliedRoles?: { itemName: string; roleId: string }[]
 ): APIContainerComponent {
   const container = new ContainerBuilder();
 
@@ -46,6 +47,21 @@ function createInventoryContainer(
   container.addSeparatorComponents(
     new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small)
   );
+
+  // 자동 적용된 역할이 있으면 알림 표시
+  if (autoAppliedRoles && autoAppliedRoles.length > 0) {
+    const roleList = autoAppliedRoles
+      .map(r => `• **${r.itemName}** → <@&${r.roleId}>`)
+      .join('\n');
+    container.addTextDisplayComponents(
+      new TextDisplayBuilder().setContent(
+        `✨ **기존 구매 아이템의 역할이 자동으로 적용되었습니다!**\n${roleList}`
+      )
+    );
+    container.addSeparatorComponents(
+      new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small)
+    );
+  }
 
   if (items.length === 0) {
     container.addTextDisplayComponents(
@@ -391,6 +407,43 @@ export const inventoryCommand: Command = {
 
       const ownedItems = ownedItemsResult.data;
 
+      // fixedRoleId가 설정되어 있지만 아직 적용되지 않은 아이템 자동 적용
+      const autoAppliedRoles: { itemName: string; roleId: string }[] = [];
+      for (const ownedItem of ownedItems) {
+        // 이미 fixed_role_id가 적용되어 있으면 스킵
+        if (ownedItem.userItem.fixedRoleId) continue;
+
+        // 선택권 아이템이고 fixedRoleId가 있는지 확인
+        if (ownedItem.isTicket && ownedItem.ticket?.fixedRoleId) {
+          const activateResult = await container.shopV2Service.activateFixedRole(
+            guildId,
+            userId,
+            ownedItem.shopItem.id,
+            ownedItem.userItem.id
+          );
+
+          if (activateResult.success && activateResult.data) {
+            // Discord 역할 부여
+            try {
+              const member = await interaction.guild?.members.fetch(userId);
+              if (member) {
+                const role = interaction.guild?.roles.cache.get(activateResult.data.fixedRoleId);
+                if (role && !member.roles.cache.has(activateResult.data.fixedRoleId)) {
+                  await member.roles.add(role);
+                  autoAppliedRoles.push({
+                    itemName: ownedItem.shopItem.name,
+                    roleId: activateResult.data.fixedRoleId,
+                  });
+                  console.log(`[Inventory] Auto-applied fixed role ${activateResult.data.fixedRoleId} for item ${ownedItem.shopItem.name}`);
+                }
+              }
+            } catch (roleError) {
+              console.error('[Inventory] Auto role grant failed:', roleError);
+            }
+          }
+        }
+      }
+
       // 사용 가능한 선택권 조회 (역할 교환용)
       const ticketsResult = await container.inventoryService.getAvailableTickets(guildId, userId);
       const tickets = ticketsResult.success ? ticketsResult.data : [];
@@ -418,8 +471,13 @@ export const inventoryCommand: Command = {
       let state: State = { type: 'ticket_select' };
 
       // 초기 화면 렌더링 (Components v2) - 모든 아이템 + 선택권 선택 메뉴
-      const renderTicketSelect = () => {
-        const inventoryContainer = createInventoryContainer(ownedItems, topyName, rubyName);
+      const renderTicketSelect = (showAutoApplied = false) => {
+        const inventoryContainer = createInventoryContainer(
+          ownedItems,
+          topyName,
+          rubyName,
+          showAutoApplied ? autoAppliedRoles : undefined
+        );
 
         // 선택권이 있으면 선택 메뉴 표시
         if (tickets.length > 0) {
@@ -453,7 +511,7 @@ export const inventoryCommand: Command = {
       };
 
       // 초기 렌더링
-      const response = await interaction.editReply(renderTicketSelect());
+      const response = await interaction.editReply(renderTicketSelect(true));
 
       // 통합 컬렉터
       const collector = response.createMessageComponentCollector({

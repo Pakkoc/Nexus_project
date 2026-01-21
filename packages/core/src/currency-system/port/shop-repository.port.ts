@@ -63,6 +63,12 @@ export interface ShopRepositoryPort {
     amount: number
   ): Promise<Result<void, RepositoryError>>;
 
+  // 유효기간 업데이트 (기간제 아이템 회수용)
+  updateUserItemExpiration(
+    id: bigint,
+    expiresAt: Date | null
+  ): Promise<Result<void, RepositoryError>>;
+
   // 현재 역할 업데이트 (기간제용)
   updateCurrentRole(
     id: bigint,

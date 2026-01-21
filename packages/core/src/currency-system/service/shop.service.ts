@@ -495,16 +495,26 @@ export class ShopService {
 
   /**
    * 관리자 아이템 회수
+   * - 수량 차감
+   * - 기간제 아이템: expires_at 단축
+   * - 수량 0 또는 기간 만료 시: 역할 정보 초기화 및 제거할 역할 ID 반환
    */
   async takeItem(
     guildId: string,
     userId: string,
     shopItemId: number,
     quantity: number = 1
-  ): Promise<Result<{ remainingQuantity: number; item: ShopItem }, CurrencyError>> {
+  ): Promise<Result<{
+    remainingQuantity: number;
+    item: ShopItem;
+    revokedRoleIds: string[];
+    newExpiresAt: Date | null;
+  }, CurrencyError>> {
     if (quantity < 1 || quantity > 999 || !Number.isInteger(quantity)) {
       return { success: false, error: { type: 'INVALID_QUANTITY' as const } };
     }
+
+    const now = this.clock.now();
 
     // 아이템 존재 확인
     const itemResult = await this.shopRepo.findById(shopItemId);
@@ -538,17 +548,66 @@ export class ShopService {
       };
     }
 
+    const remainingQuantity = userItem.quantity - quantity;
+    const revokedRoleIds: string[] = [];
+    let newExpiresAt = userItem.expiresAt;
+
+    // 기간제 아이템: expires_at 단축
+    if (isPeriodItem(item) && userItem.expiresAt) {
+      const daysToRemove = item.durationDays * quantity;
+      const msToRemove = daysToRemove * 24 * 60 * 60 * 1000;
+      newExpiresAt = new Date(userItem.expiresAt.getTime() - msToRemove);
+
+      // 만료일이 현재보다 과거면 null로 설정
+      if (newExpiresAt <= now) {
+        newExpiresAt = null;
+      }
+
+      // expires_at 업데이트
+      const expiresResult = await this.shopRepo.updateUserItemExpiration(userItem.id, newExpiresAt);
+      if (!expiresResult.success) {
+        return { success: false, error: { type: 'REPOSITORY_ERROR', cause: expiresResult.error } };
+      }
+    }
+
     // 수량 차감
     const decreaseResult = await this.shopRepo.decreaseUserItemQuantity(userItem.id, quantity);
     if (!decreaseResult.success) {
       return { success: false, error: { type: 'REPOSITORY_ERROR', cause: decreaseResult.error } };
     }
 
+    // 수량이 0이 되거나 기간이 만료되면 역할 정보 초기화
+    const shouldRevokeRole = remainingQuantity <= 0 || (isPeriodItem(item) && newExpiresAt === null);
+
+    if (shouldRevokeRole) {
+      // 제거할 역할 ID 수집
+      if (userItem.currentRoleId) {
+        revokedRoleIds.push(userItem.currentRoleId);
+      }
+      if (userItem.fixedRoleId && userItem.fixedRoleId !== userItem.currentRoleId) {
+        revokedRoleIds.push(userItem.fixedRoleId);
+      }
+
+      // 역할 정보 초기화
+      const clearRoleResult = await this.shopRepo.updateCurrentRole(
+        userItem.id,
+        null,
+        null,
+        null,
+        null
+      );
+      if (!clearRoleResult.success) {
+        return { success: false, error: { type: 'REPOSITORY_ERROR', cause: clearRoleResult.error } };
+      }
+    }
+
     return {
       success: true,
       data: {
-        remainingQuantity: userItem.quantity - quantity,
+        remainingQuantity,
         item,
+        revokedRoleIds,
+        newExpiresAt,
       },
     };
   }
