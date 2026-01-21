@@ -10,10 +10,17 @@ import {
   useCurrencyStats,
   useLevelDistribution,
   useTreasuryStats,
+  useWalletDistribution,
+  useShopStats,
+  useXpDailyTrend,
 } from "@/hooks/queries";
 import { TransactionDistributionChart } from "@/components/charts/transaction-distribution-chart";
 import { LevelDistributionChart } from "@/components/charts/level-distribution-chart";
 import { TreasuryTrendChart } from "@/components/charts/treasury-trend-chart";
+import { WalletDistributionChart } from "@/components/charts/wallet-distribution-chart";
+import { PopularItemsChart } from "@/components/charts/popular-items-chart";
+import { ActiveUsersChart } from "@/components/charts/active-users-chart";
+import { XpDailyTrendChart } from "@/components/charts/xp-daily-trend-chart";
 
 export default function ForgePage() {
   const params = useParams();
@@ -24,6 +31,9 @@ export default function ForgePage() {
   const { data: currencyStats, isLoading: currencyStatsLoading } = useCurrencyStats(guildId);
   const { data: levelDistribution, isLoading: levelLoading } = useLevelDistribution(guildId);
   const { data: treasuryStats, isLoading: treasuryStatsLoading } = useTreasuryStats(guildId);
+  const { data: walletDistribution, isLoading: walletLoading } = useWalletDistribution(guildId);
+  const { data: shopStats, isLoading: shopLoading } = useShopStats(guildId);
+  const { data: xpDailyTrend, isLoading: xpTrendLoading } = useXpDailyTrend(guildId);
 
   const isLoading = statsLoading || currencyLoading || treasuryLoading;
   const topyName = currencySettings?.topyName ?? "토피";
@@ -151,7 +161,44 @@ export default function ForgePage() {
       {/* Analytics Charts Section */}
       <div className="animate-fade-up" style={{ animationDelay: "200ms" }}>
         <h2 className="text-lg font-semibold text-white mb-4">통계</h2>
-        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-6 grid-cols-1 lg:grid-cols-2">
+          {/* 활성 유저 비율 */}
+          <div className="bg-white/5 backdrop-blur-sm rounded-2xl p-6 border border-white/10">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center">
+                <Icon icon="solar:users-group-rounded-bold" className="w-5 h-5 text-white" />
+              </div>
+              <div>
+                <h3 className="font-semibold text-white">서버 참여율</h3>
+                <p className="text-xs text-white/40">XP 보유 멤버 비율</p>
+              </div>
+            </div>
+            <ActiveUsersChart
+              totalMembers={stats?.totalMembers ?? 0}
+              membersWithXp={stats?.membersWithXp ?? 0}
+              todayTextActive={stats?.todayTextActive ?? 0}
+              todayVoiceActive={stats?.todayVoiceActive ?? 0}
+              isLoading={statsLoading}
+            />
+          </div>
+
+          {/* 일별 XP 활동 추이 */}
+          <div className="bg-white/5 backdrop-blur-sm rounded-2xl p-6 border border-white/10">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-green-500 to-emerald-500 flex items-center justify-center">
+                <Icon icon="solar:graph-up-bold" className="w-5 h-5 text-white" />
+              </div>
+              <div>
+                <h3 className="font-semibold text-white">일별 XP 활동</h3>
+                <p className="text-xs text-white/40">최근 7일</p>
+              </div>
+            </div>
+            <XpDailyTrendChart
+              data={xpDailyTrend?.dailyTrend ?? []}
+              isLoading={xpTrendLoading}
+            />
+          </div>
+
           {/* 거래 유형 분포 */}
           <div className="bg-white/5 backdrop-blur-sm rounded-2xl p-6 border border-white/10">
             <div className="flex items-center gap-3 mb-4">
@@ -166,6 +213,25 @@ export default function ForgePage() {
             <TransactionDistributionChart
               data={currencyStats?.distribution ?? []}
               isLoading={currencyStatsLoading}
+            />
+          </div>
+
+          {/* 지갑 보유량 분포 */}
+          <div className="bg-white/5 backdrop-blur-sm rounded-2xl p-6 border border-white/10">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-500 to-purple-500 flex items-center justify-center">
+                <Icon icon="solar:wallet-bold" className="w-5 h-5 text-white" />
+              </div>
+              <div>
+                <h3 className="font-semibold text-white">지갑 보유량 분포</h3>
+                <p className="text-xs text-white/40">{topyName} 기준</p>
+              </div>
+            </div>
+            <WalletDistributionChart
+              data={walletDistribution?.distribution ?? []}
+              top10Percent={walletDistribution?.top10Percent ?? 0}
+              isLoading={walletLoading}
+              currencyName={topyName}
             />
           </div>
 
@@ -203,6 +269,24 @@ export default function ForgePage() {
               totalIncome={treasuryStats?.totalIncome ?? 0}
               totalExpense={treasuryStats?.totalExpense ?? 0}
               isLoading={treasuryStatsLoading}
+              currencyName={topyName}
+            />
+          </div>
+
+          {/* 상점 인기 아이템 */}
+          <div className="bg-white/5 backdrop-blur-sm rounded-2xl p-6 border border-white/10 lg:col-span-2">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-pink-500 to-rose-500 flex items-center justify-center">
+                <Icon icon="solar:bag-4-bold" className="w-5 h-5 text-white" />
+              </div>
+              <div>
+                <h3 className="font-semibold text-white">인기 상품 TOP 5</h3>
+                <p className="text-xs text-white/40">최근 30일 판매량</p>
+              </div>
+            </div>
+            <PopularItemsChart
+              items={shopStats?.popularItems ?? []}
+              isLoading={shopLoading}
               currencyName={topyName}
             />
           </div>
