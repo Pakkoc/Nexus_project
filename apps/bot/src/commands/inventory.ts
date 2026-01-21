@@ -427,7 +427,8 @@ export const inventoryCommand: Command = {
             try {
               const member = await interaction.guild?.members.fetch(userId);
               if (member) {
-                const role = interaction.guild?.roles.cache.get(activateResult.data.fixedRoleId);
+                // cache.get 대신 fetch 사용 (캐시에 없을 수 있음)
+                const role = await interaction.guild?.roles.fetch(activateResult.data.fixedRoleId);
                 if (role && !member.roles.cache.has(activateResult.data.fixedRoleId)) {
                   await member.roles.add(role);
                   autoAppliedRoles.push({

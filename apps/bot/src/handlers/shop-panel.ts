@@ -918,16 +918,23 @@ async function handleItemSelection(
           try {
             const member = await interaction.guild?.members.fetch(userId);
             if (member) {
-              const role = interaction.guild?.roles.cache.get(grantedRoleId);
+              // cache.get 대신 fetch 사용 (캐시에 없을 수 있음)
+              const role = await interaction.guild?.roles.fetch(grantedRoleId);
               if (role) {
                 await member.roles.add(role);
                 roleGranted = true;
-                console.log(`[Shop] Auto-granted role ${grantedRoleId} to user ${userId}`);
+                console.log(`[Shop] Auto-granted fixed role ${grantedRoleId} to user ${userId}`);
+              } else {
+                console.error(`[Shop] Role ${grantedRoleId} not found in guild`);
               }
+            } else {
+              console.error(`[Shop] Member ${userId} not found`);
             }
           } catch (roleError) {
             console.error('[Shop] Auto role grant failed:', roleError);
           }
+        } else if (!activateResult.success) {
+          console.error('[Shop] activateFixedRole failed:', activateResult.error);
         }
 
         // 성공 메시지 Container 생성
