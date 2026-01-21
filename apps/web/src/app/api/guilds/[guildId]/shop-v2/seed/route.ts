@@ -132,6 +132,8 @@ export async function POST(
         const shopItemId = result.insertId;
         // 효과 지속 시간: durationDays를 초로 변환
         const effectDurationSeconds = item.durationDays > 0 ? item.durationDays * 24 * 60 * 60 : null;
+        // 기간제(durationDays > 0)면 기간권(consume_quantity = 0), 아니면 1회 사용권(consume_quantity = 1)
+        const consumeQuantity = item.durationDays > 0 ? 0 : 1;
 
         await pool.execute<ResultSetHeader>(
           `INSERT INTO role_tickets
@@ -142,7 +144,7 @@ export async function POST(
             item.name,
             item.description,
             shopItemId,
-            1, // consume_quantity = 1
+            consumeQuantity,
             1, // remove_previous_role = true
             null, // fixed_role_id = null (관리자가 설정)
             effectDurationSeconds,
