@@ -410,7 +410,7 @@ export const inventoryCommand: Command = {
       // fixedRoleId가 설정되어 있지만 아직 적용되지 않은 아이템 자동 적용
       const autoAppliedRoles: { itemName: string; roleId: string }[] = [];
       for (const ownedItem of ownedItems) {
-        console.log(`[Inventory] Checking item: ${ownedItem.shopItem.name}, isTicket: ${ownedItem.isTicket}, ticket: ${JSON.stringify(ownedItem.ticket)}, userItem.fixedRoleId: ${ownedItem.userItem.fixedRoleId}`);
+        console.log(`[Inv] Item: ${ownedItem.shopItem.name}, isTicket: ${ownedItem.isTicket}, ticketFixedRole: ${ownedItem.ticket?.fixedRoleId}, userFixedRole: ${ownedItem.userItem.fixedRoleId}`);
 
         // 이미 fixed_role_id가 적용되어 있으면 스킵
         if (ownedItem.userItem.fixedRoleId) {
@@ -428,39 +428,38 @@ export const inventoryCommand: Command = {
             ownedItem.userItem.id
           );
 
-          console.log(`[Inventory] activateResult:`, JSON.stringify(activateResult));
+          console.log(`[Inv] activateResult: success=${activateResult.success}, hasData=${activateResult.success && !!activateResult.data}`);
 
           if (activateResult.success && activateResult.data) {
             // Discord 역할 부여
             try {
-              console.log(`[Inventory] Fetching member ${userId}...`);
+              console.log(`[Inv] Fetching member...`);
               const member = await interaction.guild?.members.fetch(userId);
-              console.log(`[Inventory] Member fetched: ${!!member}`);
+              console.log(`[Inv] Member: ${!!member}`);
 
               if (member) {
-                // cache.get 대신 fetch 사용 (캐시에 없을 수 있음)
-                console.log(`[Inventory] Fetching role ${activateResult.data.fixedRoleId}...`);
+                console.log(`[Inv] Fetching role...`);
                 const role = await interaction.guild?.roles.fetch(activateResult.data.fixedRoleId);
-                console.log(`[Inventory] Role fetched: ${!!role}, role name: ${role?.name}`);
+                console.log(`[Inv] Role: ${!!role}, name: ${role?.name}`);
 
                 const alreadyHasRole = member.roles.cache.has(activateResult.data.fixedRoleId);
-                console.log(`[Inventory] Already has role: ${alreadyHasRole}`);
+                console.log(`[Inv] Already has: ${alreadyHasRole}`);
 
                 if (role && !alreadyHasRole) {
-                  console.log(`[Inventory] Adding role to member...`);
+                  console.log(`[Inv] Adding role...`);
                   await member.roles.add(role);
                   autoAppliedRoles.push({
                     itemName: ownedItem.shopItem.name,
                     roleId: activateResult.data.fixedRoleId,
                   });
-                  console.log(`[Inventory] SUCCESS: Auto-applied fixed role ${activateResult.data.fixedRoleId} for item ${ownedItem.shopItem.name}`);
+                  console.log(`[Inv] SUCCESS!`);
                 }
               }
             } catch (roleError) {
-              console.error('[Inventory] Auto role grant failed:', roleError);
+              console.error('[Inv] FAILED:', roleError);
             }
           } else {
-            console.log(`[Inventory] activateResult failed or no data`);
+            console.log(`[Inv] activateResult failed or no data`);
           }
         }
       }
