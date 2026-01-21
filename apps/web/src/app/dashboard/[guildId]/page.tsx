@@ -1,20 +1,21 @@
 "use client";
 
 import { useParams } from "next/navigation";
-import { useGuilds, useGuildStats, useMemberActivityTrend } from "@/hooks/queries";
+import { useGuilds, useGuildStats, useMemberTrend } from "@/hooks/queries";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { Icon } from "@iconify/react";
 import { DiscordIcon } from "@/components/icons/discord-icon";
 import { getBotInviteUrl } from "@/lib/discord";
-import { MemberActivityTrendChart } from "@/components/charts/member-activity-trend-chart";
+import { MemberTrendChart } from "@/components/charts/member-trend-chart";
 
 export default function GuildDashboardPage() {
   const params = useParams();
   const guildId = params["guildId"] as string;
   const { data: guilds, isLoading: guildsLoading } = useGuilds();
   const { data: stats, isLoading: statsLoading } = useGuildStats(guildId);
-  const { data: activityTrend, isLoading: activityLoading } = useMemberActivityTrend(guildId);
+  const { data: monthlyTrend, isLoading: monthlyLoading } = useMemberTrend(guildId, "monthly");
+  const { data: yearlyTrend, isLoading: yearlyLoading } = useMemberTrend(guildId, "yearly");
 
   const guild = guilds?.find((g) => g.id === guildId);
   const isLoading = guildsLoading || statsLoading;
@@ -175,28 +176,23 @@ export default function GuildDashboardPage() {
         </div>
       )}
 
-      {/* Member Activity Trend Chart */}
+      {/* Member Trend Chart */}
       <div className="animate-fade-up" style={{ animationDelay: "250ms" }}>
         <div className="bg-white/5 backdrop-blur-sm rounded-2xl p-6 border border-white/10">
           <div className="flex items-center gap-3 mb-4">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500 to-green-500 flex items-center justify-center">
-              <Icon icon="solar:graph-up-bold" className="w-5 h-5 text-white" />
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center">
+              <Icon icon="solar:users-group-rounded-bold" className="w-5 h-5 text-white" />
             </div>
             <div>
-              <h3 className="font-semibold text-white">회원 활동 추이</h3>
-              <p className="text-xs text-white/40">최근 7일 일별 활동 유저 수 (텍스트 또는 음성)</p>
+              <h3 className="font-semibold text-white">회원수 추이</h3>
+              <p className="text-xs text-white/40">총 회원수 및 신규 가입 추이</p>
             </div>
-            {activityTrend && (
-              <div className="ml-auto text-right">
-                <p className="text-xs text-white/40">일 평균</p>
-                <p className="text-lg font-bold text-emerald-400">{activityTrend.avgDailyActive}명</p>
-              </div>
-            )}
           </div>
-          <MemberActivityTrendChart
-            data={activityTrend?.dailyTrend ?? []}
-            totalMembers={stats?.totalMembers ?? 0}
-            isLoading={activityLoading}
+          <MemberTrendChart
+            monthlyData={monthlyTrend?.dailyTrend ?? []}
+            yearlyData={yearlyTrend?.dailyTrend ?? []}
+            isMonthlyLoading={monthlyLoading}
+            isYearlyLoading={yearlyLoading}
           />
         </div>
       </div>
