@@ -104,7 +104,29 @@ export class RoleTicketRepository implements RoleTicketRepositoryPort {
         'SELECT * FROM role_tickets WHERE guild_id = ? AND enabled = 1 ORDER BY id ASC',
         [guildId]
       );
-      return Result.ok(rows.map((row) => toRoleTicket(row)));
+
+      if (rows.length === 0) {
+        return Result.ok([]);
+      }
+
+      // 모든 티켓의 roleOptions 한 번에 조회
+      const ticketIds = rows.map(r => r.id);
+      const [optionRows] = await this.pool.execute<TicketRoleOptionRow[]>(
+        `SELECT * FROM ticket_role_options WHERE ticket_id IN (${ticketIds.map(() => '?').join(',')}) ORDER BY display_order ASC`,
+        ticketIds
+      );
+
+      // ticketId별로 roleOptions 그룹화
+      const optionsByTicketId = new Map<number, TicketRoleOption[]>();
+      for (const row of optionRows) {
+        const ticketId = row.ticket_id;
+        if (!optionsByTicketId.has(ticketId)) {
+          optionsByTicketId.set(ticketId, []);
+        }
+        optionsByTicketId.get(ticketId)!.push(toTicketRoleOption(row));
+      }
+
+      return Result.ok(rows.map((row) => toRoleTicket(row, optionsByTicketId.get(row.id))));
     } catch (error) {
       return Result.err({
         type: 'QUERY_ERROR',

@@ -76,6 +76,10 @@ export class InventoryService {
     const availableTickets: AvailableTicket[] = [];
 
     for (const ticket of tickets) {
+      // 교환 가능한 역할 옵션이 없으면 드롭다운에 표시하지 않음
+      // (fixedRoleId만 있는 경우 역할이 자동 적용되므로 교환 UI 불필요)
+      if (!ticket.roleOptions || ticket.roleOptions.length === 0) continue;
+
       // 해당 선택권에 연결된 상점 아이템을 유저가 보유하고 있는지 확인
       const userItem = userItems.find((item) => item.shopItemId === ticket.shopItemId);
       if (!userItem) continue;
