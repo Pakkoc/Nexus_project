@@ -9,6 +9,7 @@ import {
   ResponsiveContainer,
   Tooltip,
   CartesianGrid,
+  ReferenceLine,
 } from "recharts";
 import type { MemberTrendItem } from "@/hooks/queries/use-member-trend";
 
@@ -54,6 +55,11 @@ export function MemberTrendChart({
     Math.ceil(maxTotal + totalPadding),
   ];
   const newDomain: [number, number] = [0, Math.ceil(maxNew * 1.2)];
+
+  // 그리드 라인을 위한 Y축 tick 값 계산
+  const yTickCount = 5;
+  const yStep = (totalDomain[1] - totalDomain[0]) / (yTickCount - 1);
+  const yTicks = Array.from({ length: yTickCount }, (_, i) => totalDomain[0] + yStep * i);
 
   // X축 라벨 간격 조정 (연간은 더 띄우기)
   const tickInterval = period === "yearly" ? 13 : 4;
@@ -106,9 +112,20 @@ export function MemberTrendChart({
             <ComposedChart data={data} margin={{ top: 10, right: 40, left: 40, bottom: 0 }}>
               <CartesianGrid
                 strokeDasharray="3 3"
-                stroke="rgba(255,255,255,0.15)"
-                syncWithTicks={true}
+                stroke="rgba(255,255,255,0.1)"
+                horizontal={false}
+                vertical={true}
               />
+              {/* 수평 그리드 라인 (ReferenceLine으로 직접 그리기) */}
+              {yTicks.map((tick) => (
+                <ReferenceLine
+                  key={tick}
+                  y={tick}
+                  yAxisId="total"
+                  stroke="rgba(255,255,255,0.1)"
+                  strokeDasharray="3 3"
+                />
+              ))}
               <XAxis
                 dataKey="label"
                 axisLine={false}
