@@ -17,14 +17,16 @@ export function XpDailyTrendChart({
     1
   );
 
+  const skeletonHeights = [60, 80, 45, 70, 55, 85, 65];
+
   if (isLoading) {
     return (
       <div className="flex items-end justify-between gap-2 h-[140px] px-2">
-        {[...Array(7)].map((_, i) => (
+        {skeletonHeights.map((height, i) => (
           <div
             key={i}
             className="flex-1 bg-white/5 rounded-t animate-pulse"
-            style={{ height: `${30 + Math.random() * 70}%` }}
+            style={{ height: `${height}%` }}
           />
         ))}
       </div>
