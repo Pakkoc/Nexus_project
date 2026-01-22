@@ -513,6 +513,11 @@ export const inventoryCommand: Command = {
       // 초기 렌더링
       const response = await interaction.editReply(renderTicketSelect(true));
 
+      // 5분 후 자동 삭제
+      setTimeout(() => {
+        interaction.deleteReply().catch(() => {});
+      }, 300000);
+
       // 통합 컬렉터
       const collector = response.createMessageComponentCollector({
         filter: (i) => i.user.id === userId,
@@ -747,10 +752,6 @@ export const inventoryCommand: Command = {
             // 무시
           }
         }
-        // 5분 후 자동 삭제
-        setTimeout(() => {
-          interaction.deleteReply().catch(() => {});
-        }, 300000);
       });
 
     } catch (error) {
