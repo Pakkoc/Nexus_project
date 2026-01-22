@@ -248,20 +248,19 @@ export default function StatsPage() {
             />
           </div>
 
-          {/* 국고 추이 */}
+          {/* 지갑 보유량 분포 */}
           <div className="bg-white/5 backdrop-blur-sm rounded-2xl p-6 border border-white/10">
             <div className="flex items-center gap-3 mb-4">
-              <Icon icon="solar:wallet-money-bold" className="w-5 h-5 text-emerald-400" />
+              <Icon icon="solar:wallet-bold" className="w-5 h-5 text-emerald-400" />
               <div>
-                <h3 className="font-semibold text-white">국고 추이</h3>
-                <p className="text-xs text-white/40">최근 7일</p>
+                <h3 className="font-semibold text-white">지갑 보유량 분포</h3>
+                <p className="text-xs text-white/40">토피 기준</p>
               </div>
             </div>
-            <TreasuryTrendChart
-              data={treasuryStats?.dailyTrend ?? []}
-              totalIncome={treasuryStats?.totalIncome ?? 0}
-              totalExpense={treasuryStats?.totalExpense ?? 0}
-              isLoading={treasuryStatsLoading}
+            <WalletDistributionChart
+              data={walletDistribution?.distribution ?? []}
+              top10Percent={walletDistribution?.top10Percent ?? 0}
+              isLoading={walletLoading}
               currencyName="토피"
             />
           </div>
@@ -281,19 +280,20 @@ export default function StatsPage() {
             />
           </div>
 
-          {/* 지갑 보유량 분포 */}
+          {/* 국고 추이 */}
           <div className="lg:col-span-2 bg-white/5 backdrop-blur-sm rounded-2xl p-6 border border-white/10">
             <div className="flex items-center gap-3 mb-4">
-              <Icon icon="solar:wallet-bold" className="w-5 h-5 text-emerald-400" />
+              <Icon icon="solar:wallet-money-bold" className="w-5 h-5 text-emerald-400" />
               <div>
-                <h3 className="font-semibold text-white">지갑 보유량 분포</h3>
-                <p className="text-xs text-white/40">토피 기준</p>
+                <h3 className="font-semibold text-white">국고 추이</h3>
+                <p className="text-xs text-white/40">최근 7일</p>
               </div>
             </div>
-            <WalletDistributionChart
-              data={walletDistribution?.distribution ?? []}
-              top10Percent={walletDistribution?.top10Percent ?? 0}
-              isLoading={walletLoading}
+            <TreasuryTrendChart
+              data={treasuryStats?.dailyTrend ?? []}
+              totalIncome={treasuryStats?.totalIncome ?? 0}
+              totalExpense={treasuryStats?.totalExpense ?? 0}
+              isLoading={treasuryStatsLoading}
               currencyName="토피"
             />
           </div>
