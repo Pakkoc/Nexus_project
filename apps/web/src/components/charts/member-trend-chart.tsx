@@ -8,6 +8,7 @@ import {
   YAxis,
   ResponsiveContainer,
   Tooltip,
+  CartesianGrid,
 } from "recharts";
 import type { MemberTrendItem } from "@/hooks/queries/use-member-trend";
 
@@ -103,6 +104,11 @@ export function MemberTrendChart({
         <div className="h-[200px]">
           <ResponsiveContainer width="100%" height="100%">
             <ComposedChart data={data} margin={{ top: 10, right: 40, left: 40, bottom: 0 }}>
+              <CartesianGrid
+                strokeDasharray="3 3"
+                stroke="rgba(255,255,255,0.1)"
+                vertical={false}
+              />
               <XAxis
                 dataKey="label"
                 axisLine={false}
