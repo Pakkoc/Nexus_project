@@ -6,6 +6,7 @@ import type { CurrencyTransactionRepositoryPort } from '../port/currency-transac
 import type { TaxHistoryRepositoryPort, CreateTaxHistoryInput } from '../port/tax-history-repository.port';
 import type { ShopRepositoryPort } from '../port/shop-repository.port';
 import type { TreasuryRepositoryPort } from '../../treasury/port/treasury-repository.port';
+import type { VaultRepositoryPort } from '../port/vault-repository.port';
 import { Result } from '../../shared/types/result';
 import { createTransaction } from '../domain/currency-transaction';
 
@@ -48,6 +49,7 @@ export class TaxService {
     private readonly taxHistoryRepo: TaxHistoryRepositoryPort,
     private readonly shopRepo: ShopRepositoryPort,
     private readonly clock: ClockPort,
+    private readonly vaultRepo: VaultRepositoryPort,
     private readonly treasuryRepo?: TreasuryRepositoryPort
   ) {}
 
@@ -140,7 +142,17 @@ export class TaxService {
     for (const wallet of walletsResult.data) {
       if (wallet.balance <= BigInt(0)) continue;
 
-      const fullTaxAmount = calculateMonthlyTax(wallet.balance, settings.monthlyTaxPercent);
+      // 금고 잔액 조회 (금고에 있는 돈은 세금에서 제외)
+      const vaultResult = await this.vaultRepo.findByUser(guildId, wallet.userId);
+      const vaultBalance = vaultResult.success && vaultResult.data
+        ? vaultResult.data.depositedAmount
+        : BigInt(0);
+
+      // 과세 대상 금액 = 지갑 잔액 - 금고 잔액
+      const taxableBalance = wallet.balance - vaultBalance;
+      if (taxableBalance <= BigInt(0)) continue;
+
+      const fullTaxAmount = calculateMonthlyTax(taxableBalance, settings.monthlyTaxPercent);
 
       // 세금감면권 확인 (미리보기에서는 소모하지 않음)
       const { hasExemption, exemptPercent } = await this.checkTaxExemption(guildId, wallet.userId);
@@ -225,7 +237,17 @@ export class TaxService {
     for (const wallet of walletsResult.data) {
       if (wallet.balance <= BigInt(0)) continue;
 
-      const fullTaxAmount = calculateMonthlyTax(wallet.balance, settings.monthlyTaxPercent);
+      // 금고 잔액 조회 (금고에 있는 돈은 세금에서 제외)
+      const vaultResult = await this.vaultRepo.findByUser(guildId, wallet.userId);
+      const vaultBalance = vaultResult.success && vaultResult.data
+        ? vaultResult.data.depositedAmount
+        : BigInt(0);
+
+      // 과세 대상 금액 = 지갑 잔액 - 금고 잔액
+      const taxableBalance = wallet.balance - vaultBalance;
+      if (taxableBalance <= BigInt(0)) continue;
+
+      const fullTaxAmount = calculateMonthlyTax(taxableBalance, settings.monthlyTaxPercent);
 
       // 세금감면권 사용 시도 (실제 소모)
       const { used: hasExemption, exemptPercent, reason: exemptionReason } = await this.useTaxExemption(guildId, wallet.userId);

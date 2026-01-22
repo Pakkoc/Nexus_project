@@ -144,6 +144,7 @@ export function createContainer(): Container {
     taxHistoryRepo,
     shopRepo,
     clock,
+    vaultRepo,
     treasuryRepo
   );
 
