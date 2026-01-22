@@ -74,7 +74,7 @@ export function WelfareHealthChart({
       {/* 핵심 지표 헤더 */}
       <div className="flex items-center justify-between">
         <div>
-          <h4 className="text-sm font-medium text-white/70">국가 복지 건전성</h4>
+          <h4 className="text-sm font-medium text-white/70">서버 복지 건전성</h4>
           <p className="text-xs text-white/40">Welfare Health Index</p>
         </div>
         <div className="flex items-center gap-2">

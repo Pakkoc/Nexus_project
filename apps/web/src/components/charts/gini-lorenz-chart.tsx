@@ -71,7 +71,7 @@ export function GiniLorenzChart({
       {/* 차트 헤더 */}
       <div className="flex items-center justify-between">
         <div>
-          <h4 className="text-sm font-medium text-white/70">국가 불평등 지수</h4>
+          <h4 className="text-sm font-medium text-white/70">서버 불평등 지수</h4>
           <p className="text-xs text-white/40">Gini Coefficient</p>
         </div>
         <div className="text-right">
