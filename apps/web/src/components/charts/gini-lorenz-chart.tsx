@@ -81,7 +81,7 @@ export function GiniLorenzChart({
       </div>
 
       {/* 로렌츠 곡선 차트 */}
-      <div className="h-[200px] relative">
+      <div className="h-[200px]">
         <ResponsiveContainer width="100%" height="100%">
           <AreaChart data={chartData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
             <defs>
@@ -153,17 +153,17 @@ export function GiniLorenzChart({
             />
           </AreaChart>
         </ResponsiveContainer>
+      </div>
 
-        {/* 범례 오버레이 */}
-        <div className="absolute top-2 right-2 flex flex-col gap-1 text-xs">
-          <div className="flex items-center gap-2">
-            <div className="w-4 h-0.5 bg-green-500" style={{ borderStyle: "dashed" }} />
-            <span className="text-white/50">완전균등선</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="w-4 h-0.5 bg-white" />
-            <span className="text-white/50">실제 분포</span>
-          </div>
+      {/* 범례 */}
+      <div className="flex items-center justify-center gap-6 text-xs">
+        <div className="flex items-center gap-2">
+          <div className="w-5 h-0.5 bg-green-500 border-dashed" style={{ borderTopWidth: 2, borderTopStyle: "dashed", backgroundColor: "transparent", borderColor: "#22c55e" }} />
+          <span className="text-white/50">완전균등선</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <div className="w-5 h-0.5 bg-white" />
+          <span className="text-white/50">실제 분포</span>
         </div>
       </div>
 
