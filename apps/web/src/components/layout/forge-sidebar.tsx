@@ -87,7 +87,7 @@ export function ForgeSidebar({ guildId }: SidebarProps) {
   };
 
   const isCategoryOpen = (name: string) => {
-    return openCategories[name] ?? false;
+    return openCategories[name] ?? true;
   };
 
   const getVisibleChildren = (name: string, children: NonNullable<typeof navigation[1]["children"]>) => {
