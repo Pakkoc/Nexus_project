@@ -8,12 +8,19 @@ export interface WalletDistributionItem {
   count: number;
 }
 
+export interface LorenzPoint {
+  x: number;
+  y: number;
+}
+
 export interface WalletDistributionData {
   distribution: WalletDistributionItem[];
   totalWallets: number;
   totalBalance: number;
   top10Percent: number;
   giniCoefficient: number;
+  lorenzCurve: LorenzPoint[];
+  bottom80Percent: number;
 }
 
 export function useWalletDistribution(guildId: string) {

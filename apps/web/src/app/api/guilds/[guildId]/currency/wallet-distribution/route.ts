@@ -67,9 +67,35 @@ function calculateGiniCoefficient(balances: number[]): number {
   const sorted = [...balances].sort((a, b) => a - b);
   let weightedSum = 0;
   for (let i = 0; i < n; i++) {
-    weightedSum += (i + 1) * sorted[i];
+    weightedSum += (i + 1) * (sorted[i] ?? 0);
   }
   return (2 * weightedSum) / (n * sum) - (n + 1) / n;
+}
+
+// 로렌츠 곡선 데이터 계산 (누적 인구 비율 vs 누적 자산 비율)
+function calculateLorenzCurve(balances: number[]): { x: number; y: number }[] {
+  if (balances.length === 0) return [{ x: 0, y: 0 }, { x: 100, y: 100 }];
+
+  const sorted = [...balances].sort((a, b) => a - b);
+  const n = sorted.length;
+  const totalWealth = sorted.reduce((a, b) => a + b, 0);
+
+  if (totalWealth === 0) return [{ x: 0, y: 0 }, { x: 100, y: 100 }];
+
+  const points: { x: number; y: number }[] = [{ x: 0, y: 0 }];
+
+  let cumulativeWealth = 0;
+  // 10% 간격으로 포인트 생성 (10개 포인트)
+  for (let i = 1; i <= 10; i++) {
+    const populationIndex = Math.floor((i / 10) * n) - 1;
+    cumulativeWealth = sorted.slice(0, populationIndex + 1).reduce((a, b) => a + b, 0);
+    points.push({
+      x: i * 10,
+      y: Math.round((cumulativeWealth / totalWealth) * 100 * 100) / 100,
+    });
+  }
+
+  return points;
 }
 
 export async function GET(
@@ -139,12 +165,15 @@ export async function GET(
          ) as top10`,
         [guildId, top10Count]
       );
-      const top10Balance = Number(top10Stats[0]?.top10_balance ?? 0);
+      const top10Balance = Number(top10Stats[0]?.["top10_balance"] ?? 0);
       top10Percent = totalBalance > 0 ? Math.round((top10Balance / totalBalance) * 100) : 0;
     }
 
-    // 지니 계수 계산
+    // 지니 계수 및 로렌츠 곡선 계산
     let giniCoefficient = 0;
+    let lorenzCurve: { x: number; y: number }[] = [{ x: 0, y: 0 }, { x: 100, y: 100 }];
+    let bottom80Percent = 0; // 하위 80%가 보유한 자산 비율
+
     if (totalWallets > 0) {
       const [allBalances] = await pool.query<WalletBalanceRow[]>(
         `SELECT balance FROM topy_wallets WHERE guild_id = ?`,
@@ -152,6 +181,11 @@ export async function GET(
       );
       const balances = allBalances.map(row => Number(row.balance));
       giniCoefficient = Math.round(calculateGiniCoefficient(balances) * 100) / 100;
+      lorenzCurve = calculateLorenzCurve(balances);
+
+      // 하위 80% 자산 비율 계산
+      const point80 = lorenzCurve.find(p => p.x === 80);
+      bottom80Percent = point80 ? Math.round(point80.y) : 0;
     }
 
     const distMap = new Map(distributionStats.map(r => [r.balance_range, Number(r.count)]));
@@ -167,6 +201,8 @@ export async function GET(
       totalBalance,
       top10Percent,
       giniCoefficient,
+      lorenzCurve,
+      bottom80Percent,
     });
   } catch (error) {
     console.error("Error fetching wallet distribution:", error);

@@ -18,6 +18,8 @@ import { TreasuryTrendChart } from "@/components/charts/treasury-trend-chart";
 import { WalletDistributionChart } from "@/components/charts/wallet-distribution-chart";
 import { XpDailyTrendChart } from "@/components/charts/xp-daily-trend-chart";
 import { ActiveUsersChart } from "@/components/charts/active-users-chart";
+import { GiniLorenzChart } from "@/components/charts/gini-lorenz-chart";
+import { WelfareHealthChart } from "@/components/charts/welfare-health-chart";
 
 export default function StatsPage() {
   const params = useParams();
@@ -209,51 +211,41 @@ export default function StatsPage() {
 
         {/* 차트 그리드 */}
         <div className="grid gap-6 grid-cols-1 lg:grid-cols-2">
-          {/* 경제 지표 */}
+          {/* 복지 건전성 지수 */}
           <div className="bg-white/5 backdrop-blur-sm rounded-2xl p-6 border border-white/10">
             <div className="flex items-center gap-3 mb-4">
               <Icon icon="solar:scale-bold" className="w-5 h-5 text-emerald-400" />
               <div>
-                <h3 className="font-semibold text-white">경제 지표</h3>
-                <p className="text-xs text-white/40">복지 지수 및 지니 계수</p>
+                <h3 className="font-semibold text-white">복지 건전성 지수</h3>
+                <p className="text-xs text-white/40">재분배 vs 통화 발행 비율</p>
               </div>
             </div>
-            <div className="grid grid-cols-2 gap-4">
-              {/* 복지 지수 */}
-              <div className="bg-white/5 rounded-xl p-4">
-                <p className="text-xs text-white/40 mb-1">복지 지수</p>
-                <p className="text-2xl font-bold text-white mb-2">{treasuryStats?.welfareIndex ?? 0}%</p>
-                <div className="w-full bg-white/10 rounded-full h-1.5 mb-1">
-                  <div
-                    className="bg-gradient-to-r from-emerald-500 to-green-500 h-1.5 rounded-full"
-                    style={{ width: `${Math.min(treasuryStats?.welfareIndex ?? 0, 100)}%` }}
-                  />
-                </div>
-                <p className="text-xs text-white/40">
-                  {(treasuryStats?.welfareIndex ?? 0) >= 50 ? "적극적" : (treasuryStats?.welfareIndex ?? 0) >= 20 ? "보통" : "소극적"}
-                </p>
-              </div>
-              {/* 지니 계수 */}
-              <div className="bg-white/5 rounded-xl p-4">
-                <p className="text-xs text-white/40 mb-1">지니 계수</p>
-                <p className="text-2xl font-bold text-white mb-2">{walletDistribution?.giniCoefficient?.toFixed(2) ?? "0.00"}</p>
-                <div className="w-full bg-white/10 rounded-full h-1.5 mb-1">
-                  <div
-                    className={`h-1.5 rounded-full ${
-                      (walletDistribution?.giniCoefficient ?? 0) < 0.3
-                        ? "bg-gradient-to-r from-green-500 to-emerald-500"
-                        : (walletDistribution?.giniCoefficient ?? 0) < 0.5
-                        ? "bg-gradient-to-r from-yellow-500 to-amber-500"
-                        : "bg-gradient-to-r from-red-500 to-rose-500"
-                    }`}
-                    style={{ width: `${Math.min((walletDistribution?.giniCoefficient ?? 0) * 100, 100)}%` }}
-                  />
-                </div>
-                <p className="text-xs text-white/40">
-                  {(walletDistribution?.giniCoefficient ?? 0) < 0.3 ? "평등" : (walletDistribution?.giniCoefficient ?? 0) < 0.5 ? "보통" : "집중"}
-                </p>
+            <WelfareHealthChart
+              welfareHealthIndex={treasuryStats?.welfareHealthIndex ?? 100}
+              welfareScale={treasuryStats?.welfareScale ?? 0}
+              welfareGrade={treasuryStats?.welfareGrade ?? { grade: 'S', label: '최상', description: '' }}
+              redistributionAmount={treasuryStats?.redistributionAmount ?? 0}
+              emissionAmount={treasuryStats?.emissionAmount ?? 0}
+              totalWelfareAmount={treasuryStats?.totalWelfareAmount ?? 0}
+              isLoading={treasuryStatsLoading}
+            />
+          </div>
+
+          {/* 지니계수 (로렌츠 곡선) */}
+          <div className="bg-white/5 backdrop-blur-sm rounded-2xl p-6 border border-white/10">
+            <div className="flex items-center gap-3 mb-4">
+              <Icon icon="solar:graph-new-bold" className="w-5 h-5 text-emerald-400" />
+              <div>
+                <h3 className="font-semibold text-white">자산 불평등 지수</h3>
+                <p className="text-xs text-white/40">로렌츠 곡선</p>
               </div>
             </div>
+            <GiniLorenzChart
+              lorenzCurve={walletDistribution?.lorenzCurve ?? []}
+              giniCoefficient={walletDistribution?.giniCoefficient ?? 0}
+              bottom80Percent={walletDistribution?.bottom80Percent ?? 0}
+              isLoading={walletLoading}
+            />
           </div>
 
           {/* 국고 추이 */}
@@ -290,7 +282,7 @@ export default function StatsPage() {
           </div>
 
           {/* 지갑 보유량 분포 */}
-          <div className="bg-white/5 backdrop-blur-sm rounded-2xl p-6 border border-white/10">
+          <div className="lg:col-span-2 bg-white/5 backdrop-blur-sm rounded-2xl p-6 border border-white/10">
             <div className="flex items-center gap-3 mb-4">
               <Icon icon="solar:wallet-bold" className="w-5 h-5 text-emerald-400" />
               <div>

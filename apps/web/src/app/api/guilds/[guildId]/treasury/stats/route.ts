@@ -127,7 +127,9 @@ export async function GET(
     const totalIncome = dailyTrend.reduce((sum, d) => sum + d.income, 0);
     const totalExpense = dailyTrend.reduce((sum, d) => sum + d.expense, 0);
 
-    // 복지 지수: 전체 기간 기준 (관리자 지급 / 총 수입) * 100
+    // 복지 건전성 지수 계산
+    // 재분배(수입에서 다시 지급) vs 통화 발행(새로 찍어낸 돈)
+    // 건전성 = 재분배 비율 = 재분배 / (재분배 + 발행) * 100
     const [welfareStats] = await pool.query<RowDataPacket[]>(
       `SELECT
         COALESCE(SUM(CASE WHEN transaction_type = 'admin_distribute' THEN amount ELSE 0 END), 0) as total_distribute,
@@ -137,18 +139,51 @@ export async function GET(
       [guildId]
     );
 
-    const allTimeDistribute = Number(welfareStats[0]?.total_distribute ?? 0);
-    const allTimeIncome = Number(welfareStats[0]?.total_income ?? 0);
-    const welfareIndex = allTimeIncome > 0
-      ? Math.round((allTimeDistribute / allTimeIncome) * 100)
+    const totalDistribute = Number(welfareStats[0]?.["total_distribute"] ?? 0);
+    const totalRedistributionIncome = Number(welfareStats[0]?.["total_income"] ?? 0);
+
+    // 재분배 금액: 국고 수입 중 실제 지급된 금액 (min(수입, 지급))
+    const redistributionAmount = Math.min(totalRedistributionIncome, totalDistribute);
+    // 발행 금액: 수입을 초과하여 지급한 금액 (지급 - 수입, 0 이상)
+    const emissionAmount = Math.max(0, totalDistribute - totalRedistributionIncome);
+    // 전체 복지 금액
+    const totalWelfareAmount = redistributionAmount + emissionAmount;
+
+    // 복지 건전성 지수 = 재분배 비율 (0~100%)
+    // 재분배 비율이 높을수록 건전, 발행 비율이 높을수록 포퓰리즘
+    const welfareHealthIndex = totalWelfareAmount > 0
+      ? Math.round((redistributionAmount / totalWelfareAmount) * 100)
+      : 100; // 복지 지출이 없으면 100% (건전)
+
+    // 복지 규모 = 전체 복지 지출 / 총 국고 수입 * 100
+    const welfareScale = totalRedistributionIncome > 0
+      ? Math.round((totalDistribute / totalRedistributionIncome) * 100)
       : 0;
+
+    // 등급 계산
+    const getWelfareGrade = (score: number): { grade: string; label: string; description: string } => {
+      if (score >= 90) return { grade: 'S', label: '최상', description: '이상적 재분배: 세수가 경제 시스템 내에서 완벽하게 선순환됨' };
+      if (score >= 75) return { grade: 'A', label: '양호', description: '안정적 복지: 적절한 신규 통화 발행과 재분배가 조화를 이룸' };
+      if (score >= 50) return { grade: 'B', label: '주의', description: '포퓰리즘 경계: 생산성 없는 통화 발행이 늘어나 물가 상승 위험이 있음' };
+      return { grade: 'C', label: '위험', description: '신생/과도기: 국가 재정이 부족하여 돈을 찍어서 복지를 유지하는 단계' };
+    };
+
+    const welfareGrade = getWelfareGrade(welfareHealthIndex);
 
     return NextResponse.json({
       dailyTrend,
       byType,
       totalIncome,
       totalExpense,
-      welfareIndex,
+      // 복지 건전성 지수
+      welfareHealthIndex,
+      welfareScale,
+      welfareGrade,
+      redistributionAmount,
+      emissionAmount,
+      totalWelfareAmount,
+      // 기존 호환성 유지
+      welfareIndex: welfareScale,
       period: '7days',
     });
   } catch (error) {

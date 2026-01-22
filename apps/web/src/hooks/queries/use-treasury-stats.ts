@@ -17,11 +17,25 @@ export interface TreasuryTypeStats {
   amount: number;
 }
 
+export interface WelfareGrade {
+  grade: string;
+  label: string;
+  description: string;
+}
+
 export interface TreasuryStatsData {
   dailyTrend: DailyTrendItem[];
   byType: TreasuryTypeStats[];
   totalIncome: number;
   totalExpense: number;
+  // 복지 건전성 지수
+  welfareHealthIndex: number;
+  welfareScale: number;
+  welfareGrade: WelfareGrade;
+  redistributionAmount: number;
+  emissionAmount: number;
+  totalWelfareAmount: number;
+  // 기존 호환성
   welfareIndex: number;
   period: string;
 }
