@@ -1,6 +1,14 @@
 "use client";
 
-import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip, Cell } from "recharts";
+import {
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  ResponsiveContainer,
+  Tooltip,
+  CartesianGrid,
+} from "recharts";
 import type { XpDailyTrendItem } from "@/hooks/queries/use-xp-daily-trend";
 
 interface XpDailyTrendChartProps {
@@ -12,23 +20,10 @@ export function XpDailyTrendChart({
   data,
   isLoading,
 }: XpDailyTrendChartProps) {
-  const maxValue = Math.max(
-    ...data.map((d) => Math.max(d.textActive, d.voiceActive)),
-    1
-  );
-
-  const skeletonHeights = [60, 80, 45, 70, 55, 85, 65];
-
   if (isLoading) {
     return (
-      <div className="flex items-end justify-between gap-2 h-[140px] px-2">
-        {skeletonHeights.map((height, i) => (
-          <div
-            key={i}
-            className="flex-1 bg-white/5 rounded-t animate-pulse"
-            style={{ height: `${height}%` }}
-          />
-        ))}
+      <div className="space-y-4">
+        <div className="h-[140px] bg-white/5 rounded animate-pulse" />
       </div>
     );
   }
@@ -43,24 +38,54 @@ export function XpDailyTrendChart({
     );
   }
 
+  const maxValue = Math.max(
+    ...data.map((d) => Math.max(d.textActive, d.voiceActive)),
+    1
+  );
+
   return (
     <div className="space-y-2">
+      {/* 범례 */}
+      <div className="flex items-center justify-center gap-6 text-xs">
+        <div className="flex items-center gap-1.5">
+          <div className="w-3 h-0.5 bg-green-400 rounded-full" />
+          <span className="text-white/60">텍스트</span>
+        </div>
+        <div className="flex items-center gap-1.5">
+          <div className="w-3 h-0.5 bg-purple-400 rounded-full" />
+          <span className="text-white/60">음성</span>
+        </div>
+      </div>
+
       <div className="h-[120px]">
         <ResponsiveContainer width="100%" height="100%">
-          <BarChart data={data} barGap={2}>
+          <LineChart data={data} margin={{ top: 5, right: 10, left: 10, bottom: 0 }}>
+            <CartesianGrid
+              strokeDasharray="3 3"
+              stroke="rgba(255,255,255,0.1)"
+              vertical={true}
+              horizontal={true}
+            />
             <XAxis
               dataKey="label"
               axisLine={false}
               tickLine={false}
               tick={{ fill: "rgba(255,255,255,0.4)", fontSize: 10 }}
             />
-            <YAxis hide domain={[0, maxValue * 1.1]} />
+            <YAxis
+              axisLine={false}
+              tickLine={false}
+              tick={{ fill: "rgba(255,255,255,0.4)", fontSize: 10 }}
+              domain={[0, Math.ceil(maxValue * 1.2)]}
+              tickCount={4}
+              width={30}
+            />
             <Tooltip
-              cursor={{ fill: "rgba(255,255,255,0.05)" }}
+              cursor={{ stroke: "rgba(255,255,255,0.1)" }}
               content={({ active, payload, label }) => {
                 if (active && payload && payload.length) {
-                  const text = payload[0]?.value as number;
-                  const voice = payload[1]?.value as number;
+                  const text = payload.find(p => p.dataKey === "textActive")?.value as number;
+                  const voice = payload.find(p => p.dataKey === "voiceActive")?.value as number;
                   return (
                     <div className="bg-slate-900 border border-white/10 rounded-lg px-3 py-2 text-sm">
                       <p className="text-white font-medium mb-1">{label}</p>
@@ -72,28 +97,24 @@ export function XpDailyTrendChart({
                 return null;
               }}
             />
-            <Bar dataKey="textActive" radius={[4, 4, 0, 0]} maxBarSize={20}>
-              {data.map((_, index) => (
-                <Cell key={`text-${index}`} fill="#22c55e" fillOpacity={0.8} />
-              ))}
-            </Bar>
-            <Bar dataKey="voiceActive" radius={[4, 4, 0, 0]} maxBarSize={20}>
-              {data.map((_, index) => (
-                <Cell key={`voice-${index}`} fill="#a855f7" fillOpacity={0.8} />
-              ))}
-            </Bar>
-          </BarChart>
+            <Line
+              type="monotone"
+              dataKey="textActive"
+              stroke="#22c55e"
+              strokeWidth={2}
+              dot={false}
+              activeDot={{ fill: "#22c55e", strokeWidth: 2, stroke: "#fff", r: 4 }}
+            />
+            <Line
+              type="monotone"
+              dataKey="voiceActive"
+              stroke="#a855f7"
+              strokeWidth={2}
+              dot={false}
+              activeDot={{ fill: "#a855f7", strokeWidth: 2, stroke: "#fff", r: 4 }}
+            />
+          </LineChart>
         </ResponsiveContainer>
-      </div>
-      <div className="flex items-center justify-center gap-4 text-xs">
-        <div className="flex items-center gap-1.5">
-          <div className="w-2.5 h-2.5 rounded-full bg-green-500" />
-          <span className="text-white/60">텍스트</span>
-        </div>
-        <div className="flex items-center gap-1.5">
-          <div className="w-2.5 h-2.5 rounded-full bg-purple-500" />
-          <span className="text-white/60">음성</span>
-        </div>
       </div>
     </div>
   );
