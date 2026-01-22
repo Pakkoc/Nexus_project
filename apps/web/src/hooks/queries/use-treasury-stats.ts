@@ -8,6 +8,7 @@ export interface DailyTrendItem {
   label: string;
   income: number;
   expense: number;
+  balance: number;
 }
 
 export interface TreasuryTypeStats {

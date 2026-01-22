@@ -11,6 +11,10 @@ interface DailyStatsRow extends RowDataPacket {
   total_amount: string;
 }
 
+interface TreasuryBalanceRow extends RowDataPacket {
+  topy_balance: bigint;
+}
+
 const TRANSACTION_TYPE_LABELS: Record<string, string> = {
   transfer_fee: '이체 수수료',
   shop_fee: '상점 수수료',
@@ -77,12 +81,35 @@ export async function GET(
       }
     }
 
-    const dailyTrend = last7Days.map(date => ({
+    // 현재 국고 잔액 조회
+    const [treasuryRows] = await pool.query<TreasuryBalanceRow[]>(
+      `SELECT topy_balance FROM guild_treasury WHERE guild_id = ?`,
+      [guildId]
+    );
+    const currentBalance = Number(treasuryRows[0]?.topy_balance ?? 0);
+
+    // 일별 데이터 생성 (역순으로 잔액 계산)
+    const dailyTrendRaw = last7Days.map(date => ({
       date,
       label: format(new Date(date), 'M/d'),
       income: dailyMap.get(date)?.income ?? 0,
       expense: dailyMap.get(date)?.expense ?? 0,
     }));
+
+    // 일별 잔액 계산 (현재 잔액에서 역산)
+    let runningBalance = currentBalance;
+    const dailyTrend = [...dailyTrendRaw].reverse().map((day, index) => {
+      if (index === 0) {
+        // 가장 최근 날짜는 현재 잔액
+        return { ...day, balance: runningBalance };
+      }
+      // 이전 날짜들은 해당 일의 순변동을 더해서 역산
+      const prevDay = dailyTrendRaw[dailyTrendRaw.length - index];
+      if (prevDay) {
+        runningBalance = runningBalance - prevDay.income + prevDay.expense;
+      }
+      return { ...day, balance: runningBalance };
+    }).reverse();
 
     // 유형별 합계
     const typeStats = new Map<string, number>();
