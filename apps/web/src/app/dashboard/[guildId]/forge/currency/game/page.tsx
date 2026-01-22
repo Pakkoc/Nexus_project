@@ -17,12 +17,18 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
 import { Icon } from "@iconify/react";
@@ -34,6 +40,11 @@ export default function GameCenterPage() {
 
   // 패널 채널 선택
   const [selectedChannelId, setSelectedChannelId] = useState("");
+
+  // Combobox 열림 상태
+  const [panelChannelOpen, setPanelChannelOpen] = useState(false);
+  const [managerRoleOpen, setManagerRoleOpen] = useState(false);
+  const [approvalChannelOpen, setApprovalChannelOpen] = useState(false);
 
   // 게임 설정
   const [managerRoleId, setManagerRoleId] = useState<string | null>(null);
@@ -277,27 +288,51 @@ export default function GameCenterPage() {
         </div>
 
         <div className="flex flex-col sm:flex-row gap-3">
-          <Select
-            value={selectedChannelId || undefined}
-            onValueChange={setSelectedChannelId}
-          >
-            <SelectTrigger className="bg-white/5 border-white/10 text-white sm:w-64">
-              <SelectValue placeholder="채널 선택...">
-                {selectedChannelId && channels?.find(c => c.id === selectedChannelId)
-                  ? `# ${channels.find(c => c.id === selectedChannelId)?.name}`
-                  : selectedChannelId
-                    ? "로딩 중..."
-                    : "채널 선택..."}
-              </SelectValue>
-            </SelectTrigger>
-            <SelectContent>
-              {channels?.map((channel) => (
-                <SelectItem key={channel.id} value={channel.id}>
-                  # {channel.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <Popover open={panelChannelOpen} onOpenChange={setPanelChannelOpen}>
+            <PopoverTrigger asChild>
+              <Button
+                variant="outline"
+                role="combobox"
+                className="sm:w-64 justify-between bg-white/5 border-white/10 text-white hover:bg-white/10 font-normal"
+              >
+                {selectedChannelId && channels?.find(c => c.id === selectedChannelId) ? (
+                  <span className="flex items-center gap-2">
+                    <Icon icon="solar:hashtag-linear" className="h-4 w-4 text-white/40" />
+                    {channels.find(c => c.id === selectedChannelId)?.name}
+                  </span>
+                ) : (
+                  <span className="text-white/40">채널 선택...</span>
+                )}
+                <Icon icon="solar:alt-arrow-down-linear" className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
+              <Command>
+                <CommandInput placeholder="채널 검색..." />
+                <CommandList>
+                  <CommandEmpty>채널을 찾을 수 없습니다</CommandEmpty>
+                  <CommandGroup>
+                    {channels?.map((channel) => (
+                      <CommandItem
+                        key={channel.id}
+                        value={channel.name}
+                        onSelect={() => {
+                          setSelectedChannelId(channel.id);
+                          setPanelChannelOpen(false);
+                        }}
+                      >
+                        <Icon icon="solar:hashtag-linear" className="h-4 w-4 text-white/40" />
+                        {channel.name}
+                        {selectedChannelId === channel.id && (
+                          <Icon icon="solar:check-circle-bold" className="ml-auto h-4 w-4 text-indigo-400" />
+                        )}
+                      </CommandItem>
+                    ))}
+                  </CommandGroup>
+                </CommandList>
+              </Command>
+            </PopoverContent>
+          </Popover>
 
           <Button
             onClick={handleCreatePanel}
@@ -342,30 +377,73 @@ export default function GameCenterPage() {
         </div>
 
         <div className="flex flex-col sm:flex-row gap-3">
-          <Select
-            value={managerRoleId || "__none__"}
-            onValueChange={(value) => setManagerRoleId(value === "__none__" ? null : value)}
-          >
-            <SelectTrigger className="bg-white/5 border-white/10 text-white sm:w-64">
-              <SelectValue placeholder="역할 선택..." />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="__none__">없음 (서버 관리 권한만)</SelectItem>
-              {roles?.map((role) => (
-                <SelectItem key={role.id} value={role.id}>
-                  <div className="flex items-center gap-2">
+          <Popover open={managerRoleOpen} onOpenChange={setManagerRoleOpen}>
+            <PopoverTrigger asChild>
+              <Button
+                variant="outline"
+                role="combobox"
+                className="sm:w-64 justify-between bg-white/5 border-white/10 text-white hover:bg-white/10 font-normal"
+              >
+                {managerRoleId ? (
+                  <span className="flex items-center gap-2">
                     <div
                       className="w-3 h-3 rounded-full"
                       style={{
-                        backgroundColor: `#${role.color.toString(16).padStart(6, "0")}`,
+                        backgroundColor: `#${roles?.find(r => r.id === managerRoleId)?.color.toString(16).padStart(6, "0")}`,
                       }}
                     />
-                    @{role.name}
-                  </div>
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+                    @{roles?.find(r => r.id === managerRoleId)?.name}
+                  </span>
+                ) : (
+                  <span className="text-white/40">없음 (서버 관리 권한만)</span>
+                )}
+                <Icon icon="solar:alt-arrow-down-linear" className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
+              <Command>
+                <CommandInput placeholder="역할 검색..." />
+                <CommandList>
+                  <CommandEmpty>역할을 찾을 수 없습니다</CommandEmpty>
+                  <CommandGroup>
+                    <CommandItem
+                      value="__none__"
+                      onSelect={() => {
+                        setManagerRoleId(null);
+                        setManagerRoleOpen(false);
+                      }}
+                    >
+                      <span className="text-white/60">없음 (서버 관리 권한만)</span>
+                      {!managerRoleId && (
+                        <Icon icon="solar:check-circle-bold" className="ml-auto h-4 w-4 text-indigo-400" />
+                      )}
+                    </CommandItem>
+                    {roles?.map((role) => (
+                      <CommandItem
+                        key={role.id}
+                        value={role.name}
+                        onSelect={() => {
+                          setManagerRoleId(role.id);
+                          setManagerRoleOpen(false);
+                        }}
+                      >
+                        <div
+                          className="w-3 h-3 rounded-full"
+                          style={{
+                            backgroundColor: `#${role.color.toString(16).padStart(6, "0")}`,
+                          }}
+                        />
+                        @{role.name}
+                        {managerRoleId === role.id && (
+                          <Icon icon="solar:check-circle-bold" className="ml-auto h-4 w-4 text-indigo-400" />
+                        )}
+                      </CommandItem>
+                    ))}
+                  </CommandGroup>
+                </CommandList>
+              </Command>
+            </PopoverContent>
+          </Popover>
         </div>
         <p className="text-white/40 text-xs mt-2">
           {managerRoleId
@@ -387,28 +465,63 @@ export default function GameCenterPage() {
         </div>
 
         <div className="flex flex-col sm:flex-row gap-3">
-          <Select
-            value={approvalChannelId || "__none__"}
-            onValueChange={(value) => setApprovalChannelId(value === "__none__" ? null : value)}
-          >
-            <SelectTrigger className="bg-white/5 border-white/10 text-white sm:w-64">
-              <SelectValue placeholder="채널 선택...">
-                {approvalChannelId && channels?.find(c => c.id === approvalChannelId)
-                  ? `# ${channels.find(c => c.id === approvalChannelId)?.name}`
-                  : approvalChannelId
-                    ? "로딩 중..."
-                    : "없음 (관리자만 생성 가능)"}
-              </SelectValue>
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="__none__">없음 (관리자만 생성 가능)</SelectItem>
-              {channels?.map((channel) => (
-                <SelectItem key={channel.id} value={channel.id}>
-                  # {channel.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <Popover open={approvalChannelOpen} onOpenChange={setApprovalChannelOpen}>
+            <PopoverTrigger asChild>
+              <Button
+                variant="outline"
+                role="combobox"
+                className="sm:w-64 justify-between bg-white/5 border-white/10 text-white hover:bg-white/10 font-normal"
+              >
+                {approvalChannelId && channels?.find(c => c.id === approvalChannelId) ? (
+                  <span className="flex items-center gap-2">
+                    <Icon icon="solar:hashtag-linear" className="h-4 w-4 text-white/40" />
+                    {channels.find(c => c.id === approvalChannelId)?.name}
+                  </span>
+                ) : (
+                  <span className="text-white/40">없음 (관리자만 생성 가능)</span>
+                )}
+                <Icon icon="solar:alt-arrow-down-linear" className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
+              <Command>
+                <CommandInput placeholder="채널 검색..." />
+                <CommandList>
+                  <CommandEmpty>채널을 찾을 수 없습니다</CommandEmpty>
+                  <CommandGroup>
+                    <CommandItem
+                      value="__none__"
+                      onSelect={() => {
+                        setApprovalChannelId(null);
+                        setApprovalChannelOpen(false);
+                      }}
+                    >
+                      <span className="text-white/60">없음 (관리자만 생성 가능)</span>
+                      {!approvalChannelId && (
+                        <Icon icon="solar:check-circle-bold" className="ml-auto h-4 w-4 text-indigo-400" />
+                      )}
+                    </CommandItem>
+                    {channels?.map((channel) => (
+                      <CommandItem
+                        key={channel.id}
+                        value={channel.name}
+                        onSelect={() => {
+                          setApprovalChannelId(channel.id);
+                          setApprovalChannelOpen(false);
+                        }}
+                      >
+                        <Icon icon="solar:hashtag-linear" className="h-4 w-4 text-white/40" />
+                        {channel.name}
+                        {approvalChannelId === channel.id && (
+                          <Icon icon="solar:check-circle-bold" className="ml-auto h-4 w-4 text-indigo-400" />
+                        )}
+                      </CommandItem>
+                    ))}
+                  </CommandGroup>
+                </CommandList>
+              </Command>
+            </PopoverContent>
+          </Popover>
         </div>
         <p className="text-white/40 text-xs mt-2">
           {approvalChannelId

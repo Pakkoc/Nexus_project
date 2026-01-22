@@ -50,12 +50,18 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
 import { useToast } from "@/hooks/use-toast";
 import { Icon } from "@iconify/react";
 import type { ShopItemV2, InlineRoleOption } from "@/types/shop-v2";
@@ -166,6 +172,11 @@ export default function ShopV2Page() {
 
   // Panel settings - unified shop panel
   const [shopChannelId, setShopChannelId] = useState("");
+
+  // Combobox 열림 상태
+  const [fixedRoleOpen, setFixedRoleOpen] = useState(false);
+  const [exchangeRoleOpen, setExchangeRoleOpen] = useState(false);
+  const [shopChannelOpen, setShopChannelOpen] = useState(false);
 
   const { data: settings } = useCurrencySettings(guildId);
   const updateSettings = useUpdateCurrencySettings(guildId);
@@ -1124,11 +1135,15 @@ export default function ShopV2Page() {
                         <Icon icon="solar:lock-bold" className="h-4 w-4 text-amber-400" />
                         고정 역할 (선택)
                       </FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value || "__none__"}>
-                        <FormControl>
-                          <SelectTrigger className="bg-white/5 border-white/10 text-white">
-                            <SelectValue placeholder="고정 역할 선택 (선택사항)">
-                              {selectedRole && (
+                      <Popover open={fixedRoleOpen} onOpenChange={setFixedRoleOpen}>
+                        <PopoverTrigger asChild>
+                          <FormControl>
+                            <Button
+                              variant="outline"
+                              role="combobox"
+                              className="w-full justify-between bg-white/5 border-white/10 text-white hover:bg-white/10 font-normal"
+                            >
+                              {selectedRole ? (
                                 <div className="flex items-center gap-2">
                                   <div
                                     className="w-3 h-3 rounded-full"
@@ -1138,27 +1153,57 @@ export default function ShopV2Page() {
                                   />
                                   {selectedRole.name}
                                 </div>
+                              ) : (
+                                <span className="text-white/40">고정 역할 선택 (선택사항)</span>
                               )}
-                            </SelectValue>
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="__none__">없음</SelectItem>
-                          {roles?.map((role) => (
-                            <SelectItem key={role.id} value={role.id}>
-                              <div className="flex items-center gap-2">
-                                <div
-                                  className="w-3 h-3 rounded-full"
-                                  style={{
-                                    backgroundColor: `#${role.color.toString(16).padStart(6, "0")}`,
+                              <Icon icon="solar:alt-arrow-down-linear" className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                            </Button>
+                          </FormControl>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
+                          <Command>
+                            <CommandInput placeholder="역할 검색..." />
+                            <CommandList>
+                              <CommandEmpty>역할을 찾을 수 없습니다</CommandEmpty>
+                              <CommandGroup>
+                                <CommandItem
+                                  value="__none__"
+                                  onSelect={() => {
+                                    field.onChange("__none__");
+                                    setFixedRoleOpen(false);
                                   }}
-                                />
-                                {role.name}
-                              </div>
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                                >
+                                  <span className="text-white/60">없음</span>
+                                  {(!field.value || field.value === "__none__") && (
+                                    <Icon icon="solar:check-circle-bold" className="ml-auto h-4 w-4 text-indigo-400" />
+                                  )}
+                                </CommandItem>
+                                {roles?.map((role) => (
+                                  <CommandItem
+                                    key={role.id}
+                                    value={role.name}
+                                    onSelect={() => {
+                                      field.onChange(role.id);
+                                      setFixedRoleOpen(false);
+                                    }}
+                                  >
+                                    <div
+                                      className="w-3 h-3 rounded-full"
+                                      style={{
+                                        backgroundColor: `#${role.color.toString(16).padStart(6, "0")}`,
+                                      }}
+                                    />
+                                    {role.name}
+                                    {field.value === role.id && (
+                                      <Icon icon="solar:check-circle-bold" className="ml-auto h-4 w-4 text-indigo-400" />
+                                    )}
+                                  </CommandItem>
+                                ))}
+                              </CommandGroup>
+                            </CommandList>
+                          </Command>
+                        </PopoverContent>
+                      </Popover>
                       <FormDescription className="text-xs text-white/40">
                         교환 역할과 함께 부여되는 메인 역할. 만료 시 모든 역할 제거됨
                       </FormDescription>
@@ -1250,26 +1295,61 @@ export default function ShopV2Page() {
                     onChange={(e) => setNewRoleName(e.target.value)}
                     className="bg-white/5 border-white/10 text-white"
                   />
-                  <Select value={newRoleId} onValueChange={setNewRoleId}>
-                    <SelectTrigger className="bg-white/5 border-white/10 text-white">
-                      <SelectValue placeholder="역할 선택" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {roles?.map((role) => (
-                        <SelectItem key={role.id} value={role.id}>
+                  <Popover open={exchangeRoleOpen} onOpenChange={setExchangeRoleOpen}>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        role="combobox"
+                        className="justify-between bg-white/5 border-white/10 text-white hover:bg-white/10 font-normal"
+                      >
+                        {newRoleId ? (
                           <div className="flex items-center gap-2">
                             <div
                               className="w-3 h-3 rounded-full"
                               style={{
-                                backgroundColor: `#${role.color.toString(16).padStart(6, "0")}`,
+                                backgroundColor: `#${roles?.find((r) => r.id === newRoleId)?.color.toString(16).padStart(6, "0")}`,
                               }}
                             />
-                            {role.name}
+                            {roles?.find((r) => r.id === newRoleId)?.name}
                           </div>
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                        ) : (
+                          <span className="text-white/40">역할 선택</span>
+                        )}
+                        <Icon icon="solar:alt-arrow-down-linear" className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
+                      <Command>
+                        <CommandInput placeholder="역할 검색..." />
+                        <CommandList>
+                          <CommandEmpty>역할을 찾을 수 없습니다</CommandEmpty>
+                          <CommandGroup>
+                            {roles?.map((role) => (
+                              <CommandItem
+                                key={role.id}
+                                value={role.name}
+                                onSelect={() => {
+                                  setNewRoleId(role.id);
+                                  setExchangeRoleOpen(false);
+                                }}
+                              >
+                                <div
+                                  className="w-3 h-3 rounded-full"
+                                  style={{
+                                    backgroundColor: `#${role.color.toString(16).padStart(6, "0")}`,
+                                  }}
+                                />
+                                {role.name}
+                                {newRoleId === role.id && (
+                                  <Icon icon="solar:check-circle-bold" className="ml-auto h-4 w-4 text-indigo-400" />
+                                )}
+                              </CommandItem>
+                            ))}
+                          </CommandGroup>
+                        </CommandList>
+                      </Command>
+                    </PopoverContent>
+                  </Popover>
                   <Button
                     type="button"
                     variant="secondary"
@@ -1562,24 +1642,51 @@ export default function ShopV2Page() {
             )}
           </div>
           <div className="flex flex-col sm:flex-row gap-2">
-            <Select value={shopChannelId} onValueChange={setShopChannelId}>
-              <SelectTrigger className="bg-white/5 border-white/10 text-white flex-1">
-                <SelectValue placeholder="채널 선택...">
-                  {shopChannelId && channels?.find(c => c.id === shopChannelId)
-                    ? `# ${channels.find(c => c.id === shopChannelId)?.name}`
-                    : shopChannelId
-                      ? "로딩 중..."
-                      : "채널 선택..."}
-                </SelectValue>
-              </SelectTrigger>
-              <SelectContent>
-                {channels?.map((channel) => (
-                  <SelectItem key={channel.id} value={channel.id}>
-                    # {channel.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <Popover open={shopChannelOpen} onOpenChange={setShopChannelOpen}>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  role="combobox"
+                  className="flex-1 justify-between bg-white/5 border-white/10 text-white hover:bg-white/10 font-normal"
+                >
+                  {shopChannelId && channels?.find(c => c.id === shopChannelId) ? (
+                    <span className="flex items-center gap-2">
+                      <Icon icon="solar:hashtag-linear" className="h-4 w-4 text-white/40" />
+                      {channels.find(c => c.id === shopChannelId)?.name}
+                    </span>
+                  ) : (
+                    <span className="text-white/40">채널 선택...</span>
+                  )}
+                  <Icon icon="solar:alt-arrow-down-linear" className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
+                <Command>
+                  <CommandInput placeholder="채널 검색..." />
+                  <CommandList>
+                    <CommandEmpty>채널을 찾을 수 없습니다</CommandEmpty>
+                    <CommandGroup>
+                      {channels?.map((channel) => (
+                        <CommandItem
+                          key={channel.id}
+                          value={channel.name}
+                          onSelect={() => {
+                            setShopChannelId(channel.id);
+                            setShopChannelOpen(false);
+                          }}
+                        >
+                          <Icon icon="solar:hashtag-linear" className="h-4 w-4 text-white/40" />
+                          {channel.name}
+                          {shopChannelId === channel.id && (
+                            <Icon icon="solar:check-circle-bold" className="ml-auto h-4 w-4 text-indigo-400" />
+                          )}
+                        </CommandItem>
+                      ))}
+                    </CommandGroup>
+                  </CommandList>
+                </Command>
+              </PopoverContent>
+            </Popover>
             <Button
               onClick={handleCreateShopPanel}
               disabled={!shopChannelId || createShopPanelMutation.isPending}

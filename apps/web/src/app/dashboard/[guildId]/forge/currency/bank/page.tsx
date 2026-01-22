@@ -121,6 +121,7 @@ export default function BankPage() {
   // 유저 검색
   const [userSearch, setUserSearch] = useState("");
   const [userSearchOpen, setUserSearchOpen] = useState(false);
+  const [roleOpen, setRoleOpen] = useState(false);
 
   // 데이터 조회
   const { data: treasury, isLoading: treasuryLoading } = useTreasury(guildId);
@@ -650,52 +651,89 @@ export default function BankPage() {
               <Icon icon="solar:users-group-rounded-bold" className="inline w-4 h-4 mr-1" />
               역할로 지정
             </label>
-            <Select
-              value={settings?.treasuryManagerRoleId ?? "none"}
-              onValueChange={async (value) => {
-                const roleId = value === "none" ? null : value;
-                try {
-                  await updateSettings.mutateAsync({ treasuryManagerRoleId: roleId });
-                  toast({
-                    title: "설정이 저장되었습니다",
-                    description: roleId
-                      ? `${roles.find((r) => r.id === roleId)?.name} 역할이 국고 관리자로 설정되었습니다.`
-                      : "역할 지정이 해제되었습니다.",
-                  });
-                } catch (error) {
-                  toast({
-                    title: "설정 저장 실패",
-                    description: "다시 시도해주세요.",
-                    variant: "destructive",
-                  });
-                }
-              }}
-            >
-              <SelectTrigger className="bg-white/5 border-white/10 text-white">
-                <SelectValue placeholder="역할을 선택하세요">
-                  {settings?.treasuryManagerRoleId
-                    ? `@${roles.find((r) => r.id === settings.treasuryManagerRoleId)?.name ?? "로딩 중..."}`
-                    : "역할 미지정"}
-                </SelectValue>
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="none">
-                  <span className="text-white/60">역할 미지정</span>
-                </SelectItem>
-                <SelectGroup>
-                  <SelectLabel className="text-xs text-slate-400">역할 목록</SelectLabel>
-                  {roles
-                    .filter((role) => role.name !== "@everyone")
-                    .map((role) => (
-                      <SelectItem key={role.id} value={role.id}>
-                        <span style={{ color: role.color ? `#${role.color.toString(16).padStart(6, "0")}` : undefined }}>
-                          @{role.name}
-                        </span>
-                      </SelectItem>
-                    ))}
-                </SelectGroup>
-              </SelectContent>
-            </Select>
+            <Popover open={roleOpen} onOpenChange={setRoleOpen}>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  role="combobox"
+                  className="w-full justify-between bg-white/5 border-white/10 text-white hover:bg-white/10 font-normal"
+                >
+                  {settings?.treasuryManagerRoleId ? (
+                    <span style={{ color: roles.find((r) => r.id === settings.treasuryManagerRoleId)?.color ? `#${roles.find((r) => r.id === settings.treasuryManagerRoleId)?.color.toString(16).padStart(6, "0")}` : undefined }}>
+                      @{roles.find((r) => r.id === settings.treasuryManagerRoleId)?.name ?? "로딩 중..."}
+                    </span>
+                  ) : (
+                    <span className="text-white/40">역할 미지정</span>
+                  )}
+                  <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
+                <Command>
+                  <CommandInput placeholder="역할 검색..." />
+                  <CommandList>
+                    <CommandEmpty>역할을 찾을 수 없습니다</CommandEmpty>
+                    <CommandGroup>
+                      <CommandItem
+                        value="__none__"
+                        onSelect={async () => {
+                          try {
+                            await updateSettings.mutateAsync({ treasuryManagerRoleId: null });
+                            toast({
+                              title: "설정이 저장되었습니다",
+                              description: "역할 지정이 해제되었습니다.",
+                            });
+                          } catch (error) {
+                            toast({
+                              title: "설정 저장 실패",
+                              description: "다시 시도해주세요.",
+                              variant: "destructive",
+                            });
+                          }
+                          setRoleOpen(false);
+                        }}
+                      >
+                        <span className="text-white/60">역할 미지정</span>
+                        {!settings?.treasuryManagerRoleId && (
+                          <Check className="ml-auto h-4 w-4 text-indigo-400" />
+                        )}
+                      </CommandItem>
+                      {roles
+                        .filter((role) => role.name !== "@everyone")
+                        .map((role) => (
+                          <CommandItem
+                            key={role.id}
+                            value={role.name}
+                            onSelect={async () => {
+                              try {
+                                await updateSettings.mutateAsync({ treasuryManagerRoleId: role.id });
+                                toast({
+                                  title: "설정이 저장되었습니다",
+                                  description: `${role.name} 역할이 국고 관리자로 설정되었습니다.`,
+                                });
+                              } catch (error) {
+                                toast({
+                                  title: "설정 저장 실패",
+                                  description: "다시 시도해주세요.",
+                                  variant: "destructive",
+                                });
+                              }
+                              setRoleOpen(false);
+                            }}
+                          >
+                            <span style={{ color: role.color ? `#${role.color.toString(16).padStart(6, "0")}` : undefined }}>
+                              @{role.name}
+                            </span>
+                            {settings?.treasuryManagerRoleId === role.id && (
+                              <Check className="ml-auto h-4 w-4 text-indigo-400" />
+                            )}
+                          </CommandItem>
+                        ))}
+                    </CommandGroup>
+                  </CommandList>
+                </Command>
+              </PopoverContent>
+            </Popover>
             <p className="text-xs text-white/40 mt-2">
               선택한 역할을 가진 멤버는 /국고 명령어를 사용할 수 있습니다.
             </p>

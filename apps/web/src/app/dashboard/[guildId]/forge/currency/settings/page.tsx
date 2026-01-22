@@ -100,6 +100,8 @@ export default function CurrencySettingsPage() {
   const members = membersData?.members ?? [];
   const [selectedTopyUserId, setSelectedTopyUserId] = useState<string>("");
   const [selectedRubyUserId, setSelectedRubyUserId] = useState<string>("");
+  const [topyUserOpen, setTopyUserOpen] = useState(false);
+  const [rubyUserOpen, setRubyUserOpen] = useState(false);
 
   // 채널 목록 및 거래 알림 채널
   const { data: channels = [] } = useTextChannels(guildId);
@@ -342,29 +344,49 @@ export default function CurrencySettingsPage() {
             <div className={`p-6 space-y-4 ${!form.watch("topyManagerEnabled") ? "pointer-events-none" : ""}`}>
               {/* Add topy manager */}
               <div className="flex gap-3">
-                <Select
-                  value={selectedTopyUserId}
-                  onValueChange={setSelectedTopyUserId}
-                >
-                  <SelectTrigger className="flex-1 bg-white/5 border-white/10 text-white focus:ring-amber-500">
-                    <SelectValue placeholder="유저를 선택하세요" />
-                  </SelectTrigger>
-                  <SelectContent className="bg-slate-900 border-white/10">
-                    {members
-                      .filter(
-                        (m) => !topyManagers.some((mgr) => mgr.userId === m.userId)
-                      )
-                      .map((m) => (
-                        <SelectItem
-                          key={m.userId}
-                          value={m.userId}
-                          className="text-white focus:bg-white/10"
-                        >
-                          {m.displayName}
-                        </SelectItem>
-                      ))}
-                  </SelectContent>
-                </Select>
+                <Popover open={topyUserOpen} onOpenChange={setTopyUserOpen}>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      role="combobox"
+                      className="flex-1 justify-between bg-white/5 border-white/10 text-white hover:bg-white/10 font-normal"
+                    >
+                      {selectedTopyUserId ? (
+                        members.find((m) => m.userId === selectedTopyUserId)?.displayName
+                      ) : (
+                        <span className="text-white/40">유저를 선택하세요</span>
+                      )}
+                      <Icon icon="solar:alt-arrow-down-linear" className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
+                    <Command>
+                      <CommandInput placeholder="유저 검색..." />
+                      <CommandList>
+                        <CommandEmpty>유저를 찾을 수 없습니다</CommandEmpty>
+                        <CommandGroup>
+                          {members
+                            .filter((m) => !topyManagers.some((mgr) => mgr.userId === m.userId))
+                            .map((m) => (
+                              <CommandItem
+                                key={m.userId}
+                                value={m.displayName}
+                                onSelect={() => {
+                                  setSelectedTopyUserId(m.userId);
+                                  setTopyUserOpen(false);
+                                }}
+                              >
+                                {m.displayName}
+                                {selectedTopyUserId === m.userId && (
+                                  <Icon icon="solar:check-circle-bold" className="ml-auto h-4 w-4 text-indigo-400" />
+                                )}
+                              </CommandItem>
+                            ))}
+                        </CommandGroup>
+                      </CommandList>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
                 <Button
                   type="button"
                   disabled={!selectedTopyUserId || addManager.isPending}
@@ -494,29 +516,49 @@ export default function CurrencySettingsPage() {
             <div className={`p-6 space-y-4 ${!form.watch("rubyManagerEnabled") ? "pointer-events-none" : ""}`}>
               {/* Add ruby manager */}
               <div className="flex gap-3">
-                <Select
-                  value={selectedRubyUserId}
-                  onValueChange={setSelectedRubyUserId}
-                >
-                  <SelectTrigger className="flex-1 bg-white/5 border-white/10 text-white focus:ring-pink-500">
-                    <SelectValue placeholder="유저를 선택하세요" />
-                  </SelectTrigger>
-                  <SelectContent className="bg-slate-900 border-white/10">
-                    {members
-                      .filter(
-                        (m) => !rubyManagers.some((mgr) => mgr.userId === m.userId)
-                      )
-                      .map((m) => (
-                        <SelectItem
-                          key={m.userId}
-                          value={m.userId}
-                          className="text-white focus:bg-white/10"
-                        >
-                          {m.displayName}
-                        </SelectItem>
-                      ))}
-                  </SelectContent>
-                </Select>
+                <Popover open={rubyUserOpen} onOpenChange={setRubyUserOpen}>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      role="combobox"
+                      className="flex-1 justify-between bg-white/5 border-white/10 text-white hover:bg-white/10 font-normal"
+                    >
+                      {selectedRubyUserId ? (
+                        members.find((m) => m.userId === selectedRubyUserId)?.displayName
+                      ) : (
+                        <span className="text-white/40">유저를 선택하세요</span>
+                      )}
+                      <Icon icon="solar:alt-arrow-down-linear" className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
+                    <Command>
+                      <CommandInput placeholder="유저 검색..." />
+                      <CommandList>
+                        <CommandEmpty>유저를 찾을 수 없습니다</CommandEmpty>
+                        <CommandGroup>
+                          {members
+                            .filter((m) => !rubyManagers.some((mgr) => mgr.userId === m.userId))
+                            .map((m) => (
+                              <CommandItem
+                                key={m.userId}
+                                value={m.displayName}
+                                onSelect={() => {
+                                  setSelectedRubyUserId(m.userId);
+                                  setRubyUserOpen(false);
+                                }}
+                              >
+                                {m.displayName}
+                                {selectedRubyUserId === m.userId && (
+                                  <Icon icon="solar:check-circle-bold" className="ml-auto h-4 w-4 text-indigo-400" />
+                                )}
+                              </CommandItem>
+                            ))}
+                        </CommandGroup>
+                      </CommandList>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
                 <Button
                   type="button"
                   disabled={!selectedRubyUserId || addManager.isPending}
